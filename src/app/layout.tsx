@@ -1,4 +1,5 @@
 import { Footer } from "@/components/globals/footer";
+import { Loading } from "@/components/globals/loading";
 import { SmootherProvider } from "@/hooks/use-smoother";
 import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
@@ -32,7 +33,7 @@ export default function RootLayout({
             </div>
           </div>
         </SmootherProvider>
-        {/* <Loading /> */}
+        <Loading />
       </body>
     </html>
   );
