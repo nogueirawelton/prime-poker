@@ -8,7 +8,7 @@ import { TextInput } from "@/components/globals/form/text-input";
 export function Form() {
   return (
     <form className="flex flex-col gap-4">
-      <div className="text-prime-light/75 flex flex-col gap-2">
+      <div className="text-prime-light/75 flex flex-col gap-2 text-sm lg:text-base">
         <label htmlFor="name">Nome Completo</label>
         <TextInput
           id="name"
@@ -17,7 +17,7 @@ export function Form() {
         />
       </div>
 
-      <div className="text-prime-light/75 flex flex-col gap-2">
+      <div className="text-prime-light/75 flex flex-col gap-2 text-sm lg:text-base">
         <label htmlFor="email">E-mail</label>
         <TextInput
           id="email"
@@ -26,7 +26,7 @@ export function Form() {
         />
       </div>
 
-      <div className="text-prime-light/75 flex flex-col gap-2">
+      <div className="text-prime-light/75 flex flex-col gap-2 text-sm lg:text-base">
         <label htmlFor="phone">Telefone</label>
         <PhoneInput
           id="phone"
@@ -36,7 +36,7 @@ export function Form() {
         />
       </div>
 
-      <div className="text-prime-light/75 flex flex-col gap-2">
+      <div className="text-prime-light/75 flex flex-col gap-2 text-sm lg:text-base">
         <label htmlFor="experience">Nível de Experiência</label>
         <SelectInput
           id="experience"
@@ -47,7 +47,7 @@ export function Form() {
         />
       </div>
 
-      <div className="text-prime-light/75 flex flex-col gap-2">
+      <div className="text-prime-light/75 flex flex-col gap-2 text-sm lg:text-base">
         <label htmlFor="why">
           Por que você quer fazer parte do Prime Poker Team?
         </label>

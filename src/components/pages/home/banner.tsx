@@ -10,24 +10,25 @@ export function Banner() {
         className="text-prime-light mx-auto grid h-full max-w-screen-2xl items-center px-4 lg:px-8"
       >
         <div className="lg:pb-24">
-          <h1 className="text-5xl font-bold uppercase">
+          <h1 className="text-4xl font-bold uppercase lg:text-5xl">
             Domine o jogo com o{" "}
-            <span className="text-prime-red block">Prime Poker Team</span>
+            <span className="text-prime-red lg:block">Prime Poker Team</span>
           </h1>
 
           <p className="mt-4 lg:text-lg">
-            A equipe mais vencedora do poker brasileiro, <br /> transformando
-            jogadores em campeões desde 2018.
+            A equipe mais vencedora do poker brasileiro,{" "}
+            <br className="hidden lg:block" /> transformando jogadores em
+            campeões desde 2018.
           </p>
 
           <div data-el="cta">
-            <a
-              href="#"
-              className="bg-prime-red text-prime-light hover:bg-prime-light hover:text-prime-red mt-8 flex h-14 w-fit items-center gap-2 rounded-sm px-4 font-medium transition-all duration-500"
+            <Scroller
+              href="#faca-parte"
+              className="bg-prime-red text-prime-light hover:bg-prime-light hover:text-prime-red mt-8 flex h-14 w-fit items-center gap-2 rounded-md px-4 text-sm font-medium transition-all duration-500 lg:text-base"
             >
               Faça Parte do Prime Poker Team{" "}
               <CaretRightIcon className="size-6" />
-            </a>
+            </Scroller>
           </div>
         </div>
       </AnimationContainer>

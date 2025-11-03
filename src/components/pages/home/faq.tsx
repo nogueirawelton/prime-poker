@@ -1,3 +1,4 @@
+import { AnimationContainer } from "@/hooks/use-animation";
 import { Cards } from "@/icons/cards";
 import { CaretDownIcon } from "@phosphor-icons/react/dist/ssr";
 import { Collapsible } from "radix-ui";
@@ -5,20 +6,32 @@ import { Collapsible } from "radix-ui";
 export function Faq() {
   return (
     <section id="faq" className="bg-prime-dark">
-      <div className="mx-auto max-w-screen-2xl px-4 py-12 lg:px-8 lg:py-24">
-        <div className="flex flex-col items-center justify-center">
-          <strong className="text-prime-red flex items-center gap-2 font-normal uppercase">
+      <AnimationContainer
+        animation="home/faq"
+        className="mx-auto max-w-screen-2xl px-4 py-12 lg:px-8 lg:py-24"
+      >
+        <div
+          data-el="data"
+          className="flex flex-col items-center justify-center"
+        >
+          <strong
+            data-el="strong"
+            className="text-prime-red flex items-center gap-2 font-normal uppercase"
+          >
             <Cards className="stroke-prime-red size-6" />
             Perguntas frequentes
           </strong>
 
-          <h2 className="text-prime-light mt-2 flex items-center gap-2 text-center text-4xl font-bold uppercase">
+          <h2 className="text-prime-light mt-2 flex items-center gap-2 text-center text-3xl font-bold uppercase lg:text-4xl">
             Tire suas dúvidas sobre o <br className="hidden lg:block" /> Prime
             Poker Team e como participar
           </h2>
         </div>
 
-        <div className="mx-auto mt-12 flex max-w-screen-md flex-col gap-1">
+        <div
+          data-el="faq-items"
+          className="mx-auto mt-12 flex max-w-screen-md flex-col gap-1"
+        >
           <div className="border-b border-white/20">
             <Collapsible.Root>
               <Collapsible.Trigger className="text-prime-light group flex min-h-12 w-full cursor-pointer items-center justify-between py-1 text-left font-medium">
@@ -30,7 +43,7 @@ export function Faq() {
               </Collapsible.Trigger>
 
               <Collapsible.Content className="text-prime-light data-[state=open]:animate-slide-down data-[state=closed]:animate-slide-up overflow-hidden">
-                <p className="pb-2">
+                <p className="pb-2 text-sm lg:text-base">
                   Lorem ipsum dolor sit amet consectetur adipisicing elit. Odit
                   eveniet labore earum inventore iusto, assumenda, quas adipisci
                   odio excepturi repellendus quia tempore voluptatem iure
@@ -51,7 +64,7 @@ export function Faq() {
               </Collapsible.Trigger>
 
               <Collapsible.Content className="text-prime-light data-[state=open]:animate-slide-down data-[state=closed]:animate-slide-up overflow-hidden">
-                <p className="pb-2">
+                <p className="pb-2 text-sm lg:text-base">
                   Lorem ipsum dolor sit amet consectetur adipisicing elit. Odit
                   eveniet labore earum inventore iusto, assumenda, quas adipisci
                   odio excepturi repellendus quia tempore voluptatem iure
@@ -72,7 +85,7 @@ export function Faq() {
               </Collapsible.Trigger>
 
               <Collapsible.Content className="text-prime-light data-[state=open]:animate-slide-down data-[state=closed]:animate-slide-up overflow-hidden">
-                <p className="pb-2">
+                <p className="pb-2 text-sm lg:text-base">
                   Lorem ipsum dolor sit amet consectetur adipisicing elit. Odit
                   eveniet labore earum inventore iusto, assumenda, quas adipisci
                   odio excepturi repellendus quia tempore voluptatem iure
@@ -93,7 +106,7 @@ export function Faq() {
               </Collapsible.Trigger>
 
               <Collapsible.Content className="text-prime-light data-[state=open]:animate-slide-down data-[state=closed]:animate-slide-up overflow-hidden">
-                <p className="pb-2">
+                <p className="pb-2 text-sm lg:text-base">
                   Lorem ipsum dolor sit amet consectetur adipisicing elit. Odit
                   eveniet labore earum inventore iusto, assumenda, quas adipisci
                   odio excepturi repellendus quia tempore voluptatem iure
@@ -114,7 +127,7 @@ export function Faq() {
               </Collapsible.Trigger>
 
               <Collapsible.Content className="text-prime-light data-[state=open]:animate-slide-down data-[state=closed]:animate-slide-up overflow-hidden">
-                <p className="pb-2">
+                <p className="pb-2 text-sm lg:text-base">
                   Lorem ipsum dolor sit amet consectetur adipisicing elit. Odit
                   eveniet labore earum inventore iusto, assumenda, quas adipisci
                   odio excepturi repellendus quia tempore voluptatem iure
@@ -124,7 +137,7 @@ export function Faq() {
             </Collapsible.Root>
           </div>
         </div>
-      </div>
+      </AnimationContainer>
     </section>
   );
 }

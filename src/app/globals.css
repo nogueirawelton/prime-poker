@@ -12,6 +12,18 @@
 
   --animate-slide-up: slideUp 0.3s ease-in-out;
   --animate-slide-down: slideDown 0.3s ease-in-out;
+  --animate-to-bottom: toBottom 0.3s ease-in-out;
+}
+
+@keyframes toBottom {
+  from {
+    opacity: 0;
+    transform: translateY(-2rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideDown {

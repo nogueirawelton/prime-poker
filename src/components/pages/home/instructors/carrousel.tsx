@@ -9,7 +9,7 @@ import { Autoplay, Navigation } from "swiper/modules";
 
 export function Carrousel() {
   return (
-    <div className="mx-auto mt-12 grid max-w-screen-xl grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-4 lg:gap-12">
+    <div data-el="swiper" className="mx-auto mt-12 grid max-w-screen-xl grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-4 lg:gap-12">
       <button
         data-prev="instructors"
         className="-translate-y-[26px] cursor-pointer"

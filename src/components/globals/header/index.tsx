@@ -5,6 +5,7 @@ import { ListIcon } from "@phosphor-icons/react/dist/ssr";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { MenuMobileTrigger } from "./mobile-menu";
 
 export function Header() {
   const [scrolled, setScrolled] = useState(false);
@@ -46,9 +47,11 @@ export function Header() {
           <Scroller href="#faca-parte">Faça parte</Scroller>
         </nav>
 
-        <button className="lg:hidden">
-          <ListIcon className="text-prime-light size-7" />
-        </button>
+        <MenuMobileTrigger>
+          <button className="lg:hidden">
+            <ListIcon className="text-prime-light size-7" />
+          </button>
+        </MenuMobileTrigger>
       </div>
     </header>
   );

@@ -14,7 +14,7 @@ import Link from "next/link";
 export function Footer() {
   return (
     <footer className="bg-prime-dark border-t border-white/10 py-12">
-      <div className="mx-auto grid max-w-screen-2xl grid-cols-3 gap-12 px-4 lg:px-8">
+      <div className="mx-auto grid max-w-screen-2xl gap-12 px-4 lg:grid-cols-3 lg:px-8">
         <div>
           <Link
             href={"/"}
@@ -69,7 +69,7 @@ export function Footer() {
         <div>
           <strong className="text-prime-light uppercase">Links Rápidos</strong>
 
-          <nav className="[&_a]:hover:text-prime-red text-prime-light/85 mt-4 flex-col gap-2 text-sm lg:flex [&_a]:transition-all [&_a]:duration-500">
+          <nav className="[&_a]:hover:text-prime-red text-prime-light/85 mt-4 flex flex-col gap-2 text-sm [&_a]:transition-all [&_a]:duration-500">
             <Scroller href="#quem-somos">Quem Somos</Scroller>
             <Scroller href="#o-que-fazemos">O que Fazemos</Scroller>
             <Scroller href="#head-coachs">Head Coachs</Scroller>

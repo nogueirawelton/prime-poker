@@ -7,7 +7,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 
 export function Testimonials() {
   return (
-    <div className="mt-12">
+    <div data-el="testimonials" className="mt-12">
       <h3 className="text-prime-light gap-2 text-center text-xl font-bold uppercase">
         Histórias de sucesso
       </h3>
@@ -55,7 +55,7 @@ export function Testimonials() {
               </div>
             </div>
 
-            <p className="text-prime-light mt-4 italic">
+            <p className="text-prime-light mt-4 text-sm italic lg:text-base">
               "Entrei no Prime Poker Team como um jogador recreativo e em 7 ano
               já estava ompetindo em torneios internacionais. A estrutura de
               coaching e o suporte psicológico foram fundamentais para minha
@@ -85,7 +85,7 @@ export function Testimonials() {
               </div>
             </div>
 
-            <p className="text-prime-light mt-4 italic">
+            <p className="text-prime-light mt-4 text-sm italic lg:text-base">
               "O Prime Poker Team transformou meu jogo completamente. Antes eu
               era uma jogadora tiltada e inconsistente. Hoje tenho disciplina,
               um bankroll saudável e resultados consistentes mês após mês."
@@ -114,7 +114,7 @@ export function Testimonials() {
               </div>
             </div>
 
-            <p className="text-prime-light mt-4 italic">
+            <p className="text-prime-light mt-4 text-sm italic lg:text-base">
               "Entrei no Prime Poker Team como um jogador recreativo e em 7 ano
               já estava ompetindo em torneios internacionais. A estrutura de
               coaching e o suporte psicológico foram fundamentais para minha
@@ -127,7 +127,7 @@ export function Testimonials() {
       <div
         data-pagination="testimonials"
         className="mt-6 flex items-center justify-center gap-2"
-      ></div>
+      />
     </div>
   );
 }

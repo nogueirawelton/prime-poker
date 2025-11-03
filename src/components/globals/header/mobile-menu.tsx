@@ -1,37 +1,72 @@
-import { ListIcon } from "@phosphor-icons/react/dist/ssr";
-import { Dialog } from "radix-ui";
-import { useState } from "react";
+"use client";
 
-export function MobileMenu() {
+import { Scroller } from "@/hooks/use-smoother/scroller";
+import { XIcon } from "@phosphor-icons/react/dist/ssr";
+import * as Dialog from "@radix-ui/react-dialog";
+import Image from "next/image";
+import Link from "next/link";
+import { ReactNode, useState } from "react";
+
+export function MenuMobileTrigger({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
 
-  function toggleMenu() {
-    setOpen((prev) => !prev);
-  }
-
   return (
-    <Dialog.Root>
-      <Dialog.Trigger
-        className="absolute top-1/2 right-1/2 translate-1/2 -translate-y-1/2 transition-all duration-[1s] group-data-[scrolled=true]:right-4 group-data-[scrolled=true]:translate-x-0 lg:hidden"
-        onClick={toggleMenu}
-      >
-        <ListIcon />
-      </Dialog.Trigger>
-
+    <Dialog.Root open={open} onOpenChange={setOpen}>
+      <Dialog.Trigger asChild>{children}</Dialog.Trigger>
       <Dialog.Portal>
-        {open && (
-          <div className="bg-casa-green-500/90 animate-to-bottom fixed top-0 left-0 z-10 grid h-screen w-full place-items-center pt-[90px]">
-            <nav className="font-wide flex flex-col items-center justify-center gap-8 text-sm font-thin tracking-[2px] text-zinc-100 uppercase">
-              <a href="#projeto">Projeto</a>
-              <a href="#lazer">Lazer</a>
-              <a href="#plantas">Plantas</a>
-              <a href="#decorados">Decorados</a>
-              <a href="#servicos">Serviços</a>
-              <a href="#localizacao">Localização</a>
-              <a href="#contato">Contato</a>
+        <Dialog.Overlay />
+
+        <Dialog.Content className="data-[state=open]:animate-to-bottom bg-prime-dark fixed inset-0 top-0 z-50 flex flex-col overflow-scroll lg:hidden">
+          <Dialog.DialogTitle className="sr-only">
+            Menu Mobile
+          </Dialog.DialogTitle>
+
+          <div className="flex h-24 w-full items-center justify-between px-4 lg:px-8">
+            <Dialog.Close asChild>
+              <Link href={"/"} className="lg:h-full">
+                <Image
+                  src="/img/logo.svg"
+                  width={90}
+                  height={80}
+                  alt="Prime Poker Logo"
+                  className="h-[70px] w-auto lg:h-full"
+                />
+              </Link>
+            </Dialog.Close>
+
+            <Dialog.Close>
+              <XIcon className="text-prime-light size-7" />
+            </Dialog.Close>
+          </div>
+
+          <div className="flex flex-1 flex-col justify-center border-t px-4">
+            <nav className="[&_a]:hover:text-prime-red text-prime-light text-md flex flex-col items-center gap-6 font-semibold uppercase [&_a]:transition-all [&_a]:duration-500">
+              <span onClick={() => setOpen(false)}>
+                <Scroller href="#quem-somos">Quem Somos</Scroller>
+              </span>
+
+              <span onClick={() => setOpen(false)}>
+                <Scroller href="#o-que-fazemos">O que Fazemos</Scroller>
+              </span>
+
+              <span onClick={() => setOpen(false)}>
+                <Scroller href="#head-coachs">Head Coachs</Scroller>
+              </span>
+
+              <span onClick={() => setOpen(false)}>
+                <Scroller href="#instrutores">Instrutores</Scroller>
+              </span>
+
+              <span onClick={() => setOpen(false)}>
+                <Scroller href="#evolucao">Evolução</Scroller>
+              </span>
+
+              <span onClick={() => setOpen(false)}>
+                <Scroller href="#faca-parte">Faça parte</Scroller>
+              </span>
             </nav>
           </div>
-        )}
+        </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
   );

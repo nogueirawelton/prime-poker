@@ -76,8 +76,8 @@ export default function Chart() {
   };
 
   return (
-    <div className="mt-12 rounded-md bg-white/5 p-6 shadow-lg">
-      <div className="mb-4 flex items-center justify-between">
+    <div data-el="chart" className="mt-12 rounded-md bg-white/5 p-6 shadow-lg">
+      <div className="mb-4 flex flex-col md:flex-row gap-2 lg:items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-white">
             Ganhos Acumulados
