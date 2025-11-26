@@ -13,6 +13,7 @@ export function TextInput({
   errorClass,
   onValueChange,
   ref,
+  value,
   ...props
 }: TextInputProps) {
   return (
@@ -20,6 +21,7 @@ export function TextInput({
       <input
         {...props}
         type="text"
+        value={value ?? ""}
         className={twMerge("w-full bg-transparent", props.className)}
         ref={ref}
         onChange={(e) => onValueChange(e.target.value)}

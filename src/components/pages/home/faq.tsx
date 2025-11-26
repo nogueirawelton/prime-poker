@@ -34,7 +34,7 @@ export function Faq() {
         >
           <div className="border-b border-white/20">
             <Collapsible.Root>
-              <Collapsible.Trigger className="text-prime-light group flex min-h-12 w-full cursor-pointer items-center justify-between py-1 text-left font-medium">
+              <Collapsible.Trigger className="text-prime-light group flex min-h-14 w-full cursor-pointer items-center justify-between py-1 text-left text-lg font-medium">
                 Como faço parte do time?{" "}
                 <CaretDownIcon
                   weight="bold"
@@ -55,7 +55,7 @@ export function Faq() {
 
           <div className="border-b border-white/20">
             <Collapsible.Root>
-              <Collapsible.Trigger className="text-prime-light group flex min-h-12 w-full cursor-pointer items-center justify-between py-1 text-left font-medium">
+              <Collapsible.Trigger className="text-prime-light group flex min-h-14 w-full cursor-pointer items-center justify-between py-1 text-left text-lg font-medium">
                 Quais serviços são oferecidos?{" "}
                 <CaretDownIcon
                   weight="bold"
@@ -76,7 +76,7 @@ export function Faq() {
 
           <div className="border-b border-white/20">
             <Collapsible.Root>
-              <Collapsible.Trigger className="text-prime-light group flex min-h-12 w-full cursor-pointer items-center justify-between py-1 text-left font-medium">
+              <Collapsible.Trigger className="text-prime-light group flex min-h-14 w-full cursor-pointer items-center justify-between py-1 text-left text-lg font-medium">
                 Qual o investimento necessário?{" "}
                 <CaretDownIcon
                   weight="bold"
@@ -97,7 +97,7 @@ export function Faq() {
 
           <div className="border-b border-white/20">
             <Collapsible.Root>
-              <Collapsible.Trigger className="text-prime-light group flex min-h-12 w-full cursor-pointer items-center justify-between py-1 text-left font-medium">
+              <Collapsible.Trigger className="text-prime-light group flex min-h-14 w-full cursor-pointer items-center justify-between py-1 text-left text-lg font-medium">
                 Preciso ter experiência para participar?{" "}
                 <CaretDownIcon
                   weight="bold"
@@ -118,7 +118,7 @@ export function Faq() {
 
           <div className="border-b border-white/20">
             <Collapsible.Root>
-              <Collapsible.Trigger className="text-prime-light group flex min-h-12 w-full cursor-pointer items-center justify-between py-1 text-left font-medium">
+              <Collapsible.Trigger className="text-prime-light group flex min-h-14 w-full cursor-pointer items-center justify-between py-1 text-left text-lg font-medium">
                 Como funciona a banca compartilhada?{" "}
                 <CaretDownIcon
                   weight="bold"

@@ -13,7 +13,7 @@ export async function List() {
   ).json();
 
   return (
-    <div className="mt-12 grid lg:grid-cols-4">
+    <div className="mt-12 grid gap-2 lg:grid-cols-4">
       {posts?.slice(0, 4).map((post, key) => (
         <div key={key} className="aspect-square">
           <Post content={post} />

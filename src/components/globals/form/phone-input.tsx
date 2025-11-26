@@ -6,7 +6,7 @@ import "react-phone-input-2/lib/style.css";
 import { twMerge } from "tailwind-merge";
 
 interface PhoneInputCustomProps extends PhoneInputProps {
-  id: string,
+  id: string;
   error?: FieldError;
   errorClass?: string;
   onValueChange: (value: string) => void;
@@ -34,8 +34,8 @@ export function PhoneInput({
           "!border-none !rounded-none !text-base !bg-transparent !w-full",
           className,
         )}
-        onChange={(...args) => {
-          onValueChange(args[3]);
+        onChange={(value) => {
+          onValueChange(value);
         }}
         containerClass={twMerge("!font-sans !rounded-none", containerClass)}
         buttonClass={twMerge(
@@ -44,7 +44,7 @@ export function PhoneInput({
         )}
         placeholder={placeholder}
         countryCodeEditable={!!placeholder}
-        value={value}
+        value={value ?? ""}
         inputProps={{
           inputMode: "numeric",
           ...props,

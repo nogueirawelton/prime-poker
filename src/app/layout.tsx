@@ -3,6 +3,7 @@ import { Loading } from "@/components/globals/loading";
 import { SmootherProvider } from "@/hooks/use-smoother";
 import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
+import { ToastContainer } from "react-toastify";
 import { Header } from "../components/globals/header";
 import "./globals.css";
 
@@ -34,6 +35,7 @@ export default function RootLayout({
           </div>
         </SmootherProvider>
         <Loading />
+        <ToastContainer />
       </body>
     </html>
   );

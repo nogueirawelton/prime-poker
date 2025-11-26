@@ -25,16 +25,16 @@ export function Header() {
   return (
     <header
       data-scrolled={scrolled}
-      className="bg-prime-dark border-prime-dark fixed top-0 z-40 w-full border-b transition-all duration-500 data-[scrolled=true]:border-white/6"
+      className="bg-prime-dark group border-prime-dark fixed top-0 z-40 w-full border-b transition-all duration-500 data-[scrolled=true]:border-white/10"
     >
       <div className="mx-auto flex h-24 max-w-screen-2xl items-center justify-between px-4 py-2 lg:h-28 lg:px-8">
-        <Link href={"/"} className="lg:h-full">
+        <Link href={"/"}>
           <Image
             src="/img/logo.svg"
             width={90}
             height={80}
             alt="Prime Poker Logo"
-            className="h-[70px] w-auto lg:h-full"
+            className="h-[70px] w-auto transition-all duration-500 group-data-[scrolled=true]:h-[70px] lg:h-[90px]"
           />
         </Link>
 

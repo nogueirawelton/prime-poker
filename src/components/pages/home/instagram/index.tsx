@@ -31,7 +31,7 @@ export async function Instagram() {
         <div data-el="posts">
           <Suspense
             fallback={
-              <div className="mt-12 grid lg:grid-cols-4">
+              <div className="mt-12 grid gap-2 lg:grid-cols-4">
                 {Array(4)
                   .fill("")
                   .map((_, key) => (
