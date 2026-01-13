@@ -1,6 +1,5 @@
 import { Footer } from "@/components/globals/footer";
 import { Loading } from "@/components/globals/loading";
-import { SmootherProvider } from "@/hooks/use-smoother";
 import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
 import { ToastContainer } from "react-toastify";
@@ -23,17 +22,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${montserrat.variable}`}>
+    <html
+      lang="pt-BR"
+      className={`${montserrat.variable} scroll-pt-24 scroll-smooth`}
+    >
       <body className="antialiased">
-        <SmootherProvider>
-          <Header />
-          <div id="smooth-wrapper">
-            <div id="smooth-content">
-              {children}
-              <Footer />
-            </div>
+        {/* <SmootherProvider> */}
+        <Header />
+        <div id="smooth-wrapper">
+          <div id="smooth-content">
+            {children}
+            <Footer />
           </div>
-        </SmootherProvider>
+        </div>
+        {/* </SmootherProvider> */}
         <Loading />
         <ToastContainer />
       </body>

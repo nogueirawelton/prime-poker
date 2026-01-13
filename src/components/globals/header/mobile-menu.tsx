@@ -1,6 +1,5 @@
 "use client";
 
-import { Scroller } from "@/hooks/use-smoother/scroller";
 import { XIcon } from "@phosphor-icons/react/dist/ssr";
 import * as Dialog from "@radix-ui/react-dialog";
 import Image from "next/image";
@@ -42,27 +41,27 @@ export function MenuMobileTrigger({ children }: { children: ReactNode }) {
           <div className="flex flex-1 flex-col justify-center border-t px-4">
             <nav className="[&_a]:hover:text-prime-red text-prime-light text-md flex flex-col items-center gap-6 font-semibold uppercase [&_a]:transition-all [&_a]:duration-500">
               <span onClick={() => setOpen(false)}>
-                <Scroller href="#quem-somos">Quem Somos</Scroller>
+                <Link href="#quem-somos">Quem Somos</Link>
               </span>
 
               <span onClick={() => setOpen(false)}>
-                <Scroller href="#o-que-fazemos">O que Fazemos</Scroller>
+                <Link href="#o-que-fazemos">O que Fazemos</Link>
               </span>
 
               <span onClick={() => setOpen(false)}>
-                <Scroller href="#head-coachs">Head Coachs</Scroller>
+                <Link href="#head-coachs">Head Coachs</Link>
               </span>
 
               <span onClick={() => setOpen(false)}>
-                <Scroller href="#instrutores">Instrutores</Scroller>
+                <Link href="#instrutores">Instrutores</Link>
               </span>
 
               <span onClick={() => setOpen(false)}>
-                <Scroller href="#evolucao">Evolução</Scroller>
+                <Link href="#evolucao">Evolução</Link>
               </span>
 
               <span onClick={() => setOpen(false)}>
-                <Scroller href="#faca-parte">Faça parte</Scroller>
+                <Link href="#faca-parte">Faça parte</Link>
               </span>
             </nav>
           </div>

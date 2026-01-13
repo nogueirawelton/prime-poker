@@ -2,14 +2,22 @@
 
 import { Swiper, SwiperSlide } from "swiper/react";
 
+import { Instructors } from "@/@types/pages/Home";
 import { CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react/dist/ssr";
 import Image from "next/image";
 import "swiper/css";
 import { Autoplay, Navigation } from "swiper/modules";
 
-export function Carrousel() {
+type CarrouselProps = {
+  content: Instructors["instructors"];
+};
+
+export function Carrousel({ content }: CarrouselProps) {
   return (
-    <div data-el="swiper" className="mx-auto mt-12 grid max-w-screen-xl grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-4 lg:gap-12">
+    <div
+      data-el="swiper"
+      className="mx-auto mt-12 grid max-w-screen-xl grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-4 lg:gap-12"
+    >
       <button
         data-prev="instructors"
         className="-translate-y-[26px] cursor-pointer"
@@ -46,215 +54,28 @@ export function Carrousel() {
           }}
           loop
         >
-          <SwiperSlide>
-            <div className="relative flex aspect-square w-full flex-col items-center gap-4 overflow-hidden rounded-md">
-              <Image
-                src="/img/person-example-1.jpg"
-                width={200}
-                height={200}
-                alt=""
-                className="absolute top-0 left-0 h-full w-full object-cover object-top"
-              />
-            </div>
+          {content?.nodes.map((instructor, key) => (
+            <SwiperSlide key={key}>
+              <div className="relative flex aspect-square w-full flex-col items-center gap-4 overflow-hidden rounded-md">
+                <Image
+                  src={instructor.featuredImage?.node?.mediaItemUrl}
+                  width={200}
+                  height={200}
+                  alt=""
+                  className="absolute top-0 left-0 h-full w-full object-cover object-top"
+                />
+              </div>
 
-            <div className="mt-2 text-center">
-              <h3 className="text-prime-light text-lg font-bold">
-                Lucas "Aces"
-              </h3>
-              <strong className="text-prime-red/80 font-medium">
-                MTT Coach
-              </strong>
-            </div>
-          </SwiperSlide>
-
-          <SwiperSlide>
-            <div className="relative flex aspect-square w-full flex-col items-center gap-4 overflow-hidden rounded-md">
-              <Image
-                src="/img/person-example-2.jpg"
-                width={375}
-                height={480}
-                alt=""
-                className="absolute top-0 left-0 h-full w-full object-cover object-top"
-              />
-            </div>
-
-            <div className="mt-2 text-center">
-              <h3 className="text-prime-light text-lg font-bold">
-                Ana "Queen"
-              </h3>
-              <strong className="text-prime-red/80 font-medium">
-                Cash Game Coach
-              </strong>
-            </div>
-          </SwiperSlide>
-
-          <SwiperSlide>
-            <div className="relative flex aspect-square w-full flex-col items-center gap-4 overflow-hidden rounded-md">
-              <Image
-                src="/img/person-example-3.jpg"
-                width={375}
-                height={480}
-                alt=""
-                className="absolute top-0 left-0 h-full w-full object-cover object-top"
-              />
-            </div>
-
-            <div className="mt-2 text-center">
-              <h3 className="text-prime-light text-lg font-bold">
-                Pedro "Bluff"
-              </h3>
-              <strong className="text-prime-red/80 font-medium">
-                Spin & Go Coach
-              </strong>
-            </div>
-          </SwiperSlide>
-
-          <SwiperSlide>
-            <div className="relative flex aspect-square w-full flex-col items-center gap-4 overflow-hidden rounded-md">
-              <Image
-                src="/img/person-example-2.jpg"
-                width={375}
-                height={480}
-                alt=""
-                className="absolute top-0 left-0 h-full w-full object-cover object-top"
-              />
-            </div>
-
-            <div className="mt-2 text-center">
-              <h3 className="text-prime-light text-lg font-bold">
-                Juliana "Tilt"
-              </h3>
-              <strong className="text-prime-red/80 font-medium">
-                Mental Game Coach
-              </strong>
-            </div>
-          </SwiperSlide>
-
-          <SwiperSlide>
-            <div className="relative flex aspect-square w-full flex-col items-center gap-4 overflow-hidden rounded-md">
-              <Image
-                src="/img/person-example-1.jpg"
-                width={375}
-                height={480}
-                alt=""
-                className="absolute top-0 left-0 h-full w-full object-cover object-top"
-              />
-            </div>
-
-            <div className="mt-2 text-center">
-              <h3 className="text-prime-light text-lg font-bold">
-                Carlos "GTO"
-              </h3>
-              <strong className="text-prime-red/80 font-medium">
-                GTO Specialist
-              </strong>
-            </div>
-          </SwiperSlide>
-
-          <SwiperSlide>
-            <div className="relative flex aspect-square w-full flex-col items-center gap-4 overflow-hidden rounded-md">
-              <Image
-                src="/img/person-example-1.jpg"
-                width={375}
-                height={480}
-                alt=""
-                className="absolute top-0 left-0 h-full w-full object-cover object-top"
-              />
-            </div>
-
-            <div className="mt-2 text-center">
-              <h3 className="text-prime-light text-lg font-bold">
-                Lucas "Aces"
-              </h3>
-              <strong className="text-prime-red/80 font-medium">
-                MTT Coach
-              </strong>
-            </div>
-          </SwiperSlide>
-
-          <SwiperSlide>
-            <div className="relative flex aspect-square w-full flex-col items-center gap-4 overflow-hidden rounded-md">
-              <Image
-                src="/img/person-example-2.jpg"
-                width={375}
-                height={480}
-                alt=""
-                className="absolute top-0 left-0 h-full w-full object-cover object-top"
-              />
-            </div>
-
-            <div className="mt-2 text-center">
-              <h3 className="text-prime-light text-lg font-bold">
-                Ana "Queen"
-              </h3>
-              <strong className="text-prime-red/80 font-medium">
-                Cash Game Coach
-              </strong>
-            </div>
-          </SwiperSlide>
-
-          <SwiperSlide>
-            <div className="relative flex aspect-square w-full flex-col items-center gap-4 overflow-hidden rounded-md">
-              <Image
-                src="/img/person-example-3.jpg"
-                width={375}
-                height={480}
-                alt=""
-                className="absolute top-0 left-0 h-full w-full object-cover object-top"
-              />
-            </div>
-
-            <div className="mt-2 text-center">
-              <h3 className="text-prime-light text-lg font-bold">
-                Pedro "Bluff"
-              </h3>
-              <strong className="text-prime-red/80 font-medium">
-                Spin & Go Coach
-              </strong>
-            </div>
-          </SwiperSlide>
-
-          <SwiperSlide>
-            <div className="relative flex aspect-square w-full flex-col items-center gap-4 overflow-hidden rounded-md">
-              <Image
-                src="/img/person-example-2.jpg"
-                width={375}
-                height={480}
-                alt=""
-                className="absolute top-0 left-0 h-full w-full object-cover object-top"
-              />
-            </div>
-
-            <div className="mt-2 text-center">
-              <h3 className="text-prime-light text-lg font-bold">
-                Juliana "Tilt"
-              </h3>
-              <strong className="text-prime-red/80 font-medium">
-                Mental Game Coach
-              </strong>
-            </div>
-          </SwiperSlide>
-
-          <SwiperSlide>
-            <div className="relative flex aspect-square w-full flex-col items-center gap-4 overflow-hidden rounded-md">
-              <Image
-                src="/img/person-example-1.jpg"
-                width={375}
-                height={480}
-                alt=""
-                className="absolute top-0 left-0 h-full w-full object-cover object-top"
-              />
-            </div>
-
-            <div className="mt-2 text-center">
-              <h3 className="text-prime-light text-lg font-bold">
-                Carlos "GTO"
-              </h3>
-              <strong className="text-prime-red/80 font-medium">
-                GTO Specialist
-              </strong>
-            </div>
-          </SwiperSlide>
+              <div className="mt-2 text-center">
+                <h3 className="text-prime-light text-lg font-bold">
+                  {instructor.title}
+                </h3>
+                <strong className="text-prime-red/80 font-medium">
+                  {instructor.tags?.nodes[0].name}
+                </strong>
+              </div>
+            </SwiperSlide>
+          ))}
         </Swiper>
       </div>
 

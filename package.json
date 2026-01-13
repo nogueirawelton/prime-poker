@@ -12,6 +12,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@phosphor-icons/react": "^2.1.10",
     "chart.js": "^4.5.1",
+    "graphql-request": "^7.4.0",
     "gsap": "^3.13.0",
     "motion": "^12.23.24",
     "next": "15.5.2",

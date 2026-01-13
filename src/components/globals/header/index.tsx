@@ -1,6 +1,5 @@
 "use client";
 
-import { Scroller } from "@/hooks/use-smoother/scroller";
 import { ListIcon } from "@phosphor-icons/react/dist/ssr";
 import Image from "next/image";
 import Link from "next/link";
@@ -39,12 +38,12 @@ export function Header() {
         </Link>
 
         <nav className="[&_a]:hover:text-prime-red text-prime-light hidden items-center gap-6 text-sm font-semibold uppercase lg:flex [&_a]:transition-all [&_a]:duration-500">
-          <Scroller href="#quem-somos">Quem Somos</Scroller>
-          <Scroller href="#o-que-fazemos">O que Fazemos</Scroller>
-          <Scroller href="#head-coachs">Head Coachs</Scroller>
-          <Scroller href="#instrutores">Instrutores</Scroller>
-          <Scroller href="#evolucao">Evolução</Scroller>
-          <Scroller href="#faca-parte">Faça parte</Scroller>
+          <Link href="#quem-somos">Quem Somos</Link>
+          <Link href="#o-que-fazemos">O que Fazemos</Link>
+          <Link href="#head-coachs">Head Coachs</Link>
+          <Link href="#instrutores">Instrutores</Link>
+          <Link href="#evolucao">Evolução</Link>
+          <Link href="#faca-parte">Faça parte</Link>
         </nav>
 
         <MenuMobileTrigger>

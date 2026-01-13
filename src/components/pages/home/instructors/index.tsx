@@ -1,10 +1,15 @@
+import { Instructors as InstructorsType } from "@/@types/pages/Home";
+import { FormDialog } from "@/components/globals/form-dialog";
 import { AnimationContainer } from "@/hooks/use-animation";
-import { Scroller } from "@/hooks/use-smoother/scroller";
 import { Cards } from "@/icons/cards";
 import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr";
 import { Carrousel } from "./carrousel";
 
-export function Instructors() {
+type InstructorsProps = {
+  content: InstructorsType;
+};
+
+export function Instructors({ content }: InstructorsProps) {
   return (
     <section id="instrutores" className="bg-zinc-950">
       <AnimationContainer
@@ -23,26 +28,27 @@ export function Instructors() {
             Instrutores
           </strong>
 
-          <h2 className="text-prime-light mt-2 flex items-center gap-2 text-center text-3xl lg:text-4xl font-bold uppercase">
-            Apoio constante. <br className="hidden lg:block" /> Progresso real.
-          </h2>
+          <h2
+            className="text-prime-light break mt-2 flex items-center gap-2 text-center text-3xl font-bold uppercase lg:text-4xl"
+            dangerouslySetInnerHTML={{
+              __html: content.title,
+            }}
+          />
 
-          <p className="text-prime-light text-sm lg:text-base mt-4 max-w-2xl text-center">
-            Nossa equipe de instrutores está sempre disponível para tirar
-            dúvidas e ajudar no seu desenvolvimento.
+          <p className="text-prime-light mt-4 max-w-2xl text-center text-sm lg:text-base">
+            {content.description}
           </p>
         </div>
 
-        <Carrousel />
+        <Carrousel content={content.instructors} />
 
         <div data-el="cta">
-          <Scroller
-            href="#faca-parte"
-            className="bg-prime-red text-prime-light text-sm lg:text-base hover:bg-prime-light hover:text-prime-red mx-auto mt-8 flex h-14 w-fit items-center gap-2 rounded-md px-4 font-medium transition-all duration-500"
-          >
-            Aprenda com quem entende do jogo
-            <CaretRightIcon className="size-6" />
-          </Scroller>
+          <FormDialog>
+            <button className="bg-prime-red text-prime-light hover:bg-prime-light hover:text-prime-red mx-auto mt-8 flex h-14 w-fit items-center gap-2 rounded-md px-4 text-sm font-medium transition-all duration-500 lg:text-base">
+              Aprenda com quem entende do jogo
+              <CaretRightIcon className="size-6" />
+            </button>
+          </FormDialog>
         </div>
       </AnimationContainer>
     </section>

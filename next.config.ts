@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
       {
         hostname: "controles.internit.com.br",
       },
+      {
+        hostname: "admin.primepokerteam.com.br",
+      },
     ],
   },
 };

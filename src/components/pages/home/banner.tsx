@@ -1,6 +1,7 @@
+import { FormDialog } from "@/components/globals/form-dialog";
 import { AnimationContainer } from "@/hooks/use-animation";
-import { Scroller } from "@/hooks/use-smoother/scroller";
 import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr";
+import Link from "next/link";
 
 export function Banner() {
   return (
@@ -22,18 +23,19 @@ export function Banner() {
           </p>
 
           <div data-el="cta">
-            <Scroller
-              href="#faca-parte"
+      <FormDialog>
+               <button
               className="bg-prime-red text-prime-light hover:bg-prime-light hover:text-prime-red mt-8 flex h-14 w-fit items-center gap-2 rounded-md px-4 text-sm font-medium transition-all duration-500 lg:text-base"
             >
               Faça Parte do Prime Poker Team{" "}
               <CaretRightIcon className="size-6" />
-            </Scroller>
+            </button>
+          </FormDialog>
           </div>
         </div>
       </AnimationContainer>
 
-      <Scroller
+      <Link
         href="#quem-somos"
         className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce"
       >
@@ -53,7 +55,7 @@ export function Banner() {
             fill="#939393"
           />
         </svg>
-      </Scroller>
+      </Link>
     </section>
   );
 }

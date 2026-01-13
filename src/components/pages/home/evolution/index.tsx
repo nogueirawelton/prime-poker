@@ -1,9 +1,14 @@
+import { Evolution as EvolutionType } from "@/@types/pages/Home";
 import { AnimationContainer } from "@/hooks/use-animation";
 import { Cards } from "@/icons/cards";
 import Chart from "./chart";
 import { Testimonials } from "./testimonials";
 
-export function Evolution() {
+type EvolutionProps = {
+  content: EvolutionType;
+};
+
+export function Evolution({ content }: EvolutionProps) {
   return (
     <section id="evolucao" className="bg-prime-dark">
       <AnimationContainer
@@ -19,20 +24,19 @@ export function Evolution() {
             Evolução
           </strong>
 
-          <h2 className="text-prime-light mt-2 flex items-center gap-2 text-3xl font-bold uppercase lg:text-4xl">
-            Dados transparentes, <br className="hidden lg:block" /> resultados
-            consistentes
-          </h2>
+          <h2
+            className="text-prime-light break mt-2 flex items-center gap-2 text-3xl font-bold uppercase lg:text-4xl"
+            dangerouslySetInnerHTML={{ __html: content.title }}
+          />
 
           <p className="text-prime-light mt-4 max-w-2xl text-sm lg:text-base">
-            Nossos resultados falam por si. Veja a evolução financeira acumulada
-            do Prime Poker Team.
+            {content.description}
           </p>
         </div>
 
-        <Chart />
+        <Chart content={content.accumulatedEarnings} />
 
-        <Testimonials />
+        <Testimonials content={content.successStories} />
       </AnimationContainer>
     </section>
   );

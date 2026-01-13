@@ -1,8 +1,13 @@
+import { BePart as BePartType } from "@/@types/pages/Home";
 import { AnimationContainer } from "@/hooks/use-animation";
 import { Cards } from "@/icons/cards";
-import { Form } from "./form/form";
+import { Form } from "./form";
 
-export function BePart() {
+type BePartProps = {
+  content: BePartType;
+};
+
+export function BePart({ content }: BePartProps) {
   return (
     <section id="faca-parte" className="bg-zinc-950">
       <AnimationContainer
@@ -19,15 +24,13 @@ export function BePart() {
               Faça Parte
             </strong>
 
-            <h2 className="text-prime-light mt-2 flex items-center gap-2 text-3xl font-bold uppercase lg:text-4xl">
-              Se você leva o jogo a sério, <br className="hidden lg:block" />{" "}
-              aqui é o seu lugar.
-            </h2>
+            <h2
+              className="text-prime-light break mt-2 flex items-center gap-2 text-3xl font-bold uppercase lg:text-4xl"
+              dangerouslySetInnerHTML={{ __html: content.title }}
+            />
 
             <p className="text-prime-light mt-4 max-w-2xl text-sm lg:text-base">
-              Está pronto para levar seu poker para o próximo nível? Preencha o
-              formulário e nossa equipe entrará em contato para avaliar seu
-              perfil e conversar sobre as possibilidades.
+              {content.description}
             </p>
           </div>
 
@@ -40,53 +43,20 @@ export function BePart() {
             </h3>
 
             <div className="mt-4 flex flex-col gap-4">
-              <div
-                data-el="step"
-                className="text-prime-light flex items-center gap-3"
-              >
-                <span className="bg-prime-red/75 grid size-9 shrink-0 place-items-center rounded-full font-bold">
-                  1
-                </span>
-                <strong className="text-prime-light/75 text-sm font-normal lg:text-base">
-                  Preencha o formulário de inscrição
-                </strong>
-              </div>
-
-              <div
-                data-el="step"
-                className="text-prime-light flex items-center gap-3"
-              >
-                <span className="bg-prime-red/75 relative grid size-9 shrink-0 place-items-center rounded-full font-bold">
-                  2
-                </span>
-                <strong className="text-prime-light/75 text-sm font-normal lg:text-base">
-                  Entrevista com um de nossos coaches
-                </strong>
-              </div>
-
-              <div
-                data-el="step"
-                className="text-prime-light flex items-center gap-3"
-              >
-                <span className="bg-prime-red/75 grid size-9 shrink-0 place-items-center rounded-full font-bold">
-                  3
-                </span>
-                <strong className="text-prime-light/75 text-sm font-normal lg:text-base">
-                  Análise do seu histórico de jogo
-                </strong>
-              </div>
-
-              <div
-                data-el="step"
-                className="text-prime-light flex items-center gap-3"
-              >
-                <span className="bg-prime-red/75 grid size-9 shrink-0 place-items-center rounded-full font-bold">
-                  4
-                </span>
-                <strong className="text-prime-light/75 text-sm font-normal lg:text-base">
-                  Proposta personalizada para seu desenvolvimento
-                </strong>
-              </div>
+              {content.steps.map((step, index) => (
+                <div
+                  key={index}
+                  data-el="step"
+                  className="text-prime-light flex items-center gap-3"
+                >
+                  <span className="bg-prime-red/75 grid size-9 shrink-0 place-items-center rounded-full font-bold">
+                    {index + 1}
+                  </span>
+                  <strong className="text-prime-light/75 text-sm font-normal lg:text-base">
+                    {step.step}
+                  </strong>
+                </div>
+              ))}
             </div>
           </div>
         </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { Evolution } from "@/@types/pages/Home";
 import {
   CategoryScale,
   Chart as ChartJS,
@@ -24,13 +25,17 @@ ChartJS.register(
   Legend,
 );
 
-export default function Chart() {
+type ChartProps = {
+  content: Evolution["accumulatedEarnings"];
+};
+
+export default function Chart({ content }: ChartProps) {
   const data = {
-    labels: ["2018", "2019", "2020", "2021", "2022", "2023"],
+    labels: content.map((item) => item.title),
     datasets: [
       {
         label: "Ganhos Acumulados ($)",
-        data: [100000, 300000, 750000, 1200000, 1700000, 2250000],
+        data: content.map((item) => item.amount),
         borderColor: "#e11d48",
         backgroundColor: "rgba(225, 29, 72, 0.2)",
         tension: 0.4,
@@ -77,7 +82,7 @@ export default function Chart() {
 
   return (
     <div data-el="chart" className="mt-12 rounded-md bg-white/5 p-6 shadow-lg">
-      <div className="mb-4 flex flex-col md:flex-row gap-2 lg:items-center justify-between">
+      <div className="mb-4 flex flex-col justify-between gap-2 md:flex-row lg:items-center">
         <div>
           <h3 className="text-lg font-semibold text-white">
             Ganhos Acumulados
@@ -86,7 +91,9 @@ export default function Chart() {
             Evolução desde nossa fundação em 2018
           </p>
         </div>
-        <span className="text-prime-red/75 text-xl font-bold">$2,250,000+</span>
+        <span className="text-prime-red/75 text-xl font-bold">
+          ${Number(content.at(-1)?.amount).toLocaleString("en-US")}
+        </span>
       </div>
 
       <div className="h-[275px] md:h-[425px]">

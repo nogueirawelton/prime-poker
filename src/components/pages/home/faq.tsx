@@ -1,9 +1,14 @@
+import { Faq as FaqType } from "@/@types/pages/Home";
 import { AnimationContainer } from "@/hooks/use-animation";
 import { Cards } from "@/icons/cards";
 import { CaretDownIcon } from "@phosphor-icons/react/dist/ssr";
 import { Collapsible } from "radix-ui";
 
-export function Faq() {
+type FaqProps = {
+  content: FaqType;
+};
+
+export function Faq({ content }: FaqProps) {
   return (
     <section id="faq" className="bg-prime-dark">
       <AnimationContainer
@@ -22,120 +27,35 @@ export function Faq() {
             Perguntas frequentes
           </strong>
 
-          <h2 className="text-prime-light mt-2 flex items-center gap-2 text-center text-3xl font-bold uppercase lg:text-4xl">
-            Tire suas dúvidas sobre o <br className="hidden lg:block" /> Prime
-            Poker Team e como participar
-          </h2>
+          <h2
+            className="text-prime-light break mt-2 flex items-center gap-2 text-center text-3xl font-bold uppercase lg:text-4xl"
+            dangerouslySetInnerHTML={{
+              __html: content.title,
+            }}
+          />
         </div>
 
         <div
           data-el="faq-items"
           className="mx-auto mt-12 flex max-w-screen-md flex-col gap-1"
         >
-          <div className="border-b border-white/20">
-            <Collapsible.Root>
-              <Collapsible.Trigger className="text-prime-light group flex min-h-14 w-full cursor-pointer items-center justify-between py-1 text-left text-lg font-medium">
-                Como faço parte do time?{" "}
-                <CaretDownIcon
-                  weight="bold"
-                  className="text-prime-red/85 size-6 transition-all duration-500 group-data-[state=open]:rotate-180"
-                />
-              </Collapsible.Trigger>
+          {content.questions.map((question, index) => (
+            <div className="border-b border-white/20" key={index}>
+              <Collapsible.Root>
+                <Collapsible.Trigger className="text-prime-light group flex min-h-14 w-full cursor-pointer items-center justify-between py-1 text-left text-lg font-medium">
+                  {question.title}{" "}
+                  <CaretDownIcon
+                    weight="bold"
+                    className="text-prime-red/85 size-6 transition-all duration-500 group-data-[state=open]:rotate-180"
+                  />
+                </Collapsible.Trigger>
 
-              <Collapsible.Content className="text-prime-light data-[state=open]:animate-slide-down data-[state=closed]:animate-slide-up overflow-hidden">
-                <p className="pb-2 text-sm lg:text-base">
-                  Lorem ipsum dolor sit amet consectetur adipisicing elit. Odit
-                  eveniet labore earum inventore iusto, assumenda, quas adipisci
-                  odio excepturi repellendus quia tempore voluptatem iure
-                  consequuntur laborum minus molestiae laudantium fuga.
-                </p>
-              </Collapsible.Content>
-            </Collapsible.Root>
-          </div>
-
-          <div className="border-b border-white/20">
-            <Collapsible.Root>
-              <Collapsible.Trigger className="text-prime-light group flex min-h-14 w-full cursor-pointer items-center justify-between py-1 text-left text-lg font-medium">
-                Quais serviços são oferecidos?{" "}
-                <CaretDownIcon
-                  weight="bold"
-                  className="text-prime-red/85 size-6 transition-all duration-500 group-data-[state=open]:rotate-180"
-                />
-              </Collapsible.Trigger>
-
-              <Collapsible.Content className="text-prime-light data-[state=open]:animate-slide-down data-[state=closed]:animate-slide-up overflow-hidden">
-                <p className="pb-2 text-sm lg:text-base">
-                  Lorem ipsum dolor sit amet consectetur adipisicing elit. Odit
-                  eveniet labore earum inventore iusto, assumenda, quas adipisci
-                  odio excepturi repellendus quia tempore voluptatem iure
-                  consequuntur laborum minus molestiae laudantium fuga.
-                </p>
-              </Collapsible.Content>
-            </Collapsible.Root>
-          </div>
-
-          <div className="border-b border-white/20">
-            <Collapsible.Root>
-              <Collapsible.Trigger className="text-prime-light group flex min-h-14 w-full cursor-pointer items-center justify-between py-1 text-left text-lg font-medium">
-                Qual o investimento necessário?{" "}
-                <CaretDownIcon
-                  weight="bold"
-                  className="text-prime-red/85 size-6 transition-all duration-500 group-data-[state=open]:rotate-180"
-                />
-              </Collapsible.Trigger>
-
-              <Collapsible.Content className="text-prime-light data-[state=open]:animate-slide-down data-[state=closed]:animate-slide-up overflow-hidden">
-                <p className="pb-2 text-sm lg:text-base">
-                  Lorem ipsum dolor sit amet consectetur adipisicing elit. Odit
-                  eveniet labore earum inventore iusto, assumenda, quas adipisci
-                  odio excepturi repellendus quia tempore voluptatem iure
-                  consequuntur laborum minus molestiae laudantium fuga.
-                </p>
-              </Collapsible.Content>
-            </Collapsible.Root>
-          </div>
-
-          <div className="border-b border-white/20">
-            <Collapsible.Root>
-              <Collapsible.Trigger className="text-prime-light group flex min-h-14 w-full cursor-pointer items-center justify-between py-1 text-left text-lg font-medium">
-                Preciso ter experiência para participar?{" "}
-                <CaretDownIcon
-                  weight="bold"
-                  className="text-prime-red/85 size-6 transition-all duration-500 group-data-[state=open]:rotate-180"
-                />
-              </Collapsible.Trigger>
-
-              <Collapsible.Content className="text-prime-light data-[state=open]:animate-slide-down data-[state=closed]:animate-slide-up overflow-hidden">
-                <p className="pb-2 text-sm lg:text-base">
-                  Lorem ipsum dolor sit amet consectetur adipisicing elit. Odit
-                  eveniet labore earum inventore iusto, assumenda, quas adipisci
-                  odio excepturi repellendus quia tempore voluptatem iure
-                  consequuntur laborum minus molestiae laudantium fuga.
-                </p>
-              </Collapsible.Content>
-            </Collapsible.Root>
-          </div>
-
-          <div className="border-b border-white/20">
-            <Collapsible.Root>
-              <Collapsible.Trigger className="text-prime-light group flex min-h-14 w-full cursor-pointer items-center justify-between py-1 text-left text-lg font-medium">
-                Como funciona a banca compartilhada?{" "}
-                <CaretDownIcon
-                  weight="bold"
-                  className="text-prime-red/85 size-6 transition-all duration-500 group-data-[state=open]:rotate-180"
-                />
-              </Collapsible.Trigger>
-
-              <Collapsible.Content className="text-prime-light data-[state=open]:animate-slide-down data-[state=closed]:animate-slide-up overflow-hidden">
-                <p className="pb-2 text-sm lg:text-base">
-                  Lorem ipsum dolor sit amet consectetur adipisicing elit. Odit
-                  eveniet labore earum inventore iusto, assumenda, quas adipisci
-                  odio excepturi repellendus quia tempore voluptatem iure
-                  consequuntur laborum minus molestiae laudantium fuga.
-                </p>
-              </Collapsible.Content>
-            </Collapsible.Root>
-          </div>
+                <Collapsible.Content className="text-prime-light data-[state=open]:animate-slide-down data-[state=closed]:animate-slide-up overflow-hidden">
+                  <p className="pb-2 text-sm lg:text-base">{question.answer}</p>
+                </Collapsible.Content>
+              </Collapsible.Root>
+            </div>
+          ))}
         </div>
       </AnimationContainer>
     </section>

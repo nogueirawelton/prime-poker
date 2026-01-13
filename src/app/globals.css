@@ -15,6 +15,20 @@
   --animate-to-bottom: toBottom 0.3s ease-in-out;
 }
 
+@layer utilities {
+  button {
+    @apply cursor-pointer;
+  }
+
+  .break br {
+    @apply hidden lg:block;
+  }
+
+  .break-mobile br {
+    @apply lg:hidden;
+  }
+}
+
 @keyframes toBottom {
   from {
     opacity: 0;
