@@ -16,7 +16,7 @@ export default async function HomePage() {
 
   return (
     <main className="pt-24 lg:pt-28">
-      <Banner />
+      <Banner content={page.homeFields.banner} />
       <WhoWeAre content={page.homeFields.whoWeAre} />
       <WhatWeDo content={page.homeFields.whatWeDo} />
       <HeadCoachs content={page.homeFields.headCoaches} />

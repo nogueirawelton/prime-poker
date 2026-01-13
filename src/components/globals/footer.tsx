@@ -12,7 +12,7 @@ import Link from "next/link";
 export function Footer() {
   return (
     <footer className="bg-prime-dark border-t border-white/10 py-12">
-      <div className="mx-auto flex max-w-screen-2xl justify-between gap-12 px-4 lg:px-8">
+      <div className="mx-auto flex max-w-screen-2xl flex-col justify-between gap-12 px-4 md:flex-row lg:px-8">
         <div className="max-w-sm">
           <Link
             href={"/"}

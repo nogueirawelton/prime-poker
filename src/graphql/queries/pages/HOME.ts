@@ -122,6 +122,49 @@ export const HOME = gql`
           vision
           years
         }
+
+        banner {
+          title
+          description
+          medias {
+            media {
+              desktop {
+                video {
+                  url
+                  origin
+                  file {
+                    node {
+                      mediaItemUrl
+                    }
+                  }
+                }
+                image {
+                  node {
+                    mediaItemUrl
+                  }
+                }
+                type
+              }
+              mobile {
+                video {
+                  url
+                  origin
+                  file {
+                    node {
+                      mediaItemUrl
+                    }
+                  }
+                }
+                image {
+                  node {
+                    mediaItemUrl
+                  }
+                }
+                type
+              }
+            }
+          }
+        }
       }
     }
   }

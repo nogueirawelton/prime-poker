@@ -99,6 +99,52 @@ export type WhoWeAre = {
   years: string;
 };
 
+export type Banner = {
+  title: string;
+  description: string;
+
+  medias: Array<{
+    media: {
+      desktop: {
+        video: {
+          url: string;
+          origin: string;
+          file: {
+            node: {
+              mediaItemUrl: string;
+            };
+          };
+        };
+
+        image: {
+          node: {
+            mediaItemUrl: string;
+          };
+        };
+        type: string;
+      };
+      mobile: {
+        video: {
+          url: string;
+          origin: string;
+          file: {
+            node: {
+              mediaItemUrl: string;
+            };
+          };
+        };
+
+        image: {
+          node: {
+            mediaItemUrl: string;
+          };
+        };
+        type: string;
+      };
+    };
+  }>;
+};
+
 export type Home = {
   page: {
     homeFields: {
@@ -109,6 +155,7 @@ export type Home = {
       headCoaches: HeadCoachs;
       whatWeDo: WhatWeDo;
       whoWeAre: WhoWeAre;
+      banner: Banner;
     };
   };
 };
