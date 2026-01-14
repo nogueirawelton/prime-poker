@@ -6,10 +6,13 @@ import { Instagram } from "@/components/pages/home/instagram";
 import { Instructors } from "@/components/pages/home/instructors";
 import { client } from "@/graphql/client";
 import { HOME } from "@/graphql/queries/pages/HOME";
+import { getSEO } from "@/services/get-seo";
 import { Banner } from "../components/pages/home/banner";
 import { HeadCoachs } from "../components/pages/home/head-coachs";
 import { WhatWeDo } from "../components/pages/home/what-we-do";
 import { WhoWeAre } from "../components/pages/home/who-we-are";
+
+export const generateMetadata = getSEO({ postType: "page", uri: "home" });
 
 export default async function HomePage() {
   const { page } = await client.request<Home>(HOME);

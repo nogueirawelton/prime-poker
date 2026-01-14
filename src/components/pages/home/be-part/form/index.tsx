@@ -2,7 +2,9 @@
 
 import { PhoneInput } from "@/components/globals/form/phone-input";
 import { TextInput } from "@/components/globals/form/text-input";
+import { wp } from "@/providers/wp";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { CircleNotchIcon } from "@phosphor-icons/react";
 import { Tabs } from "radix-ui";
 import { Fragment, useState, useTransition } from "react";
 import { Controller, SubmitHandler, useForm } from "react-hook-form";
@@ -70,19 +72,36 @@ export function Form() {
   const onSubmit: SubmitHandler<FormData> = async (data) => {
     startTransition(async () => {
       try {
-        const response = await fetch("/api/submit-form", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(data),
+        // const response = await fetch("/api/submit-form", {
+        //   method: "POST",
+        //   headers: {
+        //     "Content-Type": "application/json",
+        //   },
+        //   body: JSON.stringify(data),
+        // });
+
+        // const result = await response.json();
+
+        // if (!response.ok) {
+        //   throw new Error(result.error || "Erro ao enviar formulário");
+        // }
+
+        await wp("169", {
+          nome_completo: data.dadosPessoais.entry_502479035,
+          email: data.dadosPessoais.entry_1045653986,
+          numero_whatsapp: data.dadosPessoais.entry_431975596,
+          onde_mora: data.dadosPessoais.entry_1067624691,
+          idade: data.situacaoAtual.entry_1524797025,
+          ocupacao: data.situacaoAtual.entry_936724915,
+          fonte_de_renda: data.situacaoAtual.entry_1945294488,
+          discord: data.situacaoAtual.entry_661900987,
+          nick_poker_stars: data.historicoOnline.entry_683158185,
+          outros_sites: data.historicoOnline.entry_1091112575,
+          disponibilidade: data.metasDedicacao.entry_1979104888,
+          jogou_em_time: data.metasDedicacao.entry_899222282,
+          porque_se_inscreveu: data.metasDedicacao.entry_462376964,
+          indicacao: data.metasDedicacao.entry_1510858042,
         });
-
-        const result = await response.json();
-
-        if (!response.ok) {
-          throw new Error(result.error || "Erro ao enviar formulário");
-        }
 
         toast.success("Formulário enviado com sucesso!");
         reset();
@@ -382,7 +401,7 @@ export function Form() {
 
           <div className="text-prime-light/75 flex flex-col gap-2 text-sm lg:text-base">
             <label htmlFor="entry_462376964">
-              Pq decidiu se inscrever para jogar no Prime?*
+              Por que decidiu se inscrever para jogar no Prime?*
             </label>
             <Controller
               name="metasDedicacao.entry_462376964"
@@ -433,9 +452,13 @@ export function Form() {
           {value == "3" ? (
             <button
               type="submit"
-              className="bg-prime-red/75 h-12 cursor-pointer rounded-md px-4 text-white"
+              className="bg-prime-red/75 grid h-12 min-w-[99px] cursor-pointer place-items-center rounded-md px-4 text-white"
             >
-              Enviar inscrição
+              {true ? (
+                <CircleNotchIcon className="size-6 animate-spin" />
+              ) : (
+                "Enviar inscrição"
+              )}
             </button>
           ) : (
             <button
