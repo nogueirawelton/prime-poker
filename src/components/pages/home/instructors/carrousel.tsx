@@ -5,7 +5,6 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Instructors } from "@/@types/pages/Home";
 import { CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react/dist/ssr";
 import Image from "next/image";
-import "swiper/css";
 import { Autoplay, Navigation } from "swiper/modules";
 
 type CarrouselProps = {

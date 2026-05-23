@@ -6,7 +6,7 @@ export function Post({ content }: { content: any }) {
     <a href={content.url} target="_blank">
       <div className="group relative size-full">
         <Image
-          src={`${process.env.NEXT_PUBLIC_INSTAGRAM_URL}/media/${process.env.NEXT_PUBLIC_INSTAGRAM_PROFILE}/${content.media}`}
+          src={`${process.env.NEXT_PUBLIC_INSTAGRAM_URL}${content.imagePath}`}
           width={425}
           height={425}
           alt=""

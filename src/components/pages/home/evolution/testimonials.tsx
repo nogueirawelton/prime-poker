@@ -3,7 +3,6 @@
 import { Evolution } from "@/@types/pages/Home";
 import { UserIcon } from "@phosphor-icons/react";
 import Image from "next/image";
-import "swiper/css";
 import { Autoplay, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 

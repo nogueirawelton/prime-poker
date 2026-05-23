@@ -1,9 +1,9 @@
 import { Post } from "./post";
 
 export async function List() {
-  const posts: Array<any> = await (
+  const { posts }: { posts: Array<any> } = await (
     await fetch(
-      `${process.env.NEXT_PUBLIC_INSTAGRAM_URL}/${process.env.NEXT_PUBLIC_INSTAGRAM_PROFILE}`,
+      `${process.env.NEXT_PUBLIC_INSTAGRAM_URL}/api/profiles/${process.env.NEXT_PUBLIC_INSTAGRAM_PROFILE}`,
       {
         next: {
           revalidate: 60 * 60 * 24,
