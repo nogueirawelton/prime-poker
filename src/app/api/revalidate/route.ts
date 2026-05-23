@@ -1,4 +1,3 @@
-import { getClient } from "@/graphql/client/apollo-client";
 import { revalidatePath } from "next/cache";
 
 export async function GET() {
