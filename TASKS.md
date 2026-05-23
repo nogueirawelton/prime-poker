@@ -1,2 +1,3 @@
-- [ ] SEO
-- [ ] Forms no WP
+- [ ] SMTP
+- [ ] Mudar nome dos campos do form
+- [ ] Verificar envio do google forms
