@@ -11,7 +11,7 @@ type BannerProps = {
 
 export function Banner({ content }: BannerProps) {
   return (
-    <section className="relative h-[calc(100vh-7rem)]">
+    <section className="relative h-[calc(100vh-6rem)] w-full lg:h-[calc(100vh-7rem)]">
       <MediaSwiper content={content.medias} />
 
       <div className="relative z-10 h-full bg-[radial-gradient(transparent,black)]">
