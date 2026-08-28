@@ -1,8 +1,8 @@
-import { Instructors as InstructorsType } from "@/@types/pages/Home";
-import { FormDialog } from "@/components/globals/form-dialog";
+import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr";
+import type { Instructors as InstructorsType } from "@/@types/pages/Home";
+import { FormDialog } from "@/components/shared/form-dialog";
 import { AnimationContainer } from "@/hooks/use-animation";
 import { Cards } from "@/icons/cards";
-import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr";
 import { Carrousel } from "./carrousel";
 
 type InstructorsProps = {
@@ -22,20 +22,20 @@ export function Instructors({ content }: InstructorsProps) {
         >
           <strong
             data-el="strong"
-            className="text-prime-red flex items-center gap-2 font-normal uppercase"
+            className="flex items-center gap-2 font-normal text-prime-red uppercase"
           >
-            <Cards className="stroke-prime-red size-6" />
+            <Cards className="size-6 stroke-prime-red" />
             Instrutores
           </strong>
 
           <h2
-            className="text-prime-light break mt-2 flex items-center gap-2 text-center text-3xl font-bold uppercase lg:text-4xl"
+            className="break mt-2 flex items-center gap-2 text-center font-bold text-3xl text-prime-light uppercase lg:text-4xl"
             dangerouslySetInnerHTML={{
               __html: content.title,
             }}
           />
 
-          <p className="text-prime-light mt-4 max-w-2xl text-center text-sm lg:text-base">
+          <p className="mt-4 max-w-2xl text-center text-prime-light text-sm lg:text-base">
             {content.description}
           </p>
         </div>
@@ -44,7 +44,7 @@ export function Instructors({ content }: InstructorsProps) {
 
         <div data-el="cta">
           <FormDialog>
-            <button className="bg-prime-red text-prime-light hover:bg-prime-light hover:text-prime-red mx-auto mt-8 flex h-14 w-fit items-center gap-2 rounded-md px-4 text-sm font-medium transition-all duration-500 lg:text-base">
+            <button className="mx-auto mt-8 flex h-14 w-fit items-center gap-2 rounded-md bg-prime-red px-4 font-medium text-prime-light text-sm transition-all duration-500 hover:bg-prime-light hover:text-prime-red lg:text-base">
               Aprenda com quem entende do jogo
               <CaretRightIcon className="size-6" />
             </button>

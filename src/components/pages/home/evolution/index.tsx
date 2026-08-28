@@ -1,7 +1,7 @@
-import { Evolution as EvolutionType } from "@/@types/pages/Home";
+import type { Evolution as EvolutionType } from "@/@types/pages/Home";
 import { AnimationContainer } from "@/hooks/use-animation";
 import { Cards } from "@/icons/cards";
-import Chart from "./chart";
+import { ChartLazy } from "./chart-lazy";
 import { Testimonials } from "./testimonials";
 
 type EvolutionProps = {
@@ -18,23 +18,47 @@ export function Evolution({ content }: EvolutionProps) {
         <div data-el="data" className="flex flex-col">
           <strong
             data-el="strong"
-            className="text-prime-red flex items-center gap-2 font-normal uppercase"
+            className="flex items-center gap-2 font-normal text-prime-red uppercase"
           >
-            <Cards className="stroke-prime-red size-6" />
+            <Cards className="size-6 stroke-prime-red" />
             Evolução
           </strong>
 
           <h2
-            className="text-prime-light break mt-2 flex items-center gap-2 text-3xl font-bold uppercase lg:text-4xl"
+            className="break mt-2 flex items-center gap-2 font-bold text-3xl text-prime-light uppercase lg:text-4xl"
             dangerouslySetInnerHTML={{ __html: content.title }}
           />
 
-          <p className="text-prime-light mt-4 max-w-2xl text-sm lg:text-base">
+          <p className="mt-4 max-w-2xl text-prime-light text-sm lg:text-base">
             {content.description}
           </p>
         </div>
 
-        <Chart content={content.accumulatedEarnings} />
+        {/* Cabeçalho renderizado no servidor (conteúdo indexável);
+            apenas o canvas do Chart.js é adiado para o cliente. */}
+        <div
+          data-el="chart"
+          className="mt-12 rounded-md bg-white/5 p-6 shadow-lg"
+        >
+          <div className="mb-4 flex flex-col justify-between gap-2 md:flex-row lg:items-center">
+            <div>
+              <h3 className="font-semibold text-lg text-white">
+                Ganhos Acumulados
+              </h3>
+              <p className="text-gray-400 text-sm">
+                Evolução desde nossa fundação em 2018
+              </p>
+            </div>
+            <span className="font-bold text-prime-red/75 text-xl">
+              $
+              {Number(
+                content.accumulatedEarnings.at(-1)?.amount,
+              ).toLocaleString("en-US")}
+            </span>
+          </div>
+
+          <ChartLazy content={content.accumulatedEarnings} />
+        </div>
 
         <Testimonials content={content.successStories} />
       </AnimationContainer>

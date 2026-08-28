@@ -1,10 +1,11 @@
 "use client";
 
-import animations from "@/animations";
-import { useGSAP, useGSAPConfig } from "@gsap/react";
+import { useGSAP, type useGSAPConfig } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { ComponentProps, createContext, useRef } from "react";
+import { type ComponentProps, createContext, useRef } from "react";
+import animations from "@/animations";
+
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 const AnimationContext = createContext(null);

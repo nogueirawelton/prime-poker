@@ -1,4 +1,4 @@
-import { BePart as BePartType } from "@/@types/pages/Home";
+import type { BePart as BePartType } from "@/@types/pages/Home";
 import { AnimationContainer } from "@/hooks/use-animation";
 import { Cards } from "@/icons/cards";
 import { Form } from "./form";
@@ -18,18 +18,18 @@ export function BePart({ content }: BePartProps) {
           <div data-el="data" className="flex flex-col">
             <strong
               data-el="strong"
-              className="text-prime-red flex items-center gap-2 font-normal uppercase"
+              className="flex items-center gap-2 font-normal text-prime-red uppercase"
             >
-              <Cards className="stroke-prime-red size-6" />
+              <Cards className="size-6 stroke-prime-red" />
               Faça Parte
             </strong>
 
             <h2
-              className="text-prime-light break mt-2 flex items-center gap-2 text-3xl font-bold uppercase lg:text-4xl"
+              className="break mt-2 flex items-center gap-2 font-bold text-3xl text-prime-light uppercase lg:text-4xl"
               dangerouslySetInnerHTML={{ __html: content.title }}
             />
 
-            <p className="text-prime-light mt-4 max-w-2xl text-sm lg:text-base">
+            <p className="mt-4 max-w-2xl text-prime-light text-sm lg:text-base">
               {content.description}
             </p>
           </div>
@@ -38,7 +38,7 @@ export function BePart({ content }: BePartProps) {
             data-el="step-container"
             className="mt-8 rounded-md bg-white/3 px-6 py-8"
           >
-            <h3 className="text-prime-light text-xl font-bold">
+            <h3 className="font-bold text-prime-light text-xl">
               Processo de Seleção
             </h3>
 
@@ -47,12 +47,12 @@ export function BePart({ content }: BePartProps) {
                 <div
                   key={index}
                   data-el="step"
-                  className="text-prime-light flex items-center gap-3"
+                  className="flex items-center gap-3 text-prime-light"
                 >
-                  <span className="bg-prime-red/75 grid size-9 shrink-0 place-items-center rounded-full font-bold">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-full bg-prime-red/75 font-bold">
                     {index + 1}
                   </span>
-                  <strong className="text-prime-light/75 text-sm font-normal lg:text-base">
+                  <strong className="font-normal text-prime-light/75 text-sm lg:text-base">
                     {step.step}
                   </strong>
                 </div>
@@ -63,7 +63,7 @@ export function BePart({ content }: BePartProps) {
 
         <div
           data-el="form"
-          className="border-prime-red/75 mt-8 rounded-md border bg-white/3 px-6 py-8"
+          className="mt-8 rounded-md border border-prime-red/75 bg-white/3 px-6 py-8"
         >
           <Form />
         </div>

@@ -1,8 +1,8 @@
-import { Faq as FaqType } from "@/@types/pages/Home";
-import { AnimationContainer } from "@/hooks/use-animation";
-import { Cards } from "@/icons/cards";
 import { CaretDownIcon } from "@phosphor-icons/react/dist/ssr";
 import { Collapsible } from "radix-ui";
+import type { Faq as FaqType } from "@/@types/pages/Home";
+import { AnimationContainer } from "@/hooks/use-animation";
+import { Cards } from "@/icons/cards";
 
 type FaqProps = {
   content: FaqType;
@@ -21,14 +21,14 @@ export function Faq({ content }: FaqProps) {
         >
           <strong
             data-el="strong"
-            className="text-prime-red flex items-center gap-2 font-normal uppercase"
+            className="flex items-center gap-2 font-normal text-prime-red uppercase"
           >
-            <Cards className="stroke-prime-red size-6" />
+            <Cards className="size-6 stroke-prime-red" />
             Perguntas frequentes
           </strong>
 
           <h2
-            className="text-prime-light break mt-2 flex items-center gap-2 text-center text-3xl font-bold uppercase lg:text-4xl"
+            className="break mt-2 flex items-center gap-2 text-center font-bold text-3xl text-prime-light uppercase lg:text-4xl"
             dangerouslySetInnerHTML={{
               __html: content.title,
             }}
@@ -40,17 +40,17 @@ export function Faq({ content }: FaqProps) {
           className="mx-auto mt-12 flex max-w-screen-md flex-col gap-1"
         >
           {content.questions.map((question, index) => (
-            <div className="border-b border-white/20" key={index}>
+            <div className="border-white/20 border-b" key={index}>
               <Collapsible.Root>
-                <Collapsible.Trigger className="text-prime-light group flex min-h-14 w-full cursor-pointer items-center justify-between py-1 text-left text-lg font-medium">
+                <Collapsible.Trigger className="group flex min-h-14 w-full cursor-pointer items-center justify-between py-1 text-left font-medium text-lg text-prime-light">
                   {question.title}{" "}
                   <CaretDownIcon
                     weight="bold"
-                    className="text-prime-red/85 size-6 transition-all duration-500 group-data-[state=open]:rotate-180"
+                    className="size-6 text-prime-red/85 transition-all duration-500 group-data-[state=open]:rotate-180"
                   />
                 </Collapsible.Trigger>
 
-                <Collapsible.Content className="text-prime-light data-[state=open]:animate-slide-down data-[state=closed]:animate-slide-up overflow-hidden">
+                <Collapsible.Content className="overflow-hidden text-prime-light data-[state=closed]:animate-slide-up data-[state=open]:animate-slide-down">
                   <p className="pb-2 text-sm lg:text-base">{question.answer}</p>
                 </Collapsible.Content>
               </Collapsible.Root>

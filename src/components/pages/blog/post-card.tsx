@@ -1,0 +1,50 @@
+import { ClockIcon } from "@phosphor-icons/react/dist/ssr";
+import Link from "next/link";
+import type { Post } from "./mock";
+import { PostCover } from "./post-cover";
+
+const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+});
+
+export function PostCard({ post }: { post: Post }) {
+  return (
+    <article className="group h-full">
+      <Link
+        href={`/blog/${post.slug}`}
+        className="flex h-full flex-col overflow-hidden rounded-xl border border-white/10 bg-white/3 transition-all duration-500 hover:border-prime-red/50"
+      >
+        <PostCover post={post} className="aspect-16/9 w-full" />
+
+        <div className="flex flex-1 flex-col gap-3 p-5">
+          <span className="w-fit rounded-full bg-prime-red/15 px-3 py-1 font-semibold text-prime-red text-xs uppercase">
+            {post.category.name}
+          </span>
+
+          <h3 className="font-bold text-lg text-prime-light leading-snug transition-colors duration-500 group-hover:text-prime-red">
+            {post.title}
+          </h3>
+
+          <p className="line-clamp-3 flex-1 text-prime-light/70 text-sm leading-relaxed">
+            {post.excerpt}
+          </p>
+
+          <footer className="flex flex-wrap items-center gap-x-3 gap-y-1 border-white/10 border-t pt-3 text-prime-light/50 text-xs">
+            <span className="font-medium text-prime-light/70">
+              {post.author}
+            </span>
+            <time dateTime={post.date}>
+              {dateFormatter.format(new Date(`${post.date}T12:00:00`))}
+            </time>
+            <span className="flex items-center gap-1">
+              <ClockIcon className="size-3.5" />
+              {post.readingTime} min
+            </span>
+          </footer>
+        </div>
+      </Link>
+    </article>
+  );
+}

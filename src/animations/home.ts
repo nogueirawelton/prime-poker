@@ -1,5 +1,5 @@
-import { Wrapper } from "@/hooks/use-animation";
 import gsap from "gsap";
+import type { Wrapper } from "@/hooks/use-animation";
 
 export const home: Wrapper = {
   banner: () => {

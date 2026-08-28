@@ -1,39 +1,37 @@
 "use client";
 
-import { Instructors } from "@/@types/pages/Home";
 import { CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react/dist/ssr";
-import Autoplay from "embla-carousel-autoplay";
-import useEmblaCarousel from "embla-carousel-react";
 import Image from "next/image";
+import type { Instructors } from "@/@types/pages/Home";
+import {
+  Carousel,
+  CarouselNext,
+  CarouselPrevious,
+  CarouselSlide,
+  CarouselTrack,
+  CarouselViewport,
+} from "@/components/ui/carousel";
 
 type CarrouselProps = {
   content: Instructors["instructors"];
 };
 
 export function Carrousel({ content }: CarrouselProps) {
-  const [emblaRef, emblaApi] = useEmblaCarousel(
-    { loop: true, duration: 42 },
-    [Autoplay({ delay: 5000, stopOnInteraction: false })],
-  );
-
   return (
-    <div
+    <Carousel
       data-el="swiper"
       className="mx-auto mt-12 grid max-w-screen-xl grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-4 lg:gap-12"
     >
-      <button
-        onClick={() => emblaApi?.scrollPrev()}
-        className="-translate-y-[26px] cursor-pointer"
-      >
-        <CaretLeftIcon className="text-prime-light size-12" />
-      </button>
+      <CarouselPrevious className="-translate-y-[26px] cursor-pointer">
+        <CaretLeftIcon className="size-12 text-prime-light" />
+      </CarouselPrevious>
 
-      <div ref={emblaRef} className="overflow-hidden">
-        <div className="-ml-3 flex md:-ml-6 lg:-ml-12">
+      <CarouselViewport>
+        <CarouselTrack className="-ml-3 md:-ml-6 lg:-ml-12">
           {content?.nodes.map((instructor, key) => (
-            <div
+            <CarouselSlide
               key={key}
-              className="min-w-0 shrink-0 grow-0 basis-full pl-3 sm:basis-1/2 md:basis-1/3 md:pl-6 lg:basis-1/5 lg:pl-12"
+              className="pl-3 sm:basis-1/2 md:basis-1/3 md:pl-6 lg:basis-1/5 lg:pl-12"
             >
               <div className="relative flex aspect-square w-full flex-col items-center gap-4 overflow-hidden rounded-md">
                 <Image
@@ -46,24 +44,21 @@ export function Carrousel({ content }: CarrouselProps) {
               </div>
 
               <div className="mt-2 text-center">
-                <h3 className="text-prime-light text-lg font-bold">
+                <h3 className="font-bold text-lg text-prime-light">
                   {instructor.title}
                 </h3>
-                <strong className="text-prime-red/80 font-medium">
+                <strong className="font-medium text-prime-red/80">
                   {instructor.tags?.nodes[0].name}
                 </strong>
               </div>
-            </div>
+            </CarouselSlide>
           ))}
-        </div>
-      </div>
+        </CarouselTrack>
+      </CarouselViewport>
 
-      <button
-        onClick={() => emblaApi?.scrollNext()}
-        className="-translate-y-[26px] cursor-pointer"
-      >
-        <CaretRightIcon className="text-prime-light size-12" />
-      </button>
-    </div>
+      <CarouselNext className="-translate-y-[26px] cursor-pointer">
+        <CaretRightIcon className="size-12 text-prime-light" />
+      </CarouselNext>
+    </Carousel>
   );
 }

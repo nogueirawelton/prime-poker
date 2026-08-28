@@ -1,8 +1,8 @@
-import { Banner as BannerType } from "@/@types/pages/Home";
-import { FormDialog } from "@/components/globals/form-dialog";
-import { AnimationContainer } from "@/hooks/use-animation";
 import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
+import type { Banner as BannerType } from "@/@types/pages/Home";
+import { FormDialog } from "@/components/shared/form-dialog";
+import { AnimationContainer } from "@/hooks/use-animation";
 import { MediaSwiper } from "./media-swiper";
 
 type BannerProps = {
@@ -11,17 +11,17 @@ type BannerProps = {
 
 export function Banner({ content }: BannerProps) {
   return (
-    <section className="relative h-[calc(100vh-6rem)] w-full lg:h-[calc(100vh-7rem)]">
+    <section data-banner className="relative h-screen w-full">
       <MediaSwiper content={content.medias} />
 
       <div className="relative z-10 h-full bg-[radial-gradient(transparent,black)]">
         <AnimationContainer
           animation="home/banner"
-          className="text-prime-light relative z-20 mx-auto grid h-full max-w-screen-2xl items-center px-4 lg:px-8"
+          className="relative z-20 mx-auto grid h-full max-w-screen-2xl items-center px-4 text-prime-light lg:px-8"
         >
-          <div className="lg:pb-24">
+          <div className="lg:pb-16">
             <h1
-              className="break [&_strong]:text-prime-red break text-4xl font-bold uppercase lg:text-5xl"
+              className="break break font-bold text-4xl uppercase lg:text-5xl [&_strong]:text-prime-red"
               dangerouslySetInnerHTML={{
                 __html: content.title,
               }}
@@ -34,7 +34,7 @@ export function Banner({ content }: BannerProps) {
 
             <div data-el="cta">
               <FormDialog>
-                <button className="bg-prime-red text-prime-light hover:bg-prime-light hover:text-prime-red mt-8 flex h-14 w-fit items-center gap-2 rounded-md px-4 text-sm font-medium transition-all duration-500 lg:text-base">
+                <button className="mt-8 flex h-14 w-fit items-center gap-2 rounded-md bg-prime-red px-4 font-medium text-prime-light text-sm transition-all duration-500 hover:bg-prime-light hover:text-prime-red lg:text-base">
                   Faça Parte do Prime Poker Team{" "}
                   <CaretRightIcon className="size-6" />
                 </button>

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 const GOOGLE_FORM_URL =
   "https://docs.google.com/forms/d/e/1FAIpQLSc3NdPQF5p59m965pNMd_AzSPhO1-DXa8tcbi_T_4ZR-hLAfQ/formResponse";

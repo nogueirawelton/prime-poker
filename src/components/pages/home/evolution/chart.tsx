@@ -1,19 +1,19 @@
 "use client";
 
-import { Evolution } from "@/@types/pages/Home";
 import {
   CategoryScale,
   Chart as ChartJS,
-  ChartOptions,
+  type ChartOptions,
   Legend,
   LinearScale,
   LineElement,
   PointElement,
-  Scale,
+  type Scale,
   Title,
   Tooltip,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
+import type { Evolution } from "@/@types/pages/Home";
 
 ChartJS.register(
   CategoryScale,
@@ -81,24 +81,8 @@ export default function Chart({ content }: ChartProps) {
   };
 
   return (
-    <div data-el="chart" className="mt-12 rounded-md bg-white/5 p-6 shadow-lg">
-      <div className="mb-4 flex flex-col justify-between gap-2 md:flex-row lg:items-center">
-        <div>
-          <h3 className="text-lg font-semibold text-white">
-            Ganhos Acumulados
-          </h3>
-          <p className="text-sm text-gray-400">
-            Evolução desde nossa fundação em 2018
-          </p>
-        </div>
-        <span className="text-prime-red/75 text-xl font-bold">
-          ${Number(content.at(-1)?.amount).toLocaleString("en-US")}
-        </span>
-      </div>
-
-      <div className="h-[275px] md:h-[425px]">
-        <Line data={data} options={options} />
-      </div>
+    <div className="h-[275px] md:h-[425px]">
+      <Line data={data} options={options} />
     </div>
   );
 }

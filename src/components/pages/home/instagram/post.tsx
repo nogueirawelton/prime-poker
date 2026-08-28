@@ -3,7 +3,7 @@ import Image from "next/image";
 
 export function Post({ content }: { content: any }) {
   return (
-    <a href={content.url} target="_blank">
+    <a href={content.url} target="_blank" rel="noopener">
       <div className="group relative size-full">
         <Image
           src={`${process.env.NEXT_PUBLIC_INSTAGRAM_URL}${content.imagePath}`}

@@ -1,9 +1,9 @@
-import { WhatWeDo as WhatWeDoType } from "@/@types/pages/Home";
-import { DynamicIcon } from "@/components/globals/dynamic-icon";
-import { FormDialog } from "@/components/globals/form-dialog";
+import { CaretRightIcon, CheckIcon } from "@phosphor-icons/react/dist/ssr";
+import type { WhatWeDo as WhatWeDoType } from "@/@types/pages/Home";
+import { FormDialog } from "@/components/shared/form-dialog";
+import { DynamicIcon } from "@/components/ui/dynamic-icon";
 import { AnimationContainer } from "@/hooks/use-animation";
 import { Cards } from "@/icons/cards";
-import { CaretRightIcon, CheckIcon } from "@phosphor-icons/react/dist/ssr";
 
 type WhatWeDoProps = {
   content: WhatWeDoType;
@@ -22,19 +22,19 @@ export function WhatWeDo({ content }: WhatWeDoProps) {
         >
           <strong
             data-el="strong"
-            className="text-prime-red flex items-center gap-2 font-normal uppercase"
+            className="flex items-center gap-2 font-normal text-prime-red uppercase"
           >
-            <Cards className="stroke-prime-red size-6" />O que Fazemos
+            <Cards className="size-6 stroke-prime-red" />O que Fazemos
           </strong>
 
           <h2
-            className="text-prime-light break mt-2 flex items-center gap-2 text-center text-3xl font-bold uppercase lg:text-4xl"
+            className="break mt-2 flex items-center gap-2 text-center font-bold text-3xl text-prime-light uppercase lg:text-4xl"
             dangerouslySetInnerHTML={{
               __html: content.title,
             }}
           />
 
-          <p className="text-prime-light mt-4 max-w-2xl text-center text-sm lg:text-base">
+          <p className="mt-4 max-w-2xl text-center text-prime-light text-sm lg:text-base">
             {content.description}
           </p>
         </div>
@@ -42,8 +42,8 @@ export function WhatWeDo({ content }: WhatWeDoProps) {
         <div className="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
           {content.feature.map((feature, key) => (
             <div data-el="card" key={key}>
-              <div className="hover:border-prime-light flex flex-col rounded-md border border-white/3 bg-white/3 px-8 py-4 transition-all duration-500 hover:scale-105">
-                <span className="text-prime-light bg-prime-red/75 grid size-14 shrink-0 place-items-center rounded-full">
+              <div className="flex flex-col rounded-md border border-white/3 bg-white/3 px-8 py-4 transition-all duration-500 hover:scale-105 hover:border-prime-light">
+                <span className="grid size-14 shrink-0 place-items-center rounded-full bg-prime-red/75 text-prime-light">
                   <DynamicIcon
                     icon={feature.icon}
                     weight="fill"
@@ -51,11 +51,11 @@ export function WhatWeDo({ content }: WhatWeDoProps) {
                   />
                 </span>
 
-                <h3 className="text-prime-light mt-6 gap-2 text-xl font-bold lg:text-2xl">
+                <h3 className="mt-6 gap-2 font-bold text-prime-light text-xl lg:text-2xl">
                   {feature.title}
                 </h3>
 
-                <p className="text-prime-light mt-2 text-sm lg:text-base">
+                <p className="mt-2 text-prime-light text-sm lg:text-base">
                   {feature.description}
                 </p>
               </div>
@@ -65,9 +65,9 @@ export function WhatWeDo({ content }: WhatWeDoProps) {
 
         <div
           data-el="big-card"
-          className="border-prime-red/75 mt-10 flex flex-col rounded-md border bg-white/3 px-8 py-6"
+          className="mt-10 flex flex-col rounded-md border border-prime-red/75 bg-white/3 px-8 py-6"
         >
-          <h3 className="text-prime-light break gap-2 text-center text-xl font-bold uppercase">
+          <h3 className="break gap-2 text-center font-bold text-prime-light text-xl uppercase">
             {content.structure.title}
           </h3>
 
@@ -75,12 +75,12 @@ export function WhatWeDo({ content }: WhatWeDoProps) {
             {content.structure.items.map((item, key) => (
               <div
                 key={key}
-                className="text-prime-light flex items-center gap-3"
+                className="flex items-center gap-3 text-prime-light"
               >
-                <span className="bg-prime-red/75 grid size-8 shrink-0 place-items-center rounded-full">
+                <span className="grid size-8 shrink-0 place-items-center rounded-full bg-prime-red/75">
                   <CheckIcon weight="bold" />
                 </span>
-                <strong className="text-sm font-normal lg:text-base">
+                <strong className="font-normal text-sm lg:text-base">
                   {item.item}
                 </strong>
               </div>
@@ -90,7 +90,7 @@ export function WhatWeDo({ content }: WhatWeDoProps) {
 
         <div data-el="cta">
           <FormDialog>
-            <button className="bg-prime-red text-prime-light hover:bg-prime-light hover:text-prime-red mx-auto mt-8 flex h-14 w-fit items-center gap-2 rounded-md px-4 text-sm font-medium transition-all duration-500 lg:text-base">
+            <button className="mx-auto mt-8 flex h-14 w-fit items-center gap-2 rounded-md bg-prime-red px-4 font-medium text-prime-light text-sm transition-all duration-500 hover:bg-prime-light hover:text-prime-red lg:text-base">
               Suba de nível agora
               <CaretRightIcon className="size-6" />
             </button>

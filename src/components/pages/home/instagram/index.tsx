@@ -1,45 +1,46 @@
-import { AnimationContainer } from "@/hooks/use-animation";
-import { Cards } from "@/icons/cards";
 import { CircleNotchIcon } from "@phosphor-icons/react/dist/ssr";
 import { Suspense } from "react";
+import { AnimationContainer } from "@/hooks/use-animation";
+import { Cards } from "@/icons/cards";
 import { List } from "./list";
 
 export async function Instagram() {
   return (
-    <section id="intagram" className="bg-zinc-950">
+    <section id="intagram" className="overflow-hidden bg-zinc-950">
       <AnimationContainer
         animation="home/instagram"
-        className="mx-auto flex max-w-screen-xl flex-col px-4 py-12 lg:px-8 lg:py-24"
+        className="flex flex-col pt-12 pb-4 lg:pt-24"
       >
+        {/* O cabeçalho respeita o container; a faixa do feed é full-bleed. */}
         <div
           data-el="data"
-          className="flex flex-col items-center justify-center"
+          className="mx-auto flex w-full max-w-screen-xl flex-col items-center justify-center px-4 lg:px-8"
         >
           <strong
             data-el="strong"
-            className="text-prime-red flex items-center gap-2 font-normal uppercase"
+            className="flex items-center gap-2 font-normal text-prime-red uppercase"
           >
-            <Cards className="stroke-prime-red size-6" />
+            <Cards className="size-6 stroke-prime-red" />
             @primepokerteam
           </strong>
 
-          <h2 className="text-prime-light mt-2 flex items-center gap-2 text-center text-3xl font-bold uppercase lg:text-4xl">
+          <h2 className="mt-2 flex items-center gap-2 text-center font-bold text-3xl text-prime-light uppercase lg:text-4xl">
             Siga-nos <br className="hidden lg:block" /> no instagram
           </h2>
         </div>
 
-        <div data-el="posts">
+        <div data-el="posts" className="w-full px-2">
           <Suspense
             fallback={
-              <div className="mt-12 grid gap-2 lg:grid-cols-4">
-                {Array(4)
+              <div className="mt-12 flex gap-2">
+                {Array(6)
                   .fill("")
                   .map((_, key) => (
                     <div
                       key={key}
-                      className="grid aspect-square place-items-center bg-white"
+                      className="grid aspect-square basis-4/5 place-items-center rounded-md bg-white/5 sm:basis-1/2 md:basis-1/3 lg:basis-1/4"
                     >
-                      <CircleNotchIcon className="text-galwan-blue-400 size-10 animate-spin" />
+                      <CircleNotchIcon className="size-10 animate-spin text-prime-red/60" />
                     </div>
                   ))}
               </div>

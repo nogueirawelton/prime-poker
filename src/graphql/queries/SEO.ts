@@ -1,25 +1,25 @@
 import { gql } from "graphql-request";
 
-export const SEO = (type: string, param: string, slug: string) => {
+/**
+ * Consulta o bloco de SEO de um único nó.
+ * Mesma convenção do HOME: `page(id: "home", idType: URI)`.
+ */
+export const SEO = (type: string, idType: string, id: string) => {
   return gql`
     query {
-      ${type}(where: {${param}: "${slug}"}) {
-        nodes {
-          ${type === "products" ? "... on SimpleProduct {" : ""}
-          seo {
-            canonical
+      ${type}(id: "${id}", idType: ${idType}) {
+        seo {
+          canonical
 
-            opengraphImage {
-              mediaItemUrl
-            }
-            
-            metaDesc
-            focuskw
-            title
+          opengraphImage {
+            mediaItemUrl
           }
-          ${type === "products" ? "}" : ""}
+
+          metaDesc
+          focuskw
+          title
         }
       }
     }
-`;
+  `;
 };

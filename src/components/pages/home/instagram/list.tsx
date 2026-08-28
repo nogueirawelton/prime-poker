@@ -1,24 +1,38 @@
-import { Post } from "./post";
+import { cacheLife, cacheTag } from "next/cache";
+import { InstagramCarousel } from "./carousel";
+
+type InstagramPost = Record<string, any>;
+
+export const INSTAGRAM_CACHE_TAG = "instagram";
+
+async function getPosts(): Promise<Array<InstagramPost>> {
+  "use cache";
+  cacheLife("days");
+  cacheTag(INSTAGRAM_CACHE_TAG);
+
+  const baseUrl = process.env.NEXT_PUBLIC_INSTAGRAM_URL;
+  const profile = process.env.NEXT_PUBLIC_INSTAGRAM_PROFILE;
+
+  if (!baseUrl || !profile) return [];
+
+  try {
+    const response = await fetch(`${baseUrl}/api/profiles/${profile}`);
+
+    if (!response.ok) return [];
+
+    const { posts } = await response.json();
+
+    return Array.isArray(posts) ? posts : [];
+  } catch {
+    // Uma indisponibilidade do provedor do Instagram não deve derrubar a home.
+    return [];
+  }
+}
 
 export async function List() {
-  const { posts }: { posts: Array<any> } = await (
-    await fetch(
-      `${process.env.NEXT_PUBLIC_INSTAGRAM_URL}/api/profiles/${process.env.NEXT_PUBLIC_INSTAGRAM_PROFILE}`,
-      {
-        next: {
-          revalidate: 60 * 60 * 24,
-        },
-      },
-    )
-  ).json();
+  const posts = await getPosts();
 
-  return (
-    <div className="mt-12 grid gap-2 lg:grid-cols-4">
-      {posts?.slice(0, 4).map((post, key) => (
-        <div key={key} className="aspect-square">
-          <Post content={post} />
-        </div>
-      ))}
-    </div>
-  );
+  if (!posts.length) return null;
+
+  return <InstagramCarousel posts={posts.slice(0, 6)} />;
 }
