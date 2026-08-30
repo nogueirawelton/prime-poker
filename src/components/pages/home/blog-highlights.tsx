@@ -1,18 +1,18 @@
 import { ArrowRightIcon } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
-import { ALL_POSTS } from "@/components/pages/blog/mock";
 import { PostCard } from "@/components/pages/blog/post-card";
 import { AnimationContainer } from "@/hooks/use-animation";
 import { Cards } from "@/icons/cards";
+import { getLatest } from "@/services/blog";
 
 /**
- * Vitrine do blog na home.
+ * Vitrine do blog na home: os três artigos mais recentes.
  *
- * Hoje lê o mock; quando o CMS entrar, só a origem dos posts muda — o card e
- * o layout são os mesmos do blog.
+ * O corte de três é feito pelo WordPress, não aqui — pedir o acervo inteiro
+ * para descartar quase tudo era o padrão antigo.
  */
-export function BlogHighlights() {
-  const posts = ALL_POSTS.slice(0, 3);
+export async function BlogHighlights() {
+  const posts = await getLatest(3);
 
   if (!posts.length) return null;
 

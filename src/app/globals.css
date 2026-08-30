@@ -13,6 +13,20 @@
   --animate-slide-up: slideUp 0.3s ease-in-out;
   --animate-slide-down: slideDown 0.3s ease-in-out;
   --animate-to-bottom: toBottom 0.3s ease-in-out;
+
+  /* Dialogs: conteúdo e overlay.
+     As animações usam `scale` (propriedade autônoma), nunca `transform`: o
+     Tailwind v4 centraliza o dialog via a propriedade `translate`, e um
+     `transform: translate(...)` no keyframe SOMA a ela — o dialog abriria
+     deslocado e saltaria para o centro ao fim da animação.
+     O `forwards` na saída evita um piscar de um frame antes do desmonte. */
+  --animate-dialog-open: dialogOpen 0.25s ease-out;
+  --animate-dialog-close: dialogClose 0.2s ease-in forwards;
+  --animate-overlay-in: overlayIn 0.25s ease-out;
+  --animate-overlay-out: overlayOut 0.2s ease-in forwards;
+
+  /* Painel do menu mobile: entra descendo, sai subindo. */
+  --animate-to-top: toTop 0.3s ease-in-out forwards;
 }
 
 @layer utilities {
@@ -26,6 +40,57 @@
 
   .break-mobile br {
     @apply lg:hidden;
+  }
+}
+
+@keyframes overlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes overlayOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes toTop {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-2rem);
+  }
+}
+
+@keyframes dialogOpen {
+  from {
+    opacity: 0;
+    scale: 0.96;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes dialogClose {
+  from {
+    opacity: 1;
+    scale: 1;
+  }
+  to {
+    opacity: 0;
+    scale: 0.96;
   }
 }
 
@@ -55,5 +120,153 @@
   }
   to {
     height: 0;
+  }
+}
+
+/*
+ * Tipografia do conteúdo vindo do WordPress.
+ *
+ * O preflight do Tailwind zera tamanhos de heading e `list-style`, então o
+ * HTML do editor precisa destes estilos para não sair como texto corrido.
+ */
+@layer components {
+  .rich-text {
+    @apply flex flex-col gap-6 text-base text-prime-light/80 leading-relaxed;
+  }
+
+  .rich-text h2 {
+    @apply mt-4 font-bold text-2xl text-prime-light lg:text-3xl;
+  }
+
+  .rich-text h3 {
+    @apply mt-2 font-bold text-prime-light text-xl;
+  }
+
+  .rich-text a {
+    @apply text-prime-red underline underline-offset-2 transition-opacity duration-500 hover:opacity-80;
+  }
+
+  .rich-text strong {
+    @apply font-bold text-prime-light;
+  }
+
+  .rich-text ul,
+  .rich-text ol {
+    @apply flex flex-col gap-2 pl-6;
+  }
+
+  /* O preflight remove os marcadores: reativados explicitamente. */
+  .rich-text ul {
+    @apply list-disc marker:text-prime-red;
+  }
+
+  .rich-text ol {
+    @apply list-decimal marker:text-prime-red;
+  }
+
+  .rich-text blockquote {
+    @apply border-prime-red border-l-2 pl-6 text-prime-light italic;
+  }
+
+  .rich-text blockquote cite {
+    @apply mt-2 block text-prime-light/60 text-sm not-italic;
+  }
+
+  .rich-text figure {
+    @apply flex flex-col gap-2;
+  }
+
+  .rich-text img {
+    @apply h-auto w-full rounded-xl;
+  }
+
+  .rich-text figcaption {
+    @apply text-center text-prime-light/50 text-sm;
+  }
+
+  .rich-text iframe {
+    @apply aspect-video w-full rounded-xl;
+  }
+
+  /* Tabela larga rola dentro de si em vez de estourar a página. */
+  .rich-text table {
+    @apply block w-full overflow-x-auto border-collapse text-sm;
+  }
+
+  .rich-text th,
+  .rich-text td {
+    @apply border border-white/10 px-4 py-2 text-left;
+  }
+
+  .rich-text th {
+    @apply bg-white/5 font-bold text-prime-light;
+  }
+}
+
+/*
+ * Blocos do Gutenberg.
+ *
+ * O WordPress serve o CSS dos `wp-block-*` no próprio site; um frontend
+ * headless não recebe nada disso. Sem estes estilos as colunas empilham, os
+ * embeds perdem proporção e a galeria vira uma imagem embaixo da outra.
+ */
+@layer components {
+  /* Colunas: lado a lado a partir de md, empilhadas no mobile. */
+  .rich-text .wp-block-columns {
+    @apply flex flex-col gap-6 md:flex-row;
+  }
+
+  .rich-text .wp-block-column {
+    @apply flex flex-1 flex-col gap-4;
+  }
+
+  /* Agrupamento genérico e o container interno que o WP insere. */
+  .rich-text .wp-block-group,
+  .rich-text .wp-block-group__inner-container {
+    @apply flex flex-col gap-4;
+  }
+
+  /* Classe definida pelo autor no editor para destacar uma nota. */
+  .rich-text .nota-destaque {
+    @apply rounded-xl border border-prime-red/40 bg-prime-red/5 p-6;
+  }
+
+  /* Embeds (YouTube): a proporção vem do wrapper, não do iframe. */
+  .rich-text .wp-block-embed {
+    @apply flex flex-col gap-2;
+  }
+
+  .rich-text .wp-block-embed__wrapper {
+    @apply aspect-video w-full overflow-hidden rounded-xl;
+  }
+
+  .rich-text .wp-block-embed__wrapper iframe {
+    @apply size-full;
+  }
+
+  /* Galeria: o WP marca a contagem em `columns-N`. */
+  .rich-text .wp-block-gallery {
+    @apply grid gap-4 sm:grid-cols-2;
+  }
+
+  .rich-text .wp-block-gallery.columns-3 {
+    @apply lg:grid-cols-3;
+  }
+
+  .rich-text .wp-block-gallery figure {
+    @apply m-0;
+  }
+
+  /* Pullquote é citação de destaque: centralizada, sem a barra lateral. */
+  .rich-text .wp-block-pullquote {
+    @apply border-white/10 border-y py-8;
+  }
+
+  .rich-text .wp-block-pullquote blockquote {
+    @apply border-0 p-0 text-center text-prime-light text-xl italic lg:text-2xl;
+  }
+
+  .rich-text .wp-block-separator {
+    @apply my-4 h-px border-0 bg-white/15;
   }
 }

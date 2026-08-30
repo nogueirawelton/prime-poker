@@ -3,6 +3,7 @@
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
+import { usePathname } from "next/navigation";
 import {
   createContext,
   type ReactNode,
@@ -22,6 +23,10 @@ const SmootherContext = createContext({} as SmootherContextProps);
 
 export function SmootherProvider({ children }: { children: ReactNode }) {
   const lenisRef = useRef<Lenis | null>(null);
+
+  const pathname = usePathname();
+  const isFirstRender = useRef(true);
+  const cameFromHistory = useRef(false);
 
   const scrollTo = useCallback((target: string | null) => {
     if (!target) return;
@@ -56,6 +61,10 @@ export function SmootherProvider({ children }: { children: ReactNode }) {
       easing: (t) => Math.min(1, 1.001 - 2 ** (-10 * t)),
       smoothWheel: true,
       anchors: true,
+      // Ao clicar num link para outro pathname o Lenis chama `reset()`,
+      // matando a inércia. Sem isso ela continua decaindo e sobrescreve o
+      // scroll-para-o-topo do router no frame seguinte.
+      stopInertiaOnNavigate: true,
       // Em touch o scroll nativo já é suave: interceptar prejudica a resposta.
       syncTouch: false,
     });
@@ -84,7 +93,60 @@ export function SmootherProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // Âncora presente na URL ao abrir a página.
+  // Voltar/avançar deve restaurar a posição; só a navegação "para frente"
+  // vai ao topo. O popstate chega antes do commit da nova rota.
+  useEffect(() => {
+    function onPopState() {
+      cameFromHistory.current = true;
+    }
+
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  // Página nova começa no topo.
+  //
+  // O `SmootherProvider` vive no layout do grupo `(institucional)`, então não
+  // remonta ao navegar entre home e blog: a instância do Lenis atravessa a
+  // troca de rota carregando o scroll da página anterior.
+  // `pathname` é o gatilho do efeito, não um valor lido no corpo: removê-la
+  // faria o efeito rodar só na montagem, que é exatamente o bug corrigido aqui.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: gatilho de rota
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    if (cameFromHistory.current) {
+      cameFromHistory.current = false;
+      return;
+    }
+
+    // URL com âncora: o destino é a seção, não o topo.
+    if (window.location.hash) return;
+
+    const lenis = lenisRef.current;
+
+    if (!lenis) {
+      // Reduced motion: o Lenis nunca foi criado.
+      window.scrollTo(0, 0);
+      return;
+    }
+
+    // `resize()` antes do `scrollTo` por dois motivos: re-sincroniza
+    // `animatedScroll`/`targetScroll` com o DOM real (sem isso o `scrollTo`
+    // vira no-op quando o alvo já é igual ao `targetScroll`) e recalcula o
+    // `limit` na hora, contornando o debounce de 250ms do ResizeObserver.
+    lenis.resize();
+    lenis.scrollTo(0, { immediate: true, force: true });
+  }, [pathname]);
+
+  // Âncora na URL — inclusive vinda de outra rota (`/#quem-somos` a partir do
+  // blog). O `anchors` do Lenis não cobre esse caso: ele exige mesmo pathname.
+  // `pathname` é o gatilho do efeito, não um valor lido no corpo: removê-la
+  // faria o efeito rodar só na montagem, que é exatamente o bug corrigido aqui.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: gatilho de rota
   useEffect(() => {
     const hash = location.hash;
     if (!hash) return;
@@ -92,7 +154,7 @@ export function SmootherProvider({ children }: { children: ReactNode }) {
     const timeout = setTimeout(() => scrollTo(hash), 600);
 
     return () => clearTimeout(timeout);
-  }, [scrollTo]);
+  }, [scrollTo, pathname]);
 
   return <SmootherContext value={{ scrollTo }}>{children}</SmootherContext>;
 }

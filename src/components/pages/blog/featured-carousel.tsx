@@ -9,7 +9,7 @@ import {
   CarouselTrack,
   CarouselViewport,
 } from "@/components/ui/carousel";
-import type { Post } from "./mock";
+import type { Post } from "@/services/blog";
 import { PostCover } from "./post-cover";
 
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
@@ -41,9 +41,11 @@ export function FeaturedCarousel({ posts }: { posts: Array<Post> }) {
                 <div className="absolute inset-0 bg-linear-to-t from-prime-dark via-55% via-prime-dark/55 to-transparent" />
 
                 <div className="relative flex max-w-2xl flex-col gap-3">
-                  <span className="w-fit rounded-full bg-prime-red px-3 py-1 font-semibold text-prime-light text-xs uppercase">
-                    {post.category.name}
-                  </span>
+                  {post.category && (
+                    <span className="w-fit rounded-full bg-prime-red px-3 py-1 font-semibold text-prime-light text-xs uppercase">
+                      {post.category.name}
+                    </span>
+                  )}
 
                   <h3 className="font-black text-2xl text-prime-light uppercase leading-tight lg:text-4xl">
                     {post.title}
@@ -58,7 +60,7 @@ export function FeaturedCarousel({ posts }: { posts: Array<Post> }) {
                       {post.author}
                     </span>
                     <time dateTime={post.date}>
-                      {dateFormatter.format(new Date(`${post.date}T12:00:00`))}
+                      {dateFormatter.format(new Date(post.date))}
                     </time>
                     <span className="flex items-center gap-1">
                       <ClockIcon className="size-3.5" />

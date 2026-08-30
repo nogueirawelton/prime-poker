@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { PlayerHeader } from "@/components/shared/player/player-header";
+import { requireSession } from "@/lib/session";
 
 export const metadata: Metadata = {
   // Área logada nunca deve ser indexada.
@@ -7,10 +9,21 @@ export const metadata: Metadata = {
 };
 
 /**
- * Chrome da área logada. De propósito NÃO inclui:
+ * Chrome e guarda da área do jogador.
+ *
+ * De propósito NÃO inclui:
  * - `SmootherProvider` (Lenis): inércia atrapalha formulários e listas;
  * - o overlay de `Loading` com GSAP: é abertura de landing page;
  * - o Footer institucional.
+ *
+ * A leitura da sessão fica DENTRO de um boundary de Suspense, e não no topo do
+ * layout: sob Cache Components, um `await` de sessão no topo prende o segmento
+ * inteiro atrás da requisição e derruba o prerender do shell estático.
+ *
+ * Este guard é defesa em profundidade, não a barreira principal: quem barra de
+ * fato é o proxy, que roda ANTES de qualquer renderização e consegue responder
+ * 307. Aqui, depois que o shell é transmitido, o `redirect()` só chega como
+ * instrução no corpo — com o HTML da página já entregue junto.
  */
 export default function PlayerLayout({
   children,
@@ -18,12 +31,22 @@ export default function PlayerLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col">
-      <PlayerHeader />
+    <Suspense fallback={null}>
+      <Guard>
+        <div className="flex min-h-screen flex-col">
+          <PlayerHeader />
 
-      <main className="mx-auto w-full max-w-screen-2xl flex-1 px-4 py-8 lg:px-8">
-        {children}
-      </main>
-    </div>
+          <main className="mx-auto w-full max-w-screen-2xl flex-1 px-4 py-8 lg:px-8">
+            {children}
+          </main>
+        </div>
+      </Guard>
+    </Suspense>
   );
+}
+
+async function Guard({ children }: { children: React.ReactNode }) {
+  await requireSession();
+
+  return children;
 }

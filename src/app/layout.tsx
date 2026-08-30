@@ -3,6 +3,7 @@ import { Montserrat } from "next/font/google";
 import { ToastContainer } from "react-toastify";
 import { ConsentProvider, CookieConsent } from "@/components/shared/consent";
 import { ConsentInit } from "@/components/shared/consent/consent-init";
+import { UtmCapture } from "@/components/shared/utm-capture";
 import { WebVitals } from "@/components/shared/web-vitals";
 import "./globals.css";
 
@@ -36,6 +37,7 @@ export default function RootLayout({
 
         <ConsentProvider>
           <WebVitals />
+          <UtmCapture />
 
           {children}
 

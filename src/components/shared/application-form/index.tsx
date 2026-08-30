@@ -9,7 +9,11 @@ import { toast } from "react-toastify";
 import { PhoneInput } from "@/components/ui/form/phone-input";
 import { TextInput } from "@/components/ui/form/text-input";
 import { wp } from "@/providers/wp";
+import { getUtmParams } from "@/utils/utm";
 import { type FormData, primeApplicationSchema } from "./schema";
+
+/** Formulário de inscrição no Contact Form 7. */
+const FORM_ID = "169";
 
 export function Form() {
   const [value, setValue] = useState("0");
@@ -26,26 +30,26 @@ export function Form() {
     resolver: zodResolver(primeApplicationSchema),
     defaultValues: {
       dadosPessoais: {
-        entry_502479035: "",
-        entry_1045653986: "",
-        entry_431975596: "",
-        entry_1067624691: "",
+        nome_completo: "",
+        email: "",
+        numero_whatsapp: "",
+        onde_mora: "",
       },
       situacaoAtual: {
-        entry_1524797025: "",
-        entry_936724915: "",
-        entry_1945294488: "",
-        entry_661900987: "",
+        idade: "",
+        ocupacao: "",
+        fonte_de_renda: "",
+        discord: "",
       },
       historicoOnline: {
-        entry_683158185: "",
-        entry_1091112575: "",
+        nick_poker_stars: "",
+        outros_sites: "",
       },
       metasDedicacao: {
-        entry_1979104888: "",
-        entry_899222282: "",
-        entry_462376964: "",
-        entry_1510858042: "",
+        disponibilidade: "",
+        jogou_em_time: "",
+        porque_se_inscreveu: "",
+        indicacao: "",
       },
     },
   });
@@ -72,35 +76,14 @@ export function Form() {
   const onSubmit: SubmitHandler<FormData> = async (data) => {
     startTransition(async () => {
       try {
-        // const response = await fetch("/api/submit-form", {
-        //   method: "POST",
-        //   headers: {
-        //     "Content-Type": "application/json",
-        //   },
-        //   body: JSON.stringify(data),
-        // });
-
-        // const result = await response.json();
-
-        // if (!response.ok) {
-        //   throw new Error(result.error || "Erro ao enviar formulário");
-        // }
-
-        await wp("169", {
-          nome_completo: data.dadosPessoais.entry_502479035,
-          email: data.dadosPessoais.entry_1045653986,
-          numero_whatsapp: data.dadosPessoais.entry_431975596,
-          onde_mora: data.dadosPessoais.entry_1067624691,
-          idade: data.situacaoAtual.entry_1524797025,
-          ocupacao: data.situacaoAtual.entry_936724915,
-          fonte_de_renda: data.situacaoAtual.entry_1945294488,
-          discord: data.situacaoAtual.entry_661900987,
-          nick_poker_stars: data.historicoOnline.entry_683158185,
-          outros_sites: data.historicoOnline.entry_1091112575,
-          disponibilidade: data.metasDedicacao.entry_1979104888,
-          jogou_em_time: data.metasDedicacao.entry_899222282,
-          porque_se_inscreveu: data.metasDedicacao.entry_462376964,
-          indicacao: data.metasDedicacao.entry_1510858042,
+        // Os nomes dos campos do schema são os mesmos do Contact Form 7:
+        // achatar os grupos já produz o payload esperado.
+        await wp(FORM_ID, {
+          ...data.dadosPessoais,
+          ...data.situacaoAtual,
+          ...data.historicoOnline,
+          ...data.metasDedicacao,
+          ...getUtmParams(),
         });
 
         toast.success("Formulário enviado com sucesso!");
@@ -144,16 +127,16 @@ export function Form() {
           </strong>
 
           <div className="flex flex-col gap-2 text-prime-light/75 text-sm lg:text-base">
-            <label htmlFor="entry_502479035">Seu Nome Completo*</label>
+            <label htmlFor="nome_completo">Seu Nome Completo*</label>
             <Controller
               control={control}
-              name="dadosPessoais.entry_502479035"
+              name="dadosPessoais.nome_completo"
               render={({ field: { onChange, value, ...field } }) => (
                 <TextInput
-                  id="entry_502479035"
+                  id="nome_completo"
                   onValueChange={onChange}
                   value={value}
-                  error={errors.dadosPessoais?.entry_502479035}
+                  error={errors.dadosPessoais?.nome_completo}
                   className="h-12 rounded-md border border-white/10 bg-white/10 px-4 text-sm outline-none"
                   {...field}
                 />
@@ -162,14 +145,14 @@ export function Form() {
           </div>
 
           <div className="flex flex-col gap-2 text-prime-light/75 text-sm lg:text-base">
-            <label htmlFor="entry_1045653986">Seu E-mail*</label>
+            <label htmlFor="email">Seu E-mail*</label>
             <Controller
-              name="dadosPessoais.entry_1045653986"
+              name="dadosPessoais.email"
               control={control}
               render={({ field: { onChange, value, ...field } }) => (
                 <TextInput
-                  id="entry_1045653986"
-                  error={errors.dadosPessoais?.entry_1045653986}
+                  id="email"
+                  error={errors.dadosPessoais?.email}
                   className="h-12 rounded-md border border-white/10 bg-white/10 px-4 text-sm outline-none"
                   onValueChange={onChange}
                   value={value}
@@ -180,18 +163,18 @@ export function Form() {
           </div>
 
           <div className="flex flex-col gap-2 text-prime-light/75 text-sm lg:text-base">
-            <label htmlFor="entry_431975596">
+            <label htmlFor="numero_whatsapp">
               Qual seu nº de WhatsApp (com DDD)*
             </label>
             <Controller
-              name="dadosPessoais.entry_431975596"
+              name="dadosPessoais.numero_whatsapp"
               control={control}
               render={({ field: { onChange, value, ...field } }) => (
                 <PhoneInput
-                  id="entry_431975596"
+                  id="numero_whatsapp"
                   onValueChange={onChange}
                   value={value}
-                  error={errors.dadosPessoais?.entry_431975596}
+                  error={errors.dadosPessoais?.numero_whatsapp}
                   className="!h-12 !rounded-md !bg-white/10 !text-sm"
                   containerClass="!border ! !rounded-md !border-white/20"
                   {...field}
@@ -201,18 +184,16 @@ export function Form() {
           </div>
 
           <div className="flex flex-col gap-2 text-prime-light/75 text-sm lg:text-base">
-            <label htmlFor="entry_1067624691">
-              Onde você mora? (Cidade/Estado)*
-            </label>
+            <label htmlFor="onde_mora">Onde você mora? (Cidade/Estado)*</label>
             <Controller
-              name="dadosPessoais.entry_1067624691"
+              name="dadosPessoais.onde_mora"
               control={control}
               render={({ field: { onChange, value, ...field } }) => (
                 <TextInput
-                  id="entry_1067624691"
+                  id="onde_mora"
                   onValueChange={onChange}
                   value={value}
-                  error={errors.dadosPessoais?.entry_1067624691}
+                  error={errors.dadosPessoais?.onde_mora}
                   className="h-12 rounded-md border border-white/10 bg-white/10 px-4 text-sm outline-none"
                   {...field}
                 />
@@ -227,16 +208,16 @@ export function Form() {
           </strong>
 
           <div className="flex flex-col gap-2 text-prime-light/75 text-sm lg:text-base">
-            <label htmlFor="entry_1524797025">Sua idade*</label>
+            <label htmlFor="idade">Sua idade*</label>
             <Controller
-              name="situacaoAtual.entry_1524797025"
+              name="situacaoAtual.idade"
               control={control}
               render={({ field: { onChange, value, ...field } }) => (
                 <TextInput
-                  id="entry_1524797025"
+                  id="idade"
                   onValueChange={onChange}
                   value={value}
-                  error={errors.situacaoAtual?.entry_1524797025}
+                  error={errors.situacaoAtual?.idade}
                   className="h-12 rounded-md border border-white/10 bg-white/10 px-4 text-sm outline-none"
                   {...field}
                 />
@@ -245,18 +226,18 @@ export function Form() {
           </div>
 
           <div className="flex flex-col gap-2 text-prime-light/75 text-sm lg:text-base">
-            <label htmlFor="entry_936724915">
+            <label htmlFor="ocupacao">
               Sua ocupação? (Trabalha? Estuda? Nada?)*
             </label>
             <Controller
-              name="situacaoAtual.entry_936724915"
+              name="situacaoAtual.ocupacao"
               control={control}
               render={({ field: { onChange, value, ...field } }) => (
                 <TextInput
-                  id="entry_936724915"
+                  id="ocupacao"
                   onValueChange={onChange}
                   value={value}
-                  error={errors.situacaoAtual?.entry_936724915}
+                  error={errors.situacaoAtual?.ocupacao}
                   className="h-12 rounded-md border border-white/10 bg-white/10 px-4 text-sm outline-none"
                   {...field}
                 />
@@ -265,19 +246,19 @@ export function Form() {
           </div>
 
           <div className="flex flex-col gap-2 text-prime-light/75 text-sm lg:text-base">
-            <label htmlFor="entry_1945294488">
+            <label htmlFor="fonte_de_renda">
               Caso não trabalhe, possui alguma fonte de renda ou renda
               guardada?*
             </label>
             <Controller
-              name="situacaoAtual.entry_1945294488"
+              name="situacaoAtual.fonte_de_renda"
               control={control}
               render={({ field: { onChange, value, ...field } }) => (
                 <TextInput
-                  id="entry_1945294488"
+                  id="fonte_de_renda"
                   onValueChange={onChange}
                   value={value}
-                  error={errors.situacaoAtual?.entry_1945294488}
+                  error={errors.situacaoAtual?.fonte_de_renda}
                   className="h-12 rounded-md border border-white/10 bg-white/10 px-4 text-sm outline-none"
                   {...field}
                 />
@@ -286,18 +267,16 @@ export function Form() {
           </div>
 
           <div className="flex flex-col gap-2 text-prime-light/75 text-sm lg:text-base">
-            <label htmlFor="entry_661900987">
-              Possui Discord? Qual login?*
-            </label>
+            <label htmlFor="discord">Possui Discord? Qual login?*</label>
             <Controller
-              name="situacaoAtual.entry_661900987"
+              name="situacaoAtual.discord"
               control={control}
               render={({ field: { onChange, value, ...field } }) => (
                 <TextInput
-                  id="entry_661900987"
+                  id="discord"
                   onValueChange={onChange}
                   value={value}
-                  error={errors.situacaoAtual?.entry_661900987}
+                  error={errors.situacaoAtual?.discord}
                   className="h-12 rounded-md border border-white/10 bg-white/10 px-4 text-sm outline-none"
                   {...field}
                 />
@@ -312,19 +291,19 @@ export function Form() {
           </strong>
 
           <div className="flex flex-col gap-2 text-prime-light/75 text-sm lg:text-base">
-            <label htmlFor="entry_683158185">
+            <label htmlFor="nick_poker_stars">
               Seu nick PokerStars? (Precisa estar com busca ABERTA no
               SharkScope.)*
             </label>
             <Controller
-              name="historicoOnline.entry_683158185"
+              name="historicoOnline.nick_poker_stars"
               control={control}
               render={({ field: { onChange, value, ...field } }) => (
                 <TextInput
-                  id="entry_683158185"
+                  id="nick_poker_stars"
                   onValueChange={onChange}
                   value={value}
-                  error={errors.historicoOnline?.entry_683158185}
+                  error={errors.historicoOnline?.nick_poker_stars}
                   className="h-12 rounded-md border border-white/10 bg-white/10 px-4 text-sm outline-none"
                   {...field}
                 />
@@ -333,18 +312,18 @@ export function Form() {
           </div>
 
           <div className="flex flex-col gap-2 text-prime-light/75 text-sm lg:text-base">
-            <label htmlFor="entry_1091112575">
+            <label htmlFor="outros_sites">
               Joga em outros sites? Quais? Quais nicks?*
             </label>
             <Controller
-              name="historicoOnline.entry_1091112575"
+              name="historicoOnline.outros_sites"
               control={control}
               render={({ field: { onChange, value, ...field } }) => (
                 <TextInput
-                  id="entry_1091112575"
+                  id="outros_sites"
                   onValueChange={onChange}
                   value={value}
-                  error={errors.historicoOnline?.entry_1091112575}
+                  error={errors.historicoOnline?.outros_sites}
                   className="h-12 rounded-md border border-white/10 bg-white/10 px-4 text-sm outline-none"
                   {...field}
                 />
@@ -359,19 +338,19 @@ export function Form() {
           </strong>
 
           <div className="flex flex-col gap-2 text-prime-light/75 text-sm lg:text-base">
-            <label htmlFor="entry_1979104888">
+            <label htmlFor="disponibilidade">
               Qual sua disponibilidade para se dedicar ao pôquer? (Horas por dia
               e dias na semana)*
             </label>
             <Controller
-              name="metasDedicacao.entry_1979104888"
+              name="metasDedicacao.disponibilidade"
               control={control}
               render={({ field: { onChange, value, ...field } }) => (
                 <TextInput
-                  id="entry_1979104888"
+                  id="disponibilidade"
                   onValueChange={onChange}
                   value={value}
-                  error={errors.metasDedicacao?.entry_1979104888}
+                  error={errors.metasDedicacao?.disponibilidade}
                   className="h-12 rounded-md border border-white/10 bg-white/10 px-4 text-sm outline-none"
                   {...field}
                 />
@@ -380,18 +359,18 @@ export function Form() {
           </div>
 
           <div className="flex flex-col gap-2 text-prime-light/75 text-sm lg:text-base">
-            <label htmlFor="entry_899222282">
+            <label htmlFor="jogou_em_time">
               Já jogou em time? Se sim, quais?*
             </label>
             <Controller
-              name="metasDedicacao.entry_899222282"
+              name="metasDedicacao.jogou_em_time"
               control={control}
               render={({ field: { onChange, value, ...field } }) => (
                 <TextInput
-                  id="entry_899222282"
+                  id="jogou_em_time"
                   onValueChange={onChange}
                   value={value}
-                  error={errors.metasDedicacao?.entry_899222282}
+                  error={errors.metasDedicacao?.jogou_em_time}
                   className="h-12 rounded-md border border-white/10 bg-white/10 px-4 text-sm outline-none"
                   {...field}
                 />
@@ -400,18 +379,18 @@ export function Form() {
           </div>
 
           <div className="flex flex-col gap-2 text-prime-light/75 text-sm lg:text-base">
-            <label htmlFor="entry_462376964">
+            <label htmlFor="porque_se_inscreveu">
               Por que decidiu se inscrever para jogar no Prime?*
             </label>
             <Controller
-              name="metasDedicacao.entry_462376964"
+              name="metasDedicacao.porque_se_inscreveu"
               control={control}
               render={({ field: { onChange, value, ...field } }) => (
                 <TextInput
-                  id="entry_462376964"
+                  id="porque_se_inscreveu"
                   onValueChange={onChange}
                   value={value}
-                  error={errors.metasDedicacao?.entry_462376964}
+                  error={errors.metasDedicacao?.porque_se_inscreveu}
                   className="h-12 rounded-md border border-white/10 bg-white/10 px-4 text-sm outline-none"
                   {...field}
                 />
@@ -420,18 +399,18 @@ export function Form() {
           </div>
 
           <div className="flex flex-col gap-2 text-prime-light/75 text-sm lg:text-base">
-            <label htmlFor="entry_1510858042">
+            <label htmlFor="indicacao">
               Alguém te indicou/sugeriu se inscrever no Prime? Se sim, quem?*
             </label>
             <Controller
-              name="metasDedicacao.entry_1510858042"
+              name="metasDedicacao.indicacao"
               control={control}
               render={({ field: { onChange, value, ...field } }) => (
                 <TextInput
-                  id="entry_1510858042"
+                  id="indicacao"
                   onValueChange={onChange}
                   value={value}
-                  error={errors.metasDedicacao?.entry_1510858042}
+                  error={errors.metasDedicacao?.indicacao}
                   className="h-12 rounded-md border border-white/10 bg-white/10 px-4 text-sm outline-none"
                   {...field}
                 />
@@ -443,18 +422,19 @@ export function Form() {
         <div className="mt-8 flex justify-between">
           <button
             type="button"
-            disabled={value == "0"}
+            disabled={value === "0"}
             onClick={() => setValue((prev) => String(+prev - 1))}
             className="h-12 cursor-pointer rounded-md border border-white/10 bg-white/10 px-4 text-white transition-all duration-500 disabled:opacity-0"
           >
             Anterior
           </button>
-          {value == "3" ? (
+          {value === "3" ? (
             <button
               type="submit"
-              className="grid h-12 min-w-[99px] cursor-pointer place-items-center rounded-md bg-prime-red/75 px-4 text-white"
+              disabled={pending}
+              className="grid h-12 min-w-[99px] cursor-pointer place-items-center rounded-md bg-prime-red/75 px-4 text-white transition-opacity duration-500 disabled:opacity-70"
             >
-              {true ? (
+              {pending ? (
                 <CircleNotchIcon className="size-6 animate-spin" />
               ) : (
                 "Enviar inscrição"

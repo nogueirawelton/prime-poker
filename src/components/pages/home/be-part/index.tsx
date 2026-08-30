@@ -1,7 +1,7 @@
 import type { BePart as BePartType } from "@/@types/pages/Home";
+import { Form } from "@/components/shared/application-form";
 import { AnimationContainer } from "@/hooks/use-animation";
 import { Cards } from "@/icons/cards";
-import { Form } from "./form";
 
 type BePartProps = {
   content: BePartType;

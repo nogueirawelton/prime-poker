@@ -1,19 +1,34 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { Breadcrumbs } from "@/components/pages/blog/breadcrumbs";
-import { CATEGORIES, getByCategory } from "@/components/pages/blog/mock";
+import { Pagination } from "@/components/pages/blog/pagination";
 import { PostCard } from "@/components/pages/blog/post-card";
 import { Cards } from "@/icons/cards";
+import {
+  getCategories,
+  getCategory,
+  getPage,
+  getTotal,
+  getTotalPages,
+} from "@/services/blog";
 
-type Props = { params: Promise<{ slug: string }> };
+type Props = {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ p?: string }>;
+};
 
-export function generateStaticParams() {
-  return CATEGORIES.map((category) => ({ slug: category.slug }));
+export async function generateStaticParams() {
+  const categories = await getCategories();
+  return categories.map((category) => ({ slug: category.slug }));
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: Pick<Props, "params">): Promise<Metadata> {
   const { slug } = await params;
-  const category = CATEGORIES.find((item) => item.slug === slug);
+  const category = await getCategory(slug);
 
   if (!category) return {};
 
@@ -24,13 +39,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function CategoryPage({ params }: Props) {
+export default async function CategoryPage({ params, searchParams }: Props) {
   const { slug } = await params;
-  const category = CATEGORIES.find((item) => item.slug === slug);
+
+  const [category, categories, total] = await Promise.all([
+    getCategory(slug),
+    getCategories(),
+    getTotal({ category: slug }),
+  ]);
 
   if (!category) notFound();
-
-  const posts = getByCategory(slug);
 
   return (
     <main>
@@ -49,13 +67,15 @@ export default async function CategoryPage({ params }: Props) {
         </h1>
 
         <p className="mt-3 text-prime-light/70 text-sm">
-          {posts.length} {posts.length === 1 ? "artigo" : "artigos"}
+          {/* Total da categoria, não o tamanho da página: com paginação as
+              duas coisas deixam de coincidir. */}
+          {total} {total === 1 ? "artigo" : "artigos"}
         </p>
       </header>
 
       <nav aria-label="Outras categorias" className="mt-8 flex flex-wrap gap-2">
-        {CATEGORIES.map((item) => (
-          <a
+        {categories.map((item) => (
+          <Link
             key={item.slug}
             href={`/blog/categoria/${item.slug}`}
             aria-current={item.slug === slug ? "page" : undefined}
@@ -66,21 +86,75 @@ export default async function CategoryPage({ params }: Props) {
             }
           >
             {item.name}
-          </a>
+          </Link>
         ))}
       </nav>
 
-      {posts.length > 0 ? (
-        <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {posts.map((post) => (
-            <PostCard key={post.id} post={post} />
-          ))}
-        </div>
-      ) : (
-        <p className="mt-10 rounded-xl border border-white/10 border-dashed p-16 text-center text-prime-light/60">
-          Ainda não há artigos nesta categoria.
-        </p>
-      )}
+      {/* A página pedida vem da URL, que só existe em tempo de requisição:
+          atrás do boundary, o cabeçalho e a navegação seguem no shell. */}
+      <Suspense fallback={<Esqueleto />}>
+        <Lista slug={slug} searchParams={searchParams} />
+      </Suspense>
     </main>
+  );
+}
+
+const GRID = "mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3";
+
+async function Lista({
+  slug,
+  searchParams,
+}: {
+  slug: string;
+  searchParams: Props["searchParams"];
+}) {
+  const { p } = await searchParams;
+  const pagina = Math.max(1, Number(p) || 1);
+  const filtro = { category: slug };
+
+  const [posts, totalPages] = await Promise.all([
+    getPage(pagina, filtro),
+    getTotalPages(filtro),
+  ]);
+
+  if (posts.length === 0) {
+    return (
+      <p className="mt-10 rounded-xl border border-white/10 border-dashed p-16 text-center text-prime-light/60">
+        Ainda não há artigos nesta categoria.
+      </p>
+    );
+  }
+
+  return (
+    <>
+      <div className={GRID}>
+        {posts.map((post) => (
+          <PostCard key={post.id} post={post} />
+        ))}
+      </div>
+
+      <Pagination
+        current={pagina}
+        total={totalPages}
+        hrefFor={(page) =>
+          page <= 1
+            ? `/blog/categoria/${slug}`
+            : `/blog/categoria/${slug}?p=${page}`
+        }
+      />
+    </>
+  );
+}
+
+function Esqueleto() {
+  return (
+    <div className={GRID} aria-hidden="true">
+      {Array.from({ length: 6 }, (_, index) => index).map((index) => (
+        <div
+          key={index}
+          className="h-80 animate-pulse rounded-xl border border-white/10 bg-white/3"
+        />
+      ))}
+    </div>
   );
 }

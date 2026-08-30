@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { SmartLink } from "@/components/ui/smart-link";
 import { MenuMobileTrigger } from "./mobile-menu";
 
 const ANCHORS = [
@@ -171,17 +170,17 @@ export function Header() {
               </Link>
             ))}
 
-            {/* Rota real, não âncora: SmartLink preserva os UTMs. */}
-            <SmartLink href="/blog">Blog</SmartLink>
+            {/* Rota real, não âncora. */}
+            <Link href="/blog">Blog</Link>
           </nav>
 
-          <SmartLink
+          <Link
             href="/login"
             className="flex h-11 shrink-0 items-center gap-2 rounded-md bg-prime-red px-5 font-semibold text-prime-light text-sm uppercase transition-all duration-500 hover:bg-prime-light hover:text-prime-red"
           >
             <UserIcon className="size-5" weight="bold" />
             Entrar
-          </SmartLink>
+          </Link>
         </div>
 
         <MenuMobileTrigger>

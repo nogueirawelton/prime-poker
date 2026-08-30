@@ -15,16 +15,15 @@ export default function AuthLayout({
     <main className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
       <Link href="/" className="mb-10">
         <Image
-          src="/img/logo.svg"
-          width={90}
-          height={80}
+          src="/img/logo-alt.svg"
+          width={150}
+          height={135}
           alt="Prime Poker Team"
-          className="h-[70px] w-auto"
           priority
         />
       </Link>
 
-      <div className="w-full max-w-md rounded-xl border border-white/10 bg-prime-darkgray p-6 shadow-2xl lg:p-8">
+      <div className="w-full max-w-xl rounded-xl border border-white/10 bg-zinc-800 p-6 shadow-2xl lg:p-8">
         {children}
       </div>
 

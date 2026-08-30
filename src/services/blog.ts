@@ -1,0 +1,277 @@
+import { query } from "@/graphql/client";
+import { POST } from "@/graphql/queries/blog/POST";
+import {
+  CATEGORIES,
+  POST_SLUGS,
+  POSTS,
+  POSTS_TOTAL,
+} from "@/graphql/queries/blog/POSTS";
+
+export type Category = { name: string; slug: string };
+
+export type Post = {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  date: string;
+  isSticky: boolean;
+  author: string;
+  category: Category | null;
+  image: { url: string; alt: string } | null;
+  readingTime: number;
+};
+
+/** Forma crua do nó de post no WPGraphQL. */
+type PostNode = {
+  id: string;
+  slug: string;
+  title?: string | null;
+  excerpt?: string | null;
+  content?: string | null;
+  date: string;
+  isSticky?: boolean | null;
+  featuredImage?: { node?: { mediaItemUrl: string; altText?: string } } | null;
+  author?: { node?: { name?: string } } | null;
+  categories?: { nodes?: Array<{ name: string; slug: string }> } | null;
+  seo?: {
+    title?: string | null;
+    metaDesc?: string | null;
+  } | null;
+};
+
+export type PostDetail = Post & {
+  content: string;
+  seoTitle: string | null;
+  seoDescription: string | null;
+};
+
+/** Quantos posts por página na listagem. */
+export const PAGE_SIZE = 6;
+
+/**
+ * Teto para as listagens que precisam varrer o acervo: os slugs do
+ * `generateStaticParams` e as categorias.
+ *
+ * Nenhuma delas traz corpo ou imagem, então o custo é baixo. As listagens
+ * exibidas ao usuário não passam por aqui — elas pedem exatamente a página
+ * pedida ao servidor.
+ */
+const MAX_INDEX = 500;
+
+/** Filtros que o servidor aplica; todos opcionais. */
+export type PostFilter = {
+  /** Termo de busca — casado pelo WordPress em título e conteúdo. */
+  search?: string;
+  /** Slug da categoria. */
+  category?: string;
+};
+
+/** Média de leitura em português; serve para uma estimativa, não precisão. */
+const WORDS_PER_MINUTE = 200;
+
+/** O WordPress devolve `excerpt` e `content` como HTML. */
+function stripHtml(html: string | null | undefined) {
+  if (!html) return "";
+
+  return html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&#8217;|&#8216;/g, "'")
+    .replace(/&#8220;|&#8221;/g, '"')
+    .replace(/&hellip;/g, "…")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function readingTime(html: string | null | undefined) {
+  const words = stripHtml(html).split(" ").filter(Boolean).length;
+  return Math.max(1, Math.round(words / WORDS_PER_MINUTE));
+}
+
+function toPost(node: PostNode, html?: string | null): Post {
+  const category = node.categories?.nodes?.[0];
+
+  return {
+    id: node.id,
+    slug: node.slug,
+    title: stripHtml(node.title),
+    excerpt: stripHtml(node.excerpt),
+    date: node.date,
+    isSticky: Boolean(node.isSticky),
+    author: node.author?.node?.name ?? "Prime Poker Team",
+    category: category ? { name: category.name, slug: category.slug } : null,
+    image: node.featuredImage?.node
+      ? {
+          url: node.featuredImage.node.mediaItemUrl,
+          alt: node.featuredImage.node.altText || "",
+        }
+      : null,
+    // `html` é usado só aqui e descartado: o corpo não entra no objeto `Post`
+    // e portanto não é serializado para os componentes client.
+    readingTime: readingTime(html ?? node.excerpt),
+  };
+}
+
+/** Vira `undefined` para o campo sumir do `where` em vez de virar `null`. */
+function opcional(value: string | undefined) {
+  const limpo = value?.trim();
+  return limpo ? limpo : undefined;
+}
+
+async function buscar(
+  variables: Record<string, unknown>,
+  tags: Array<string>,
+): Promise<Array<Post>> {
+  const data = await query<{ posts?: { nodes?: Array<PostNode> } }>(POSTS, {
+    variables,
+    profile: "hours",
+    tags,
+  });
+
+  return (data?.posts?.nodes ?? []).map((node) => toPost(node, node.content));
+}
+
+/**
+ * Uma página da listagem, já filtrada pelo servidor.
+ *
+ * O `offset` é resolvido no WordPress: a página 7 custa o mesmo que a 1.
+ */
+export async function getPage(
+  page = 1,
+  filter: PostFilter = {},
+): Promise<Array<Post>> {
+  return buscar(
+    {
+      first: PAGE_SIZE,
+      offset: Math.max(0, (page - 1) * PAGE_SIZE),
+      search: opcional(filter.search),
+      categoryName: opcional(filter.category),
+    },
+    ["posts"],
+  );
+}
+
+/** Quantos posts atendem ao filtro. */
+export async function getTotal(filter: PostFilter = {}): Promise<number> {
+  const data = await query<{ postsTotal?: number }>(POSTS_TOTAL, {
+    variables: {
+      search: opcional(filter.search),
+      categoryName: opcional(filter.category),
+    },
+    profile: "hours",
+    tags: ["posts"],
+  });
+
+  return data?.postsTotal ?? 0;
+}
+
+export async function getTotalPages(filter: PostFilter = {}) {
+  return Math.max(1, Math.ceil((await getTotal(filter)) / PAGE_SIZE));
+}
+
+/** Os posts mais recentes — usado nos destaques da home. */
+export async function getLatest(limit = 3): Promise<Array<Post>> {
+  return buscar({ first: limit }, ["posts"]);
+}
+
+/**
+ * Destaques: os marcados como sticky no WordPress.
+ *
+ * Sem nenhum sticky, cai nos mais recentes — a seção nunca fica vazia.
+ */
+export async function getFeatured(limit = 3): Promise<Array<Post>> {
+  const sticky = await buscar({ first: limit, isSticky: true }, ["posts"]);
+
+  return sticky.length > 0 ? sticky : getLatest(limit);
+}
+
+/**
+ * Categorias com pelo menos um artigo.
+ *
+ * O `postCount` vem do plugin porque o `count` nativo soma todos os post
+ * types: sem ele, as categorias dos membros do time apareceriam na navegação
+ * do blog levando a páginas vazias.
+ */
+export async function getCategories(): Promise<Array<Category>> {
+  const data = await query<{
+    categories?: {
+      nodes?: Array<{ name: string; slug: string; postCount?: number }>;
+    };
+  }>(CATEGORIES, {
+    variables: { first: MAX_INDEX },
+    profile: "hours",
+    tags: ["posts", "categories"],
+  });
+
+  return (data?.categories?.nodes ?? [])
+    .filter((node) => (node.postCount ?? 0) > 0)
+    .map(({ name, slug }) => ({ name, slug }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export async function getCategory(slug: string): Promise<Category | null> {
+  const categories = await getCategories();
+  return categories.find((category) => category.slug === slug) ?? null;
+}
+
+/**
+ * Relacionados: mesma categoria, sem repetir o post atual.
+ *
+ * Se a categoria não tiver o bastante, completa com os mais recentes —
+ * inclusive quando o post não tem categoria alguma.
+ */
+export async function getRelated(post: Post, limit = 3): Promise<Array<Post>> {
+  const mesmaCategoria = post.category
+    ? await buscar(
+        {
+          first: limit,
+          categoryName: post.category.slug,
+          notIn: [post.id],
+        },
+        ["posts"],
+      )
+    : [];
+
+  if (mesmaCategoria.length >= limit) return mesmaCategoria;
+
+  const recentes = await buscar({ first: limit + 1, notIn: [post.id] }, [
+    "posts",
+  ]);
+
+  const vistos = new Set(mesmaCategoria.map((item) => item.id));
+
+  return [
+    ...mesmaCategoria,
+    ...recentes.filter((item) => !vistos.has(item.id)),
+  ].slice(0, limit);
+}
+
+/** Slugs para o `generateStaticParams` das páginas de post. */
+export async function getAllSlugs(): Promise<Array<string>> {
+  const data = await query<{ posts?: { nodes?: Array<{ slug: string }> } }>(
+    POST_SLUGS,
+    { variables: { first: MAX_INDEX }, profile: "hours", tags: ["posts"] },
+  );
+
+  return (data?.posts?.nodes ?? []).map((node) => node.slug);
+}
+
+export async function getPost(slug: string): Promise<PostDetail | null> {
+  const data = await query<{ post?: PostNode | null }>(POST, {
+    variables: { slug },
+    profile: "hours",
+    tags: ["posts", `post:${slug}`],
+  });
+
+  const node = data?.post;
+  if (!node) return null;
+
+  return {
+    ...toPost(node, node.content),
+    content: node.content ?? "",
+    seoTitle: node.seo?.title || null,
+    seoDescription: node.seo?.metaDesc || null,
+  };
+}

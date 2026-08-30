@@ -1,6 +1,6 @@
 import { ClockIcon } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
-import type { Post } from "./mock";
+import type { Post } from "@/services/blog";
 import { PostCover } from "./post-cover";
 
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
@@ -19,9 +19,11 @@ export function PostCard({ post }: { post: Post }) {
         <PostCover post={post} className="aspect-16/9 w-full" />
 
         <div className="flex flex-1 flex-col gap-3 p-5">
-          <span className="w-fit rounded-full bg-prime-red/15 px-3 py-1 font-semibold text-prime-red text-xs uppercase">
-            {post.category.name}
-          </span>
+          {post.category && (
+            <span className="w-fit rounded-full bg-prime-red/15 px-3 py-1 font-semibold text-prime-red text-xs uppercase">
+              {post.category.name}
+            </span>
+          )}
 
           <h3 className="font-bold text-lg text-prime-light leading-snug transition-colors duration-500 group-hover:text-prime-red">
             {post.title}
@@ -36,7 +38,7 @@ export function PostCard({ post }: { post: Post }) {
               {post.author}
             </span>
             <time dateTime={post.date}>
-              {dateFormatter.format(new Date(`${post.date}T12:00:00`))}
+              {dateFormatter.format(new Date(post.date))}
             </time>
             <span className="flex items-center gap-1">
               <ClockIcon className="size-3.5" />

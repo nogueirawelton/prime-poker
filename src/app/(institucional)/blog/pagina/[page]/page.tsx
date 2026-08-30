@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/pages/blog/breadcrumbs";
-import { getPage, TOTAL_PAGES } from "@/components/pages/blog/mock";
 import { Pagination } from "@/components/pages/blog/pagination";
 import { PostCard } from "@/components/pages/blog/post-card";
+import { getPage, getTotalPages } from "@/services/blog";
 
 type Props = { params: Promise<{ page: string }> };
 
 /** Só as páginas 2+ moram aqui; a 1 é a própria `/blog`. */
-export function generateStaticParams() {
-  return Array.from({ length: TOTAL_PAGES - 1 }, (_, index) => ({
+export async function generateStaticParams() {
+  const total = await getTotalPages();
+
+  return Array.from({ length: Math.max(0, total - 1) }, (_, index) => ({
     page: String(index + 2),
   }));
 }
@@ -28,12 +30,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function BlogPagePaginated({ params }: Props) {
   const { page } = await params;
   const current = Number(page);
+  const total = await getTotalPages();
 
-  if (!Number.isInteger(current) || current < 2 || current > TOTAL_PAGES) {
+  if (!Number.isInteger(current) || current < 2 || current > total) {
     notFound();
   }
 
-  const posts = getPage(current);
+  const posts = await getPage(current);
 
   return (
     <main>
@@ -55,7 +58,7 @@ export default async function BlogPagePaginated({ params }: Props) {
         ))}
       </div>
 
-      <Pagination current={current} total={TOTAL_PAGES} />
+      <Pagination current={current} total={total} />
     </main>
   );
 }

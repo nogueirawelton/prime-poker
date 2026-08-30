@@ -52,7 +52,7 @@ export function PreferencesDialog() {
   return (
     <Dialog.Root open={preferencesOpen} onOpenChange={setPreferencesOpen}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70 data-[state=closed]:animate-overlay-out data-[state=open]:animate-overlay-in" />
         <Dialog.Content className="fixed top-1/2 left-1/2 z-50 flex max-h-[90vh] w-[95vw] max-w-[560px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-white/10 bg-zinc-800 shadow-xl data-[state=closed]:animate-dialog-close data-[state=open]:animate-dialog-open">
           <div className="flex items-start justify-between gap-4 border-white/10 border-b p-6">
             <div>

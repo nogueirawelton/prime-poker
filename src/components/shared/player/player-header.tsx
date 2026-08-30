@@ -1,6 +1,7 @@
 import { SignOutIcon, UserIcon } from "@phosphor-icons/react/dist/ssr";
 import Image from "next/image";
 import Link from "next/link";
+import { logout } from "@/actions/auth";
 
 /**
  * Header da área logada: fixo apenas no topo do fluxo (sem `fixed`), sem
@@ -28,14 +29,18 @@ export function PlayerHeader() {
             <span className="hidden sm:inline">Minha conta</span>
           </span>
 
-          {/* TODO: ligar à ação de logout. */}
-          <Link
-            href="/"
-            className="flex h-10 items-center gap-2 rounded-md border border-white/20 px-4 font-semibold text-prime-light text-sm transition-all duration-500 hover:bg-prime-light hover:text-prime-dark"
-          >
-            <SignOutIcon className="size-4" weight="bold" />
-            Sair
-          </Link>
+          {/* Formulário, não link: encerrar sessão muda estado e precisa ser
+              POST. Como link, o prefetch do Next poderia derrubar a sessão de
+              quem só passasse o mouse por cima. */}
+          <form action={logout}>
+            <button
+              type="submit"
+              className="flex h-10 items-center gap-2 rounded-md border border-white/20 px-4 font-semibold text-prime-light text-sm transition-all duration-500 hover:bg-prime-light hover:text-prime-dark"
+            >
+              <SignOutIcon className="size-4" weight="bold" />
+              Sair
+            </button>
+          </form>
         </div>
       </div>
     </header>

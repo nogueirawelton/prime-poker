@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Dialog } from "radix-ui";
 import { type ReactNode, useRef, useState } from "react";
-import { SmartLink } from "@/components/ui/smart-link";
 import { useSmoother } from "@/hooks/use-smoother";
 
 /** Âncoras da home: interceptadas para rolar com o Lenis. */
@@ -43,7 +42,7 @@ export function MenuMobileTrigger({ children }: { children: ReactNode }) {
             pendingTarget.current = null;
             scrollTo(target);
           }}
-          className="fixed inset-0 top-0 z-50 flex flex-col overflow-scroll bg-prime-dark data-[state=open]:animate-to-bottom lg:hidden"
+          className="fixed inset-0 top-0 z-50 flex flex-col overflow-scroll bg-prime-dark data-[state=closed]:animate-to-top data-[state=open]:animate-to-bottom lg:hidden"
         >
           <Dialog.DialogTitle className="sr-only">
             Menu Mobile
@@ -54,10 +53,9 @@ export function MenuMobileTrigger({ children }: { children: ReactNode }) {
               <Link href={"/"} className="lg:h-full">
                 <Image
                   src="/img/logo.svg"
-                  width={90}
-                  height={80}
+                  width={190}
+                  height={50}
                   alt="Prime Poker Logo"
-                  className="h-[70px] w-auto lg:h-full"
                 />
               </Link>
             </Dialog.Close>
@@ -85,19 +83,19 @@ export function MenuMobileTrigger({ children }: { children: ReactNode }) {
 
               {ROUTES.map(({ href, label }) => (
                 <Dialog.Close asChild key={href}>
-                  <SmartLink href={href}>{label}</SmartLink>
+                  <Link href={href}>{label}</Link>
                 </Dialog.Close>
               ))}
             </nav>
 
             <Dialog.Close asChild>
-              <SmartLink
+              <Link
                 href="/login"
                 className="mt-10 flex h-14 items-center justify-center gap-2 rounded-md bg-prime-red font-semibold text-prime-light text-sm uppercase transition-all duration-500 hover:bg-prime-light hover:text-prime-red"
               >
                 <UserIcon className="size-5" weight="bold" />
                 Entrar
-              </SmartLink>
+              </Link>
             </Dialog.Close>
           </div>
         </Dialog.Content>

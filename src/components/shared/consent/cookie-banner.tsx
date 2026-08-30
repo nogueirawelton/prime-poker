@@ -1,6 +1,6 @@
 "use client";
 
-import { SmartLink } from "@/components/ui/smart-link";
+import Link from "next/link";
 import { useConsent } from "./consent-provider";
 
 export function CookieBanner() {
@@ -22,12 +22,12 @@ export function CookieBanner() {
             Utilizamos cookies e outras tecnologias semelhantes para melhorar
             sua experiência. De acordo com a nossa Política de Privacidade, ao
             continuar navegando, você aceita estas condições. Acesse nossa{" "}
-            <SmartLink
+            <Link
               href="/politica-de-privacidade"
               className="text-prime-light underline underline-offset-2 transition-colors duration-500 hover:text-prime-red"
             >
               Política de Privacidade
-            </SmartLink>{" "}
+            </Link>{" "}
             e confira como tratamos os dados pessoais.
           </p>
         </div>

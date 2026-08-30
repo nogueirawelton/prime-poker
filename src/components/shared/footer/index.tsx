@@ -35,7 +35,7 @@ const YEAR = new Date().getFullYear();
 export function Footer() {
   return (
     <footer className="border-white/10 border-t bg-prime-dark">
-      <div className="mx-auto flex max-w-screen-2xl justify-between gap-12 px-4 py-16 lg:px-8">
+      <div className="mx-auto flex max-w-screen-2xl flex-col justify-between gap-12 px-4 py-16 lg:flex-row lg:px-8">
         <div className="max-w-sm">
           <Link href="/" aria-label="Prime Poker Team — início">
             <Image

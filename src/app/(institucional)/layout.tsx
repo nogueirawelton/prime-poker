@@ -7,11 +7,7 @@ import { SmootherProvider } from "@/hooks/use-smoother";
  * scroll inercial faz sentido na landing, mas atrapalha formulários e
  * painéis da área logada.
  */
-export default function InstitucionalLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function InstitucionalLayout({ children }: LayoutProps<"/">) {
   return (
     <SmootherProvider>
       <Header />

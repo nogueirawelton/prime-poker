@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { LoginForm } from "@/components/pages/auth/login-form";
 
 export const metadata: Metadata = {
   title: "Entrar | Prime Poker Team",
@@ -19,11 +20,7 @@ export default function LoginPage() {
         </p>
       </div>
 
-      {/* TODO: formulário de login (react-hook-form + zod, como os demais
-          formulários do projeto) e a chamada de autenticação. */}
-      <div className="rounded-md border border-white/10 border-dashed p-6 text-center text-prime-light/50 text-sm">
-        Formulário de login a implementar.
-      </div>
+      <LoginForm />
 
       <p className="text-center text-prime-light/70 text-sm">
         Ainda não tem conta?{" "}

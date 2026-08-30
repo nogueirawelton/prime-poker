@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { RegisterForm } from "@/components/pages/auth/register-form";
 
 export const metadata: Metadata = {
   title: "Criar conta | Prime Poker Team",
@@ -19,10 +20,7 @@ export default function CadastroPage() {
         </p>
       </div>
 
-      {/* TODO: formulário de cadastro e criação de usuário. */}
-      <div className="rounded-md border border-white/10 border-dashed p-6 text-center text-prime-light/50 text-sm">
-        Formulário de cadastro a implementar.
-      </div>
+      <RegisterForm />
 
       <p className="text-center text-prime-light/70 text-sm">
         Já tem conta?{" "}
