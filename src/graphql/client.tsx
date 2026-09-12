@@ -1,10 +1,8 @@
 import { GraphQLClient, gql, type RequestDocument } from "graphql-request";
 import { cacheLife, cacheTag } from "next/cache";
+import { CMS_CACHE_TAG } from "@/lib/cache-tags";
 
 export { gql };
-
-/** Tag aplicada a toda entrada de cache do CMS — permite zerar tudo de uma vez. */
-export const CMS_CACHE_TAG = "cms";
 
 const PROFILES = {
   minutes: { stale: 60, revalidate: 60, expire: 300 }, // stale 1min  | revalidate 1min  | expire 5min

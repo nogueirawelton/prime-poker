@@ -48,7 +48,7 @@ export function Carrousel({ content }: CarrouselProps) {
                   {instructor.title}
                 </h3>
                 <strong className="font-medium text-prime-red/80">
-                  {instructor.tags?.nodes[0].name}
+                  {instructor.tags?.nodes[0]?.name}
                 </strong>
               </div>
             </CarouselSlide>

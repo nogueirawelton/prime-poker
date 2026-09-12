@@ -1,17 +1,20 @@
-import { SignOutIcon, UserIcon } from "@phosphor-icons/react/dist/ssr";
 import Image from "next/image";
 import Link from "next/link";
-import { logout } from "@/actions/auth";
+import { Suspense } from "react";
+import { NotificationBellData } from "./notification-bell-server";
+import { PlayerMenu } from "./player-menu";
 
 /**
- * Header da área logada: fixo apenas no topo do fluxo (sem `fixed`), sem
- * âncoras de scroll e sem o comportamento de auto-hide da landing.
+ * Header da área logada.
+ *
+ * Grudado no topo (`sticky`), sem âncoras de scroll e sem o auto-hide da
+ * landing. Navegação, perfil e saída ficam todos no menu da direita.
  */
 export function PlayerHeader() {
   return (
-    <header className="border-white/10 border-b bg-prime-dark">
-      <div className="mx-auto flex h-20 max-w-screen-2xl items-center justify-between gap-4 px-4 lg:px-8">
-        <Link href="/player">
+    <header className="sticky top-0 z-40 border-white/10 border-b bg-prime-dark">
+      <div className="flex h-20 items-center justify-between gap-4 px-4 lg:px-8">
+        <Link href="/player" className="shrink-0">
           <Image
             src="/img/logo.svg"
             width={90}
@@ -22,25 +25,14 @@ export function PlayerHeader() {
           />
         </Link>
 
-        <div className="flex items-center gap-3">
-          {/* TODO: trocar pelo nome/avatar do usuário quando houver sessão. */}
-          <span className="flex items-center gap-2 text-prime-light text-sm">
-            <UserIcon className="size-5" weight="bold" />
-            <span className="hidden sm:inline">Minha conta</span>
-          </span>
+        <div className="flex items-center gap-2">
+          {/* As notificações são por usuário: ficam atrás do próprio
+              boundary para não segurar o shell estático do header. */}
+          <Suspense fallback={<div className="size-10" />}>
+            <NotificationBellData />
+          </Suspense>
 
-          {/* Formulário, não link: encerrar sessão muda estado e precisa ser
-              POST. Como link, o prefetch do Next poderia derrubar a sessão de
-              quem só passasse o mouse por cima. */}
-          <form action={logout}>
-            <button
-              type="submit"
-              className="flex h-10 items-center gap-2 rounded-md border border-white/20 px-4 font-semibold text-prime-light text-sm transition-all duration-500 hover:bg-prime-light hover:text-prime-dark"
-            >
-              <SignOutIcon className="size-4" weight="bold" />
-              Sair
-            </button>
-          </form>
+          <PlayerMenu />
         </div>
       </div>
     </header>

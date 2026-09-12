@@ -12,12 +12,13 @@ import { WhoWeAre } from "@/components/pages/home/who-we-are";
 import { Loading } from "@/components/ui/loading";
 import { query } from "@/graphql/client";
 import { HOME } from "@/graphql/queries/pages/HOME";
+import { HOME_CACHE_TAG } from "@/lib/cache-tags";
 import { getSEO } from "@/utils/get-seo";
 
 export const generateMetadata = getSEO("page", "home");
 
 export default async function HomePage() {
-  const { page } = await query<Home>(HOME);
+  const { page } = await query<Home>(HOME, { tags: [HOME_CACHE_TAG] });
 
   return (
     <main>

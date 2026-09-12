@@ -2,12 +2,18 @@ import { ClockIcon } from "@phosphor-icons/react/dist/ssr";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AuthorCard } from "@/components/pages/blog/author-card";
 import { Breadcrumbs } from "@/components/pages/blog/breadcrumbs";
 import { PostCard } from "@/components/pages/blog/post-card";
+import { PostComments } from "@/components/pages/blog/post-comments";
 import { PostCover } from "@/components/pages/blog/post-cover";
+import { PostFaq } from "@/components/pages/blog/post-faq";
+import { PostSidebar } from "@/components/pages/blog/post-sidebar";
 import { ReadingProgress } from "@/components/pages/blog/reading-progress";
 import { ShareButtons } from "@/components/pages/blog/share-buttons";
-import { getAllSlugs, getPost, getRelated } from "@/services/blog";
+import { getAulaSugerida } from "@/services/aulas";
+import { getAllSlugs, getComments, getPost, getRelated } from "@/services/blog";
+import { prepararConteudo } from "@/utils/rich-content";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -53,7 +59,17 @@ export default async function PostPage({ params }: Props) {
 
   if (!post) notFound();
 
-  const related = await getRelated(post);
+  const [related, aula, comentarios] = await Promise.all([
+    getRelated(post),
+    // A chamada da lateral aponta para a aula do acervo que trata do mesmo
+    // assunto; o título do post é o que aproxima os dois.
+    getAulaSugerida(post.title, post.category?.slug),
+    getComments(post.databaseId),
+  ]);
+
+  // Uma passada só no HTML do editor: ancora os títulos, monta o índice
+  // lateral e separa o bloco de perguntas frequentes do corpo.
+  const { html, secoes, faq } = prepararConteudo(post.content);
 
   return (
     <>
@@ -116,16 +132,33 @@ export default async function PostPage({ params }: Props) {
           className="mt-10 aspect-21/9 w-full rounded-xl"
         />
 
-        {/* `rich-text` estiliza o HTML do WordPress; `max-w-3xl` mantém a
-            linha em ~75 caracteres, que é a medida confortável de leitura. */}
-        <div
-          className="rich-text mt-12 max-w-3xl"
-          dangerouslySetInnerHTML={{ __html: post.content }}
-        />
+        <div className="mt-12 grid gap-12 lg:grid-cols-[minmax(0,1fr)_20rem]">
+          <div>
+            {/* `rich-text` estiliza o HTML do WordPress; `max-w-3xl` mantém a
+                linha em ~75 caracteres, que é a medida confortável de
+                leitura. */}
+            <div
+              className="rich-text max-w-3xl"
+              dangerouslySetInnerHTML={{ __html: html }}
+            />
 
-        <footer className="mt-12 max-w-3xl border-white/10 border-t pt-8">
-          <ShareButtons title={post.title} />
-        </footer>
+            <PostFaq perguntas={faq} />
+
+            <AuthorCard post={post} />
+
+            <footer className="mt-12 max-w-3xl border-white/10 border-t pt-8">
+              <ShareButtons title={post.title} />
+            </footer>
+
+            <PostComments postId={post.databaseId} comentarios={comentarios} />
+          </div>
+
+          <PostSidebar
+            secoes={secoes}
+            relacionados={related.slice(0, 3)}
+            aula={aula}
+          />
+        </div>
       </article>
 
       {related.length > 0 && (

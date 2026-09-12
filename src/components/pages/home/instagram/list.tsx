@@ -1,9 +1,8 @@
 import { cacheLife, cacheTag } from "next/cache";
+import { INSTAGRAM_CACHE_TAG } from "@/lib/cache-tags";
 import { InstagramCarousel } from "./carousel";
 
 type InstagramPost = Record<string, any>;
-
-export const INSTAGRAM_CACHE_TAG = "instagram";
 
 async function getPosts(): Promise<Array<InstagramPost>> {
   "use cache";

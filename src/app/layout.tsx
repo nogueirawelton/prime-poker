@@ -1,5 +1,6 @@
 import { GoogleTagManager } from "@next/third-parties/google";
 import { Montserrat } from "next/font/google";
+import { Suspense } from "react";
 import { ToastContainer } from "react-toastify";
 import { ConsentProvider, CookieConsent } from "@/components/shared/consent";
 import { ConsentInit } from "@/components/shared/consent/consent-init";
@@ -37,7 +38,14 @@ export default function RootLayout({
 
         <ConsentProvider>
           <WebVitals />
-          <UtmCapture />
+
+          {/* `usePathname` só tem valor em tempo de requisição: fora de um
+              boundary, ele bloquearia o prerender do shell de qualquer rota
+              com parâmetro desconhecido (ex.: /player/aulas/[slug]). Como o
+              componente não renderiza nada, o fallback é `null`. */}
+          <Suspense fallback={null}>
+            <UtmCapture />
+          </Suspense>
 
           {children}
 

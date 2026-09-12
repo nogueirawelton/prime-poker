@@ -16,6 +16,10 @@ export const metadata: Metadata = {
  * - o overlay de `Loading` com GSAP: é abertura de landing page;
  * - o Footer institucional.
  *
+ * O `<main>` não impõe container: a listagem de aulas ocupa a largura toda
+ * para encostar a sidebar na borda esquerda. Cada página cuida do próprio
+ * espaçamento.
+ *
  * A leitura da sessão fica DENTRO de um boundary de Suspense, e não no topo do
  * layout: sob Cache Components, um `await` de sessão no topo prende o segmento
  * inteiro atrás da requisição e derruba o prerender do shell estático.
@@ -36,9 +40,7 @@ export default function PlayerLayout({
         <div className="flex min-h-screen flex-col">
           <PlayerHeader />
 
-          <main className="mx-auto w-full max-w-screen-2xl flex-1 px-4 py-8 lg:px-8">
-            {children}
-          </main>
+          <main className="flex w-full flex-1 flex-col">{children}</main>
         </div>
       </Guard>
     </Suspense>

@@ -134,12 +134,14 @@
     @apply flex flex-col gap-6 text-base text-prime-light/80 leading-relaxed;
   }
 
+  /* `scroll-mt` compensa o header fixo: sem ele, o link do índice lateral
+     para com o título escondido atrás do header. */
   .rich-text h2 {
-    @apply mt-4 font-bold text-2xl text-prime-light lg:text-3xl;
+    @apply mt-4 scroll-mt-32 font-bold text-2xl text-prime-light lg:text-3xl;
   }
 
   .rich-text h3 {
-    @apply mt-2 font-bold text-prime-light text-xl;
+    @apply mt-2 scroll-mt-32 font-bold text-prime-light text-xl;
   }
 
   .rich-text a {

@@ -5,6 +5,7 @@ export const POST = gql`
   query Post($slug: ID!) {
     post(id: $slug, idType: SLUG) {
       id
+      databaseId
       slug
       title
       excerpt
@@ -20,6 +21,7 @@ export const POST = gql`
       author {
         node {
           name
+          description
         }
       }
       categories(first: 1) {

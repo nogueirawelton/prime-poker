@@ -1,4 +1,5 @@
 import { query } from "@/graphql/client";
+import { COMMENTS } from "@/graphql/queries/blog/COMMENTS";
 import { POST } from "@/graphql/queries/blog/POST";
 import {
   CATEGORIES,
@@ -25,6 +26,7 @@ export type Post = {
 /** Forma crua do nó de post no WPGraphQL. */
 type PostNode = {
   id: string;
+  databaseId?: number;
   slug: string;
   title?: string | null;
   excerpt?: string | null;
@@ -32,7 +34,7 @@ type PostNode = {
   date: string;
   isSticky?: boolean | null;
   featuredImage?: { node?: { mediaItemUrl: string; altText?: string } } | null;
-  author?: { node?: { name?: string } } | null;
+  author?: { node?: { name?: string; description?: string } } | null;
   categories?: { nodes?: Array<{ name: string; slug: string }> } | null;
   seo?: {
     title?: string | null;
@@ -42,6 +44,10 @@ type PostNode = {
 
 export type PostDetail = Post & {
   content: string;
+  /** Id numérico do WordPress — é o que a mutation de comentário exige. */
+  databaseId: number;
+  /** Bio do autor no WordPress; vazia quando ninguém preencheu. */
+  authorBio: string | null;
   seoTitle: string | null;
   seoDescription: string | null;
 };
@@ -271,7 +277,84 @@ export async function getPost(slug: string): Promise<PostDetail | null> {
   return {
     ...toPost(node, node.content),
     content: node.content ?? "",
+    databaseId: node.databaseId ?? 0,
+    authorBio: stripHtml(node.author?.node?.description) || null,
     seoTitle: node.seo?.title || null,
     seoDescription: node.seo?.metaDesc || null,
   };
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                 Comentários                                */
+/* -------------------------------------------------------------------------- */
+
+export type Comment = {
+  id: string;
+  author: string;
+  date: string;
+  /** HTML do WordPress, já sanitizado por ele na publicação. */
+  content: string;
+  /** Um nível de respostas; o WordPress permite mais, a tela achata o resto. */
+  replies: Array<Comment>;
+};
+
+type CommentNode = {
+  id: string;
+  databaseId: number;
+  parentId?: string | null;
+  date: string;
+  content?: string | null;
+  author?: { node?: { name?: string } } | null;
+};
+
+/** Etiqueta de cache dos comentários de um post — usada para invalidar. */
+export const commentsTag = (postId: number) => `comments:${postId}`;
+
+/**
+ * Comentários aprovados, já aninhados.
+ *
+ * Cache curto e etiqueta própria: comentário novo precisa aparecer rápido, e
+ * republicar o post inteiro por causa de um comentário seria desperdício.
+ */
+export async function getComments(postId: number): Promise<Array<Comment>> {
+  if (!postId) return [];
+
+  const data = await query<{ comments?: { nodes?: Array<CommentNode> } }>(
+    COMMENTS,
+    {
+      variables: { contentId: postId },
+      profile: "minutes",
+      tags: ["comments", commentsTag(postId)],
+    },
+  );
+
+  const nodes = data?.comments?.nodes ?? [];
+
+  const porId = new Map<string, Comment>();
+  for (const node of nodes) {
+    porId.set(node.id, {
+      id: node.id,
+      author: node.author?.node?.name?.trim() || "Anônimo",
+      date: node.date,
+      content: node.content ?? "",
+      replies: [],
+    });
+  }
+
+  const raiz: Array<Comment> = [];
+  for (const node of nodes) {
+    const comentario = porId.get(node.id);
+    if (!comentario) continue;
+
+    // Resposta cujo pai não veio (moderado, apagado) sobe para a raiz em vez
+    // de sumir da conversa.
+    const pai = node.parentId ? porId.get(node.parentId) : undefined;
+    if (pai) {
+      pai.replies.push(comentario);
+    } else {
+      raiz.push(comentario);
+    }
+  }
+
+  return raiz;
 }
