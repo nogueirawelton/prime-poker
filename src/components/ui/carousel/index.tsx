@@ -25,6 +25,8 @@ type CarouselApi = {
   emblaApi: EmblaCarouselType | undefined;
   selectedIndex: number;
   scrollSnaps: number[];
+  /** `false` quando os slides cabem todos na viewport — nada a navegar. */
+  canScroll: boolean;
   scrollTo: (index: number) => void;
   scrollPrev: () => void;
   scrollNext: () => void;
@@ -88,6 +90,14 @@ export function Carousel({
     };
   }, [emblaApi]);
 
+  /**
+   * Antes do Embla inicializar assumimos que dá para navegar: é o caso comum,
+   * e supor o contrário faria as setas piscarem para dentro da tela no mount.
+   * Com `loop`, o próprio Embla desliga o loop quando não há slides suficientes,
+   * então a lista de snaps cai para um só.
+   */
+  const canScroll = !emblaApi || scrollSnaps.length > 1;
+
   const scrollTo = useCallback(
     (index: number) => emblaApi?.scrollTo(index),
     [emblaApi],
@@ -101,6 +111,7 @@ export function Carousel({
       emblaApi,
       selectedIndex,
       scrollSnaps,
+      canScroll,
       scrollTo,
       scrollPrev,
       scrollNext,
@@ -110,6 +121,7 @@ export function Carousel({
       emblaApi,
       selectedIndex,
       scrollSnaps,
+      canScroll,
       scrollTo,
       scrollPrev,
       scrollNext,
@@ -198,8 +210,11 @@ export function CarouselDots({ children, ...props }: CarouselDotsProps) {
   );
 }
 
+/** Some quando não há o que navegar — seta inerte é ruído. */
 export function CarouselPrevious({ ...props }: ComponentProps<"button">) {
-  const { scrollPrev } = useCarousel();
+  const { scrollPrev, canScroll } = useCarousel();
+
+  if (!canScroll) return null;
 
   return (
     <button
@@ -211,8 +226,11 @@ export function CarouselPrevious({ ...props }: ComponentProps<"button">) {
   );
 }
 
+/** Some quando não há o que navegar — seta inerte é ruído. */
 export function CarouselNext({ ...props }: ComponentProps<"button">) {
-  const { scrollNext } = useCarousel();
+  const { scrollNext, canScroll } = useCarousel();
+
+  if (!canScroll) return null;
 
   return (
     <button

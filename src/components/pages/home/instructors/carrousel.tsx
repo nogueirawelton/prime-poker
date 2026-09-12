@@ -20,13 +20,15 @@ export function Carrousel({ content }: CarrouselProps) {
   return (
     <Carousel
       data-el="swiper"
-      className="mx-auto mt-12 grid max-w-screen-xl grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-4 lg:gap-12"
+      // Flex, e não grid de colunas fixas: quando as setas somem (slides de
+      // menos) as laterais não deixam buraco — o carrossel ocupa tudo.
+      className="mx-auto mt-12 flex max-w-screen-xl items-center gap-4 lg:gap-12"
     >
-      <CarouselPrevious className="-translate-y-[26px] cursor-pointer">
+      <CarouselPrevious className="shrink-0 -translate-y-[26px] cursor-pointer">
         <CaretLeftIcon className="size-12 text-prime-light" />
       </CarouselPrevious>
 
-      <CarouselViewport>
+      <CarouselViewport className="min-w-0 flex-1">
         <CarouselTrack className="-ml-3 md:-ml-6 lg:-ml-12">
           {content?.nodes.map((instructor, key) => (
             <CarouselSlide
@@ -56,7 +58,7 @@ export function Carrousel({ content }: CarrouselProps) {
         </CarouselTrack>
       </CarouselViewport>
 
-      <CarouselNext className="-translate-y-[26px] cursor-pointer">
+      <CarouselNext className="shrink-0 -translate-y-[26px] cursor-pointer">
         <CaretRightIcon className="size-12 text-prime-light" />
       </CarouselNext>
     </Carousel>
