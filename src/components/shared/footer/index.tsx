@@ -47,8 +47,8 @@ export function Footer() {
           </Link>
 
           <p className="mt-6 text-prime-light/70 text-sm leading-relaxed">
-            A equipe mais vencedora do poker brasileiro, transformando jogadores
-            em campeões desde 2018.
+            Um time. Uma comunidade. Um propósito: evoluir juntos. Desde 2018,
+            construindo histórias e formando campeões
           </p>
 
           <div className="mt-8 flex gap-4 text-prime-light/70">
@@ -110,25 +110,25 @@ export function Footer() {
 
             <div className="mt-4 flex flex-col gap-3 text-prime-light/70 text-sm">
               <a
-                href="mailto:contato@primepokerteam.com"
+                href="mailto:primepokerteam@gmail.com"
                 className={`flex items-start gap-2 ${LINK}`}
               >
                 <EnvelopeIcon
                   weight="fill"
                   className="size-5 shrink-0 text-prime-red/75"
                 />
-                contato@primepokerteam.com
+                primepokerteam@gmail.com
               </a>
 
               <a
-                href="tel:+5511987654321"
+                href="tel:+5521981788877"
                 className={`flex items-start gap-2 ${LINK}`}
               >
                 <PhoneIcon
                   weight="fill"
                   className="size-5 shrink-0 text-prime-red/75"
                 />
-                +55 11 98765-4321
+                +55 21 98178-8877
               </a>
 
               <span className="flex items-start gap-2">
@@ -136,7 +136,7 @@ export function Footer() {
                   weight="fill"
                   className="size-5 shrink-0 text-prime-red/75"
                 />
-                São Paulo — SP, Brasil
+                Rio de Janeiro - RJ
               </span>
             </div>
           </div>

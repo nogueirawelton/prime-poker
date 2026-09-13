@@ -151,9 +151,22 @@ export function CarouselViewport({
   );
 }
 
-/** Trilho flex que contém os slides. */
+/**
+ * Trilho flex que contém os slides.
+ *
+ * Quando tudo cabe na viewport os slides são centralizados — encostados à
+ * esquerda com sobra à direita o carrossel parece quebrado. Com slides demais
+ * o `justify-center` sairia pela esquerda, por isso só entra com `!canScroll`.
+ */
 export function CarouselTrack({ className, ...props }: ComponentProps<"div">) {
-  return <div className={twMerge("flex", className)} {...props} />;
+  const { canScroll } = useCarousel();
+
+  return (
+    <div
+      className={twMerge("flex", !canScroll && "justify-center", className)}
+      {...props}
+    />
+  );
 }
 
 /** Slide individual. A largura vem do `basis-*` passado por className. */

@@ -42,7 +42,9 @@ export function WhatWeDo({ content }: WhatWeDoProps) {
         <div className="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
           {content.feature.map((feature, key) => (
             <div data-el="card" key={key}>
-              <div className="flex flex-col rounded-md border border-white/3 bg-white/3 px-8 py-4 transition-all duration-500 hover:scale-105 hover:border-prime-light">
+              {/* `h-full`: o item do grid já estica, o cartão dentro dele não —
+                  sem isso cada cartão para no tamanho do próprio texto. */}
+              <div className="flex h-full flex-col rounded-md border border-white/3 bg-white/3 px-8 py-4 transition-all duration-500 hover:scale-105 hover:border-prime-light">
                 <span className="grid size-14 shrink-0 place-items-center rounded-full bg-prime-red/75 text-prime-light">
                   <DynamicIcon
                     icon={feature.icon}

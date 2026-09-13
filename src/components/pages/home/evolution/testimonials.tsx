@@ -25,7 +25,9 @@ export function Testimonials({ content }: TestimonialsProps) {
         <CarouselTrack className="-ml-8">
           {content.nodes.map((item, index) => (
             <CarouselSlide key={index} className="pl-8 md:basis-1/2">
-              <div className="rounded-md border border-white/3 border-l-2 border-l-prime-red/75 bg-white/3 px-6 py-8">
+              {/* `h-full`: o slide já é esticado pelo trilho flex, então o
+                  cartão acompanha o depoimento mais alto do carrossel. */}
+              <div className="h-full rounded-md border border-white/3 border-l-2 border-l-prime-red/75 bg-white/3 px-6 py-8">
                 <div className="flex items-center gap-4">
                   <div className="flex size-14 overflow-hidden rounded-full">
                     {/* O avatar real segue desabilitado, como no código original
