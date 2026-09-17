@@ -18,11 +18,10 @@ export function PlayerHeader() {
         <Link href="/player" className="shrink-0">
           <Image
             src="/img/logo.svg"
-            width={90}
-            height={80}
-            alt="Prime Poker Team"
-            className="h-[52px] w-auto"
-            priority
+            width={210}
+            height={45}
+            alt="Prime Poker Logo"
+            className="transition-all duration-500"
           />
         </Link>
 

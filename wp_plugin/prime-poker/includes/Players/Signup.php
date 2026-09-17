@@ -96,8 +96,8 @@ final class Signup {
 	 *
 	 * Vale para os dois destinatários que o WordPress notificaria: o jogador
 	 * (com um link para "definir sua senha" que ele acabou de escolher) e o
-	 * administrador. Enquanto não houver um e-mail de boas-vindas próprio, o
-	 * silêncio é melhor do que a mensagem errada.
+	 * administrador. No lugar do e-mail do jogador sai o de boas-vindas próprio
+	 * (ver Welcome), enviado depois da resposta.
 	 *
 	 * Efeito colateral bem-vindo: os dois envios eram SÍNCRONOS e respondiam
 	 * por quase todo o tempo da mutation — o cadastro passa de ~10s para ~1s.

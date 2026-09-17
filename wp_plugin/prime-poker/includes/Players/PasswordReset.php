@@ -9,7 +9,8 @@ declare(strict_types=1);
 
 namespace PrimePoker\Players;
 
-use PrimePoker\Cache\Revalidation;
+use PrimePoker\Front;
+use PrimePoker\Mail\Layout;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -24,17 +25,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  * "Enviar redefinição de senha" da lista de usuários.
  */
 final class PasswordReset {
-
-	/**
-	 * Cabeçalho em que o front informa o próprio endereço.
-	 *
-	 * Serve para o link do e-mail voltar ao ambiente de onde o pedido saiu
-	 * (produção ou staging). Só é aceito se estiver entre os endereços de
-	 * Configurações → Cache do site: sem essa lista, qualquer um poderia pedir
-	 * a redefinição de uma conta alheia informando o próprio domínio — e o
-	 * e-mail legítimo entregaria a chave a esse domínio.
-	 */
-	private const HEADER = 'HTTP_X_PRIME_FRONT_URL';
 
 	/** Caminho da página de redefinição no front. */
 	private const PATH = '/redefinir-senha/';
@@ -73,7 +63,7 @@ final class PasswordReset {
 		return sprintf(
 			/* translators: %s: nome do site. */
 			__( 'Redefinição de senha — %s', 'prime-poker' ),
-			self::site_name()
+			Layout::site_name()
 		);
 	}
 
@@ -89,7 +79,7 @@ final class PasswordReset {
 	 * @param \WP_User $user       Usuário.
 	 */
 	public static function message( $message, $key, $user_login, $user ): string {
-		$front = self::front_url();
+		$front = Front::url();
 
 		if ( null === $front || ! $user instanceof \WP_User ) {
 			return (string) $message;
@@ -103,7 +93,34 @@ final class PasswordReset {
 			$front . self::PATH
 		);
 
-		self::$html = self::template( $user, $link );
+		$horas = (int) round( (int) apply_filters( 'password_reset_expiration', DAY_IN_SECONDS ) / HOUR_IN_SECONDS );
+
+		self::$html = Layout::render(
+			array(
+				'titulo'       => __( 'Redefinir sua senha', 'prime-poker' ),
+				'saudacao'     => Layout::greeting( $user ),
+				'paragrafos'   => array(
+					sprintf(
+						/* translators: %s: e-mail da conta. */
+						__( 'Recebemos um pedido para redefinir a senha da conta %s. Clique no botão abaixo para criar uma nova senha.', 'prime-poker' ),
+						$user->user_email
+					),
+				),
+				'botao'        => array(
+					'texto' => __( 'Criar nova senha', 'prime-poker' ),
+					'url'   => $link,
+				),
+				'notas'        => array(
+					sprintf(
+						/* translators: %d: horas de validade do link. */
+						_n( 'O link vale por %d hora e só pode ser usado uma vez.', 'O link vale por %d horas e só pode ser usado uma vez.', $horas, 'prime-poker' ),
+						$horas
+					),
+					__( 'Se você não pediu a redefinição, ignore este e-mail: sua senha continua a mesma.', 'prime-poker' ),
+				),
+				'link_reserva' => true,
+			)
+		);
 
 		return self::$html;
 	}
@@ -131,143 +148,6 @@ final class PasswordReset {
 		$args['headers'] = $headers;
 
 		return $args;
-	}
-
-	/**
-	 * Endereço do front para o link.
-	 *
-	 * O informado pelo front vence se estiver na lista; senão, o primeiro da
-	 * lista (produção, por convenção).
-	 */
-	private static function front_url(): ?string {
-		$permitidos = Revalidation::urls();
-
-		if ( array() === $permitidos ) {
-			return null;
-		}
-
-		$pedido = isset( $_SERVER[ self::HEADER ] )
-			? untrailingslashit( esc_url_raw( wp_unslash( (string) $_SERVER[ self::HEADER ] ) ) )
-			: '';
-
-		return in_array( $pedido, $permitidos, true ) ? $pedido : $permitidos[0];
-	}
-
-	/**
-	 * Nome do site, sem entidades HTML.
-	 */
-	private static function site_name(): string {
-		return wp_specialchars_decode( (string) get_option( 'blogname' ), ENT_QUOTES );
-	}
-
-	/**
-	 * HTML do e-mail.
-	 *
-	 * Tabelas e estilos inline porque é o que Gmail e Outlook respeitam. Sem
-	 * imagem de logo: SVG é bloqueado pela maioria dos clientes e imagem
-	 * externa costuma vir oculta até o usuário liberar.
-	 *
-	 * @param \WP_User $user Usuário.
-	 * @param string   $link Link de redefinição.
-	 */
-	private static function template( \WP_User $user, string $link ): string {
-		$horas = (int) round( (int) apply_filters( 'password_reset_expiration', DAY_IN_SECONDS ) / HOUR_IN_SECONDS );
-		$nome  = trim( (string) $user->first_name ) ?: trim( (string) $user->display_name );
-		$site  = self::site_name();
-
-		$saudacao = '' !== $nome
-			/* translators: %s: primeiro nome. */
-			? sprintf( __( 'Olá, %s!', 'prime-poker' ), $nome )
-			: __( 'Olá!', 'prime-poker' );
-
-		ob_start();
-		?>
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title><?php echo esc_html( self::title( '' ) ); ?></title>
-</head>
-<body style="margin:0;padding:0;background:#0a0a0a;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;">
-	<tr>
-		<td align="center" style="padding:32px 16px;">
-			<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#221e1e;border-radius:12px;font-family:Montserrat,Arial,Helvetica,sans-serif;color:#ffffff;">
-				<tr>
-					<td style="padding:28px 32px;border-bottom:1px solid rgba(255,255,255,0.1);">
-						<span style="font-size:18px;font-weight:900;letter-spacing:2px;text-transform:uppercase;">
-							Prime <span style="color:#ff1820;">Poker</span> Team
-						</span>
-					</td>
-				</tr>
-				<tr>
-					<td style="padding:32px;">
-						<h1 style="margin:0 0 16px;font-size:22px;font-weight:900;text-transform:uppercase;">
-							<?php esc_html_e( 'Redefinir sua senha', 'prime-poker' ); ?>
-						</h1>
-
-						<p style="margin:0 0 12px;font-size:15px;line-height:1.6;color:rgba(255,255,255,0.85);">
-							<?php echo esc_html( $saudacao ); ?>
-						</p>
-
-						<p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:rgba(255,255,255,0.85);">
-							<?php
-							echo esc_html(
-								sprintf(
-									/* translators: %s: e-mail da conta. */
-									__( 'Recebemos um pedido para redefinir a senha da conta %s. Clique no botão abaixo para criar uma nova senha.', 'prime-poker' ),
-									$user->user_email
-								)
-							);
-							?>
-						</p>
-
-						<table role="presentation" cellpadding="0" cellspacing="0">
-							<tr>
-								<td style="border-radius:6px;background:#ff1820;">
-									<a href="<?php echo esc_url( $link ); ?>" style="display:inline-block;padding:16px 28px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;text-transform:uppercase;letter-spacing:1px;">
-										<?php esc_html_e( 'Criar nova senha', 'prime-poker' ); ?>
-									</a>
-								</td>
-							</tr>
-						</table>
-
-						<p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.6);">
-							<?php
-							echo esc_html(
-								sprintf(
-									/* translators: %d: horas de validade do link. */
-									_n( 'O link vale por %d hora e só pode ser usado uma vez.', 'O link vale por %d horas e só pode ser usado uma vez.', $horas, 'prime-poker' ),
-									$horas
-								)
-							);
-							?>
-						</p>
-
-						<p style="margin:12px 0 0;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.6);">
-							<?php esc_html_e( 'Se você não pediu a redefinição, ignore este e-mail: sua senha continua a mesma.', 'prime-poker' ); ?>
-						</p>
-
-						<p style="margin:24px 0 0;font-size:12px;line-height:1.6;color:rgba(255,255,255,0.45);word-break:break-all;">
-							<?php esc_html_e( 'Se o botão não funcionar, copie e cole este endereço no navegador:', 'prime-poker' ); ?><br>
-							<a href="<?php echo esc_url( $link ); ?>" style="color:#ff1820;"><?php echo esc_html( $link ); ?></a>
-						</p>
-					</td>
-				</tr>
-				<tr>
-					<td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.1);font-size:12px;color:rgba(255,255,255,0.45);">
-						<?php echo esc_html( $site ); ?>
-					</td>
-				</tr>
-			</table>
-		</td>
-	</tr>
-</table>
-</body>
-</html>
-		<?php
-		return (string) ob_get_clean();
 	}
 
 	/* ---------------------------------------------------------------------- */

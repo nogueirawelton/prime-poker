@@ -201,13 +201,13 @@ Desligar em *GraphQL → Settings → Enable GraphQL Debug Mode*. O front não d
 
 ---
 
-## Etapa 5 — Recuperação de senha 🟡 código pronto — falta subir e testar
+## Etapa 5 — Recuperação de senha + e-mail de boas-vindas 🟡 código pronto — falta subir e testar
 
 **👤 Você**
 - [x] SMTP funcionando (etapa 0).
 - [x] ❓ Texto e assunto do e-mail → **a critério do Claude**.
 - [ ] Commit + push na `staging`.
-- [ ] Subir o plugin **1.8.0** no WP.
+- [ ] Subir o plugin **1.9.0** no WP.
 - [ ] Em *Configurações → Cache do site*, garantir a **produção na primeira linha** (é o
       destino padrão dos links) e a staging na segunda.
 - [ ] Testar na staging com um e-mail que você recebe (os `teste.*@primepokerteam.com.br`
@@ -216,6 +216,10 @@ Desligar em *GraphQL → Settings → Enable GraphQL Debug Mode*. O front não d
       2. Conferir o e-mail: visual, assunto, link apontando para a **staging**.
       3. Abrir o link, salvar a nova senha → volta para o login → entrar com a nova.
       4. Abrir o mesmo link de novo → deve dizer que é inválido/já usado.
+- [ ] Testar o **cadastro** na staging com um e-mail seu: a conta é criada rápido (o e-mail
+      sai depois da resposta) e chega "Boas-vindas ao Prime Poker Team!" com o seu nome e o
+      botão apontando para a staging.
+- [ ] ❓ Avisar a equipe (admin) a cada cadastro novo? Hoje ninguém da equipe é notificado.
 - [ ] Me contar o resultado (e mandar print do e-mail, se algo parecer estranho).
 
 **🤖 Claude**
@@ -236,6 +240,13 @@ Desligar em *GraphQL → Settings → Enable GraphQL Debug Mode*. O front não d
       (mín. 8, como no cadastro); link vencido/usado/incompleto troca o formulário por
       "Pedir um novo link"; sucesso limpa os cookies deste navegador e leva ao login.
 - [x] `robots.ts` bloqueia `/redefinir-senha/`.
+- [x] **E-mail de boas-vindas** (`Players/Welcome.php`, pedido em 17/09/2026): só para
+      cadastro pelo front; enviado depois da resposta (`fastcgi_finish_request`) para não
+      deixar o cadastro lento e para já ter o nome gravado; saudação pelo nome (neutra se não
+      houver), tier inicial, botão para o login do ambiente de origem.
+- [x] Layout de e-mail e resolução do endereço do front extraídos (`Mail/Layout.php`,
+      `Front.php`) — redefinição de senha e boas-vindas usam os mesmos.
+- [x] Action de cadastro envia `X-Prime-Front-Url`.
 - [x] Testes: plugin com WP simulado (16 cenários — link por ambiente, domínio de atacante,
       HTML só no e-mail certo, giro do segredo, refresh antigo recusado, revogado intacto);
       mensagem real do WP para chave inválida casa com a tradução; página no build de
@@ -243,7 +254,8 @@ Desligar em *GraphQL → Settings → Enable GraphQL Debug Mode*. O front não d
       login decodificado).
 - [ ] Conferir o fluxo real na staging depois do seu teste.
 
-**✅ Pronto quando:** você recebe o e-mail, troca a senha e entra com a nova.
+**✅ Pronto quando:** você recebe o e-mail, troca a senha e entra com a nova; e um cadastro
+novo recebe o e-mail de boas-vindas.
 
 ---
 

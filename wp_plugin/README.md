@@ -109,11 +109,10 @@ já expõe, pelo mesmo motivo da seção acima.
 - **Cadastro novo entra como Player Free.** Feito no `user_register`, não pela
   option `default_role`: o `registerUser` do WPGraphQL ignora a role enviada na
   mutation e força o padrão do site. A role padrão (`subscriber`) é removida.
-- **Nenhum e-mail automático é enviado** nos cadastros pelo front — nem ao
-  jogador (o padrão do WP pede para "definir a senha" que ele acabou de
-  escolher) nem ao administrador. Os dois envios eram síncronos e respondiam
+- **Os e-mails padrão do WordPress não são enviados** nos cadastros pelo front
+  — nem ao jogador (o padrão do WP pede para "definir a senha" que ele acabou
+  de escolher) nem ao administrador. O jogador recebe o de boas-vindas próprio. Os dois envios eram síncronos e respondiam
   por quase todo o tempo da mutation: o cadastro caiu de ~10s para ~1s.
-  Para um e-mail de boas-vindas próprio, use o hook `prime_player_registered`.
 - **O authToken JWT vale 1 hora** em vez dos 300s padrão do
   wp-graphql-jwt-authentication. O front renova sozinho, mas cada renovação é
   uma ida ao WordPress: a 300s isso acontecia a cada 5 minutos de navegação.
@@ -129,20 +128,37 @@ já expõe, pelo mesmo motivo da seção acima.
 - **Jogadores não entram no `wp-admin`.** Quem também é da equipe (tem
   `edit_posts`) continua com acesso normal.
 
+### E-mails do site
+
+Layout único em `includes/Mail/Layout.php` (HTML com tabelas e estilos inline,
+sem imagem). O endereço do site para os links sai de `includes/Front.php`: o
+front informa o próprio endereço no cabeçalho `X-Prime-Front-Url`, aceito só
+se estiver em *Configurações → Cache do site*; senão vale o **primeiro** da
+lista.
+
+#### Boas-vindas
+
+`includes/Players/Welcome.php`. Sai para quem se cadastra **pelo front**
+(quem é criado pelo painel recebe a notificação normal do WordPress).
+
+- Enviado no `shutdown`, depois de `fastcgi_finish_request()` quando existir:
+  a resposta do cadastro chega ao front antes do envio, e o nome gravado pelo
+  WPGraphQL (depois do `prime_player_registered`) já está disponível.
+- Saudação pelo primeiro nome, tier inicial e botão para `{site}/login/`.
+- Filtro `prime_players_send_welcome_email` para desligar.
+
 ### Redefinição de senha
 
 `includes/Players/PasswordReset.php`. Vale para o `sendPasswordResetEmail` do
 WPGraphQL, o "Perdeu a senha?" do `wp-login.php` e o "Enviar redefinição de
 senha" da lista de usuários — os três passam pelos mesmos filtros do núcleo.
 
-- **E-mail em HTML** com a identidade do site, botão e link de reserva. O link
-  aponta para `{site}/redefinir-senha/?key=…&login=…`.
-- **Qual site recebe o link:** o front informa o próprio endereço no cabeçalho
-  `X-Prime-Front-Url`, aceito só se estiver em *Configurações → Cache do site*.
-  Fora da lista (ou sem cabeçalho), vale o **primeiro** endereço da lista.
-  Sem nenhum endereço configurado, o e-mail padrão do WordPress é mantido.
-  A lista impede que alguém peça a redefinição de uma conta alheia informando
-  o próprio domínio e receba a chave pelo e-mail legítimo.
+- **E-mail em HTML** (layout comum), botão e link de reserva, apontando para
+  `{site}/redefinir-senha/?key=…&login=…`. Sem nenhum endereço configurado,
+  o e-mail padrão do WordPress é mantido.
+- A lista de endereços permitidos impede que alguém peça a redefinição de uma
+  conta alheia informando o próprio domínio e receba a chave pelo e-mail
+  legítimo.
 - **Sessões encerradas ao trocar a senha** (redefinição ou painel): o segredo
   JWT do usuário é regenerado. O plugin JWT grava esse segredo no refresh
   token, mas só confere se ele foi *revogado*, nunca se ainda é o atual — por

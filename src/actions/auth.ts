@@ -270,16 +270,21 @@ export async function registerUser(
   const email = dados.email.trim().toLowerCase();
 
   try {
-    const resposta = await mutate<RegisterResponse>(REGISTER_USER, {
-      // O WP aceita `@` e `.` em `user_login`, então o e-mail serve de usuário
-      // e o jogador não precisa memorizar um segundo identificador.
-      username: email,
-      email,
-      password: dados.senha,
-      firstName: dados.nome,
-      lastName: dados.sobrenome,
-      displayName: `${dados.nome} ${dados.sobrenome}`,
-    });
+    const resposta = await mutate<RegisterResponse>(
+      REGISTER_USER,
+      {
+        // O WP aceita `@` e `.` em `user_login`, então o e-mail serve de usuário
+        // e o jogador não precisa memorizar um segundo identificador.
+        username: email,
+        email,
+        password: dados.senha,
+        firstName: dados.nome,
+        lastName: dados.sobrenome,
+        displayName: `${dados.nome} ${dados.sobrenome}`,
+      },
+      // O botão do e-mail de boas-vindas volta ao ambiente do cadastro.
+      { "X-Prime-Front-Url": await origemDoPedido() },
+    );
 
     const tier = resposta.registerUser?.user?.playerTier ?? null;
 
