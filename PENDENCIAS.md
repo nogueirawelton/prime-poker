@@ -111,17 +111,20 @@ Precisa estar certa antes de qualquer outra etapa.
 
 ---
 
-## Etapa 3 — Cache e revalidação ao publicar 🟡 código pronto — falta subir e testar
+## Etapa 3 — Cache e revalidação ao publicar ✅ concluída (17/09/2026)
 
 **👤 Você**
 - [x] ❓ Segredo na rota → **decisão: a rota fica aberta** (sem `REVALIDATE_SECRET`).
-- [ ] Autorizar o commit + push do código na `staging` (o front novo precisa estar no ar
+- [x] Commit + push do código na `staging` (feito por você: `6c3f6d2`)
+- [ ] ⚠️ O `6c3f6d2` foi **antes** do botão na barra superior: o `Revalidation.php` com o
+      botão ainda não está commitado nem no WP. Commitar e subir o plugin de novo
+      (mesma versão 1.7.0, só substituir o arquivo). (o front novo precisa estar no ar
       para aceitar várias tags e a tag `seo`).
-- [ ] Subir o plugin **1.7.0** (`wp_plugin/prime-poker`) no WP.
-- [ ] Em **Configurações → Cache do site**, cadastrar os endereços (um por linha):
+- [x] Subir o plugin **1.7.0** (`wp_plugin/prime-poker`) no WP.
+- [x] Em **Configurações → Cache do site**, cadastrar os endereços (um por linha):
       `https://primepokerteam.com.br` e a URL da staging.
-- [ ] Clicar em **Limpar cache agora** e me mandar print/texto do resultado.
-- [ ] Me passar a URL da staging, para eu testar a ponta do front.
+- [x] Clicar em **Limpar cache agora** (Configurações → Cache do site) — funcionou.
+- [x] ~~Me passar a URL da staging~~ → dispensado: você validou o fluxo direto no WP.
 
 **🤖 Claude**
 - [x] `lib/cache-tags.ts`: tags `posts`, `categories`, `seo` e as por item
@@ -135,13 +138,14 @@ Precisa estar certa antes de qualquer outra etapa.
       despublicar, lixeira, excluir), categorias, tags e comentários; envio único e
       sem bloqueio no fim da requisição; tela *Configurações → Cache do site* com
       botão "Limpar cache agora"; option removida na desinstalação.
+- [x] Botão **Limpar cache** na barra superior do WP (editores e administradores), com
+      aviso do resultado por endereço em qualquer tela do painel.
 - [x] Mapeamento com os slugs reais dos CPTs (`instructor`, `testimonial`), conferidos no WP.
 - [x] Testes: endpoint local (várias tags, tag inválida, sem tag, sem barra final) e
       lógica do plugin com WP simulado (12 cenários: rascunho não dispara, comentário
       pendente não dispara, lixeira dispara, CPT novo cai em `cms`…).
 - [x] README do plugin atualizado (tabela de mudança → tags).
-- [ ] Após o deploy e a configuração: editar um post de teste no WP e confirmar
-      que a staging mostra a mudança em segundos.
+- [x] Após o deploy e a configuração: limpeza de cache validada por você no WP (17/09/2026).
 
 **✅ Pronto quando:** você publica ou edita no WP e o site reflete a mudança em segundos.
 
@@ -152,10 +156,28 @@ Precisa estar certa antes de qualquer outra etapa.
 Base de todas as etapas da área do jogador.
 
 **👤 Você**
-- [ ] Nada no painel. Só ter um usuário jogador de teste em cada tier (free, basic, gold, platinum)
-      e me passar os logins **de staging**.
+- [x] Usuários de teste criados por mim via `registerUser` (todos entram como Player Free):
+      `teste.free@` (id 9), `teste.basic@` (10), `teste.gold@` (11), `teste.platinum@` (12)
+      — domínio `primepokerteam.com.br`. Senhas geradas na sessão (fora do repo); guardar num gerenciador.
+- [x] No painel: mudar o tier de `teste.basic`, `teste.gold` e `teste.platinum` — conferido
+      pelo token de cada um (basic, gold, platinum).
+- [x] ~~`WP_JWT_SECRET` diferente do WP~~ → **falso alarme**: o `.env.local` está certo (valor
+      entre aspas; meu teste lia as aspas junto). Conferido do jeito que o Next lê: idêntico.
+- [ ] Na Vercel (produção e staging): conferir que `WP_JWT_SECRET` é o mesmo valor do
+      `wp-config.php`. Lá o valor vai **sem aspas** (a UI da Vercel não interpreta o `.env`).
+- [ ] Teste rápido na staging (depois do deploy com o ajuste de relógio): logar com
+      `teste.free` e ver se entra na área do jogador.
 
 **🤖 Claude**
+- [x] Verificado: login dos 4 usuários OK (authToken + refreshToken) e query `viewer`
+      autenticada devolve nome, e-mail, `registeredDate` e tier.
+- [x] Verificação da assinatura: os 4 tokens validam com o segredo local e um segredo
+      errado é recusado.
+- [x] **Falha real encontrada e corrigida:** o WP emite o token com `nbf` = relógio dele,
+      ~2s adiantado. Validado na hora, o token "ainda não valia" → login voltava para a tela
+      de login. Criado `lib/jwt.ts` com `clockTolerance: 30`, usado pelo proxy e pelo
+      `getSession()`. Testado no build de produção: `/player/` com token recém-emitido → 200;
+      sem cookie ou com token adulterado → 307 para `/login`.
 - [ ] Criar `authQuery`/`authMutate` em `graphql/`: sem `"use cache"`, com
       `Authorization: Bearer <access_token>` lido do cookie.
 - [ ] `services/perfil.ts` → `getPerfil()` real via `viewer { name username email registeredDate playerTier playerTierLabel playerTierExpiresAt }`.

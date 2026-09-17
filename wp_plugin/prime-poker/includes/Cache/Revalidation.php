@@ -35,6 +35,16 @@ final class Revalidation {
 	private const PAGE = 'prime-poker-cache';
 
 	/**
+	 * Quem pode limpar o cache na mão.
+	 *
+	 * Editores inclusos: são eles que publicam e percebem o site desatualizado.
+	 * Os endereços, na tela de configurações, continuam só com administradores.
+	 */
+	private const CAP_FLUSH = 'edit_others_posts';
+
+	private const ACTION_FLUSH = 'prime_poker_flush_cache';
+
+	/**
 	 * Tags pendentes desta requisição, como chaves para não repetir.
 	 *
 	 * @var array<string, true>
@@ -60,7 +70,9 @@ final class Revalidation {
 
 		add_action( 'admin_menu', array( self::class, 'menu' ) );
 		add_action( 'admin_init', array( self::class, 'register_setting' ) );
-		add_action( 'admin_post_prime_poker_flush_cache', array( self::class, 'flush_now' ) );
+		add_action( 'admin_post_' . self::ACTION_FLUSH, array( self::class, 'flush_now' ) );
+		add_action( 'admin_bar_menu', array( self::class, 'admin_bar' ), 100 );
+		add_action( 'admin_notices', array( self::class, 'flush_notice' ) );
 	}
 
 	/* ---------------------------------------------------------------------- */
@@ -366,19 +378,107 @@ final class Revalidation {
 	}
 
 	/**
-	 * Botão "Limpar cache agora": limpa tudo e mostra o retorno de cada front.
+	 * Botão "Limpar cache" na barra superior do WordPress.
+	 *
+	 * Um link GET com nonce, e não um formulário: a barra não comporta
+	 * formulário, e o nonce é o que impede um link forjado de disparar a
+	 * limpeza em nome de alguém logado.
+	 *
+	 * @param \WP_Admin_Bar $bar Barra de administração.
+	 */
+	public static function admin_bar( $bar ): void {
+		if ( ! current_user_can( self::CAP_FLUSH ) ) {
+			return;
+		}
+
+		$bar->add_node(
+			array(
+				'id'    => 'prime-poker-flush-cache',
+				'title' => '<span class="ab-icon dashicons dashicons-database-remove" style="top:2px"></span>'
+					. '<span class="ab-label">' . esc_html__( 'Limpar cache', 'prime-poker' ) . '</span>',
+				'href'  => self::flush_url(),
+				'meta'  => array(
+					'title' => __( 'Faz o site buscar tudo de novo no WordPress', 'prime-poker' ),
+				),
+			)
+		);
+	}
+
+	/**
+	 * Link de limpeza já assinado com o nonce.
+	 */
+	private static function flush_url(): string {
+		return wp_nonce_url(
+			admin_url( 'admin-post.php?action=' . self::ACTION_FLUSH ),
+			self::ACTION_FLUSH
+		);
+	}
+
+	/**
+	 * Limpa tudo em todos os endereços e volta para onde a pessoa estava.
+	 *
+	 * Atende tanto o botão da barra (GET) quanto o da tela de configurações
+	 * (POST). O resultado fica num transient por usuário, exibido como aviso
+	 * na próxima tela do painel.
 	 */
 	public static function flush_now(): void {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( self::CAP_FLUSH ) ) {
 			wp_die( esc_html__( 'Sem permissão.', 'prime-poker' ), 403 );
 		}
 
-		check_admin_referer( 'prime_poker_flush_cache' );
+		check_admin_referer( self::ACTION_FLUSH );
 
-		set_transient( 'prime_poker_flush_result', self::send( array(), true ), 60 );
+		set_transient( self::result_key(), self::send( array(), true ), 60 );
 
-		wp_safe_redirect( admin_url( 'options-general.php?page=' . self::PAGE ) );
+		wp_safe_redirect( wp_get_referer() ?: admin_url() );
 		exit;
+	}
+
+	/**
+	 * Transient do resultado, por usuário: dois editores limpando ao mesmo
+	 * tempo não veem o aviso um do outro.
+	 */
+	private static function result_key(): string {
+		return 'prime_poker_flush_result_' . get_current_user_id();
+	}
+
+	/**
+	 * Aviso com o retorno de cada endereço, em qualquer tela do painel.
+	 */
+	public static function flush_notice(): void {
+		$resultado = get_transient( self::result_key() );
+
+		if ( ! is_array( $resultado ) ) {
+			return;
+		}
+
+		delete_transient( self::result_key() );
+
+		$falhou = array_filter( $resultado, static fn( $status ) => 200 !== $status );
+		$classe = array() === $resultado || array() !== $falhou ? 'notice-warning' : 'notice-success';
+		?>
+		<div class="notice <?php echo esc_attr( $classe ); ?> is-dismissible">
+			<?php if ( array() === $resultado ) : ?>
+				<p>
+					<?php esc_html_e( 'Nenhum endereço configurado para limpar o cache.', 'prime-poker' ); ?>
+					<?php if ( current_user_can( 'manage_options' ) ) : ?>
+						<a href="<?php echo esc_url( admin_url( 'options-general.php?page=' . self::PAGE ) ); ?>"><?php esc_html_e( 'Configurar', 'prime-poker' ); ?></a>
+					<?php endif; ?>
+				</p>
+			<?php else : ?>
+				<?php foreach ( $resultado as $base => $status ) : ?>
+					<p>
+						<code><?php echo esc_html( (string) $base ); ?></code> →
+						<?php
+						echo 200 === $status
+							? esc_html__( 'cache limpo', 'prime-poker' )
+							: esc_html( (string) $status );
+						?>
+					</p>
+				<?php endforeach; ?>
+			<?php endif; ?>
+		</div>
+		<?php
 	}
 
 	/**
@@ -389,8 +489,6 @@ final class Revalidation {
 			return;
 		}
 
-		$resultado = get_transient( 'prime_poker_flush_result' );
-		delete_transient( 'prime_poker_flush_result' );
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Cache do site', 'prime-poker' ); ?></h1>
@@ -398,25 +496,6 @@ final class Revalidation {
 			<p>
 				<?php esc_html_e( 'O site guarda o conteúdo do WordPress em cache. Ao publicar, editar ou excluir posts, páginas, instrutores, depoimentos, categorias, tags e comentários, o plugin avisa cada endereço abaixo para buscar a versão nova.', 'prime-poker' ); ?>
 			</p>
-
-			<?php if ( is_array( $resultado ) ) : ?>
-				<div class="notice notice-info">
-					<?php if ( array() === $resultado ) : ?>
-						<p><?php esc_html_e( 'Nenhum endereço configurado.', 'prime-poker' ); ?></p>
-					<?php else : ?>
-						<?php foreach ( $resultado as $base => $status ) : ?>
-							<p>
-								<code><?php echo esc_html( $base ); ?></code> →
-								<?php
-								echo 200 === $status
-									? esc_html__( 'cache limpo', 'prime-poker' )
-									: esc_html( (string) $status );
-								?>
-							</p>
-						<?php endforeach; ?>
-					<?php endif; ?>
-				</div>
-			<?php endif; ?>
 
 			<form method="post" action="options.php">
 				<?php settings_fields( self::PAGE ); ?>
@@ -447,11 +526,11 @@ final class Revalidation {
 			<hr>
 
 			<h2><?php esc_html_e( 'Limpar manualmente', 'prime-poker' ); ?></h2>
-			<p><?php esc_html_e( 'Força todos os endereços a buscarem tudo de novo no WordPress. Útil depois de mudanças que não passam pelos hooks, como importações.', 'prime-poker' ); ?></p>
+			<p><?php esc_html_e( 'Força todos os endereços a buscarem tudo de novo no WordPress. Útil depois de mudanças que não passam pelos hooks, como importações. O mesmo botão fica na barra superior do WordPress.', 'prime-poker' ); ?></p>
 
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-				<input type="hidden" name="action" value="prime_poker_flush_cache">
-				<?php wp_nonce_field( 'prime_poker_flush_cache' ); ?>
+				<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTION_FLUSH ); ?>">
+				<?php wp_nonce_field( self::ACTION_FLUSH ); ?>
 				<?php submit_button( __( 'Limpar cache agora', 'prime-poker' ), 'secondary', 'submit', false ); ?>
 			</form>
 		</div>

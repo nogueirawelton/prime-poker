@@ -136,8 +136,13 @@ O Next guarda as respostas do GraphQL em cache por horas. O módulo
 `GET {site}/api/revalidate/?tag=…&tag=…` em cada endereço configurado.
 
 **Configuração:** *Configurações → Cache do site* → um endereço por linha
-(produção e staging), sem caminho. Na mesma tela há o botão **Limpar cache
-agora**, que limpa tudo e mostra o retorno de cada endereço.
+(produção e staging), sem caminho. Só administradores.
+
+**Limpeza manual:** botão **Limpar cache** na barra superior do WordPress (e
+**Limpar cache agora** na tela de configurações). Limpa tudo em todos os
+endereços e volta para a tela onde a pessoa estava, com um aviso do retorno de
+cada endereço. Disponível para editores e administradores
+(`edit_others_posts`).
 
 | Mudança no WP | Tags enviadas |
 |---|---|

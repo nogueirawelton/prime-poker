@@ -4,6 +4,7 @@ import { jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
+import { JWT_VERIFY_OPTIONS } from "./jwt";
 
 /**
  * Leitura da sessão a partir do cookie de access token.
@@ -38,9 +39,11 @@ export const getSession = cache(async (): Promise<Session | null> => {
   if (!token) return null;
 
   try {
-    const { payload } = await jwtVerify<JwtPayloadWp>(token, await getKey(), {
-      algorithms: ["HS256"],
-    });
+    const { payload } = await jwtVerify<JwtPayloadWp>(
+      token,
+      await getKey(),
+      JWT_VERIFY_OPTIONS,
+    );
 
     const id = Number(payload.data?.user?.id);
 

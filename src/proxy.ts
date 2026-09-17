@@ -1,6 +1,7 @@
 import { decodeJwt, jwtVerify } from "jose";
 import { type NextRequest, NextResponse } from "next/server";
 import { ACCESS_OPTS, REMEMBER_COOKIE, refreshOptsFor } from "@/lib/cookies";
+import { JWT_VERIFY_OPTIONS } from "@/lib/jwt";
 
 /**
  * A mutation vive inline aqui, e não em `graphql/mutations`, de propósito:
@@ -111,9 +112,11 @@ async function tokenValido(token: string | undefined) {
   }
 
   try {
-    await jwtVerify(token, new TextEncoder().encode(segredo), {
-      algorithms: ["HS256"],
-    });
+    await jwtVerify(
+      token,
+      new TextEncoder().encode(segredo),
+      JWT_VERIFY_OPTIONS,
+    );
     return true;
   } catch {
     return false;
