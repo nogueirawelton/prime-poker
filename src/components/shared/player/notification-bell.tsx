@@ -4,8 +4,8 @@ import { ArrowRightIcon, BellIcon, ChecksIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 import { Popover } from "radix-ui";
 import { useState, useTransition } from "react";
-import { lerTodas } from "@/actions/notificacoes";
-import type { Notificacao } from "@/services/notificacoes";
+import { markAllRead } from "@/actions/notifications";
+import type { PlayerNotification } from "@/services/notifications";
 import { NotificationItem } from "./notification-item";
 
 /**
@@ -17,32 +17,34 @@ import { NotificationItem } from "./notification-item";
  * lista sem recarregar a página.
  */
 export function NotificationBell({
-  notificacoes,
-  naoLidas,
+  notifications,
+  unreadCount,
 }: {
   /** As mais recentes; a lista completa fica na página de notificações. */
-  notificacoes: Array<Notificacao>;
-  naoLidas: number;
+  notifications: Array<PlayerNotification>;
+  unreadCount: number;
 }) {
-  const [aberto, setAberto] = useState(false);
-  const [pendente, startTransition] = useTransition();
+  const [isOpen, setIsOpen] = useState(false);
+  const [pending, startTransition] = useTransition();
 
   return (
-    <Popover.Root open={aberto} onOpenChange={setAberto}>
+    <Popover.Root open={isOpen} onOpenChange={setIsOpen}>
       <Popover.Trigger
         aria-label={
-          naoLidas > 0 ? `Notificações, ${naoLidas} não lidas` : "Notificações"
+          unreadCount > 0
+            ? `Notificações, ${unreadCount} não lidas`
+            : "Notificações"
         }
         className="relative flex size-10 items-center justify-center rounded-lg text-prime-light/70 transition-colors duration-500 hover:bg-white/5 hover:text-prime-light data-[state=open]:bg-white/5 data-[state=open]:text-prime-light"
       >
         <BellIcon className="size-6" aria-hidden="true" />
 
-        {naoLidas > 0 && (
+        {unreadCount > 0 && (
           <span
             aria-hidden="true"
             className="absolute -top-0.5 -right-0.5 flex size-5 items-center justify-center rounded-full bg-prime-red font-bold text-[10px] text-prime-light"
           >
-            {naoLidas > 9 ? "9+" : naoLidas}
+            {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
       </Popover.Trigger>
@@ -58,11 +60,11 @@ export function NotificationBell({
               Notificações
             </strong>
 
-            {naoLidas > 0 && (
+            {unreadCount > 0 && (
               <button
                 type="button"
-                disabled={pendente}
-                onClick={() => startTransition(() => lerTodas())}
+                disabled={pending}
+                onClick={() => startTransition(() => markAllRead())}
                 className="flex items-center gap-1.5 text-prime-light/60 text-xs transition-colors duration-300 hover:text-prime-light disabled:opacity-50"
               >
                 <ChecksIcon className="size-4" weight="bold" />
@@ -71,7 +73,7 @@ export function NotificationBell({
             )}
           </header>
 
-          {notificacoes.length === 0 ? (
+          {notifications.length === 0 ? (
             <p className="px-4 py-10 text-center text-prime-light/50 text-sm">
               Nenhuma notificação por aqui.
             </p>
@@ -79,11 +81,11 @@ export function NotificationBell({
             // Teto de altura: o painel rola por dentro em vez de crescer até
             // sair da tela.
             <div className="flex max-h-96 flex-col gap-1 overflow-y-auto p-2">
-              {notificacoes.map((notificacao) => (
+              {notifications.map((notification) => (
                 <NotificationItem
-                  key={notificacao.id}
-                  notificacao={notificacao}
-                  onNavigate={() => setAberto(false)}
+                  key={notification.id}
+                  notification={notification}
+                  onNavigate={() => setIsOpen(false)}
                 />
               ))}
             </div>
@@ -92,7 +94,7 @@ export function NotificationBell({
           <footer className="border-white/10 border-t p-2">
             <Link
               href="/player/notificacoes"
-              onClick={() => setAberto(false)}
+              onClick={() => setIsOpen(false)}
               className="flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 font-semibold text-prime-light text-sm transition-colors duration-300 hover:bg-white/5 hover:text-prime-red"
             >
               Ver todas

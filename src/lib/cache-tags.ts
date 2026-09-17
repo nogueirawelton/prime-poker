@@ -40,7 +40,7 @@ export const CACHE_TAGS = [
 ] as const;
 
 /** Tags fixas aceitas pelo endpoint, além das por item abaixo. */
-const TAGS_FIXAS: ReadonlyArray<string> = [
+const STATIC_TAGS: ReadonlyArray<string> = [
   ...CACHE_TAGS,
   SEO_CACHE_TAG,
   POSTS_CACHE_TAG,
@@ -53,8 +53,8 @@ const TAGS_FIXAS: ReadonlyArray<string> = [
  * O slug pode vir percent-encoded do WordPress (acentos), por isso a classe é
  * "qualquer coisa sem espaço" e não só `[a-z0-9-]`.
  */
-const TAG_DE_ITEM = /^(post:\S{1,200}|comments:\d{1,20})$/;
+const ITEM_TAG = /^(post:\S{1,200}|comments:\d{1,20})$/;
 
 export function isCacheTag(value: string) {
-  return TAGS_FIXAS.includes(value) || TAG_DE_ITEM.test(value);
+  return STATIC_TAGS.includes(value) || ITEM_TAG.test(value);
 }

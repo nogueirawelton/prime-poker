@@ -14,11 +14,11 @@ import {
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { twMerge } from "tailwind-merge";
-import { PARAMS } from "@/lib/aulas-params";
-import { type Aula, CATEGORIAS, type CategoriaSlug } from "@/services/aulas";
-import { ContinuarAssistindo } from "./continuar-assistindo";
+import { PARAMS } from "@/lib/lessons-params";
+import { type Lesson, TRACKS, type TrackSlug } from "@/services/lessons";
+import { ContinueWatching } from "./continue-watching";
 
-const ICONES: Record<CategoriaSlug, Icon> = {
+const ICONS: Record<TrackSlug, Icon> = {
   estrategia: StrategyIcon,
   "mental-game": BrainIcon,
   torneios: TrophyIcon,
@@ -37,25 +37,29 @@ const ICONES: Record<CategoriaSlug, Icon> = {
  * limpos, porque um filtro de instrutor herdado costuma zerar a nova trilha
  * sem que ninguém entenda o porquê.
  */
-function useTrilhas() {
+function useTracks() {
   const searchParams = useSearchParams();
-  const atual = searchParams.get(PARAMS.categoria);
-  const busca = searchParams.get(PARAMS.busca);
+  const current = searchParams.get(PARAMS.track);
+  const search = searchParams.get(PARAMS.search);
 
-  function href(slug?: CategoriaSlug) {
+  function href(slug?: TrackSlug) {
     const params = new URLSearchParams();
-    if (slug) params.set(PARAMS.categoria, slug);
-    if (busca) params.set(PARAMS.busca, busca);
+    if (slug) params.set(PARAMS.track, slug);
+    if (search) params.set(PARAMS.search, search);
 
     const query = params.toString();
     return query ? `/player/aulas?${query}` : "/player/aulas";
   }
 
-  return { atual, href };
+  return { current, href };
 }
 
-export function AulasSidebar({ continuar }: { continuar: Aula | null }) {
-  const { atual, href } = useTrilhas();
+export function LessonsSidebar({
+  continueWatching,
+}: {
+  continueWatching: Lesson | null;
+}) {
+  const { current, href } = useTracks();
 
   return (
     // `fixed`, e não `sticky`: presa ao topo (abaixo do header, h-20) e ao
@@ -67,27 +71,27 @@ export function AulasSidebar({ continuar }: { continuar: Aula | null }) {
         aria-label="Trilhas"
         className="flex flex-1 flex-col gap-1 overflow-y-auto p-4"
       >
-        <Item href={href()} icone={PlayCircleIcon} ativo={!atual}>
+        <Item href={href()} icon={PlayCircleIcon} active={!current}>
           Todas as Aulas
         </Item>
 
-        {CATEGORIAS.map((categoria) => (
+        {TRACKS.map((track) => (
           <Item
-            key={categoria.slug}
-            href={href(categoria.slug)}
-            icone={ICONES[categoria.slug]}
-            ativo={atual === categoria.slug}
+            key={track.slug}
+            href={href(track.slug)}
+            icon={ICONS[track.slug]}
+            active={current === track.slug}
           >
-            {categoria.nome}
+            {track.name}
           </Item>
         ))}
       </nav>
 
       {/* `mt-auto` empurra a retomada para o fim da tela; a navegação, com
           `flex-1`, ocupa o que sobra e rola por dentro. */}
-      {continuar && (
+      {continueWatching && (
         <div className="mt-auto shrink-0 border-white/10 border-t p-4">
-          <ContinuarAssistindo aula={continuar} />
+          <ContinueWatching lesson={continueWatching} />
         </div>
       )}
     </aside>
@@ -96,27 +100,27 @@ export function AulasSidebar({ continuar }: { continuar: Aula | null }) {
 
 function Item({
   href,
-  icone: Icone,
-  ativo,
+  icon: ItemIcon,
+  active,
   children,
 }: {
   href: string;
-  icone: Icon;
-  ativo: boolean;
+  icon: Icon;
+  active: boolean;
   children: React.ReactNode;
 }) {
   return (
     <Link
       href={href}
-      aria-current={ativo ? "page" : undefined}
+      aria-current={active ? "page" : undefined}
       className={twMerge(
         "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-300",
-        ativo
+        active
           ? "bg-prime-red/10 font-semibold text-prime-red"
           : "text-prime-light/70 hover:bg-white/5 hover:text-prime-light",
       )}
     >
-      <Icone className="size-5" weight={ativo ? "fill" : "regular"} />
+      <ItemIcon className="size-5" weight={active ? "fill" : "regular"} />
       {children}
     </Link>
   );
@@ -128,25 +132,25 @@ function Item({
  * Sem isso, o mobile perderia o único acesso às categorias — elas não estão
  * no painel de configurações, que trata de ordenação e filtros.
  */
-export function AulasTrilhasMobile() {
-  const { atual, href } = useTrilhas();
+export function MobileTracks() {
+  const { current, href } = useTracks();
 
   return (
     <nav
       aria-label="Trilhas"
       className="-mx-4 flex gap-2 overflow-x-auto px-4 lg:hidden"
     >
-      <Chip href={href()} ativo={!atual}>
+      <Chip href={href()} active={!current}>
         Todas
       </Chip>
 
-      {CATEGORIAS.map((categoria) => (
+      {TRACKS.map((track) => (
         <Chip
-          key={categoria.slug}
-          href={href(categoria.slug)}
-          ativo={atual === categoria.slug}
+          key={track.slug}
+          href={href(track.slug)}
+          active={current === track.slug}
         >
-          {categoria.nome}
+          {track.name}
         </Chip>
       ))}
     </nav>
@@ -155,20 +159,20 @@ export function AulasTrilhasMobile() {
 
 function Chip({
   href,
-  ativo,
+  active,
   children,
 }: {
   href: string;
-  ativo: boolean;
+  active: boolean;
   children: React.ReactNode;
 }) {
   return (
     <Link
       href={href}
-      aria-current={ativo ? "page" : undefined}
+      aria-current={active ? "page" : undefined}
       className={twMerge(
         "shrink-0 rounded-full border px-4 py-2 font-semibold text-xs uppercase transition-all duration-300",
-        ativo
+        active
           ? "border-prime-red bg-prime-red/15 text-prime-light"
           : "border-white/15 text-prime-light/70 hover:border-white/40 hover:text-prime-light",
       )}

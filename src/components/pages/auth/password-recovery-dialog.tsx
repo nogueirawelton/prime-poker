@@ -11,7 +11,7 @@ import { type ReactNode, useId, useState } from "react";
 import { type SubmitHandler, useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { z } from "zod";
-import { solicitarRedefinicao } from "@/actions/auth";
+import { requestPasswordReset } from "@/actions/auth";
 import { IconInput } from "@/components/ui/form/icon-input";
 
 const recoverySchema = z.object({
@@ -36,10 +36,10 @@ export function PasswordRecoveryDialog({ children }: { children: ReactNode }) {
 
   const onSubmit: SubmitHandler<RecoveryData> = async ({ email }) => {
     try {
-      const resultado = await solicitarRedefinicao(email);
+      const result = await requestPasswordReset(email);
 
-      if (!resultado.ok) {
-        toast.error(resultado.error ?? "Não foi possível enviar.");
+      if (!result.ok) {
+        toast.error(result.error ?? "Não foi possível enviar.");
         return;
       }
 

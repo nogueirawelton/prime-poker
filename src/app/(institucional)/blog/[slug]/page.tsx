@@ -11,9 +11,9 @@ import { PostFaq } from "@/components/pages/blog/post-faq";
 import { PostSidebar } from "@/components/pages/blog/post-sidebar";
 import { ReadingProgress } from "@/components/pages/blog/reading-progress";
 import { ShareButtons } from "@/components/pages/blog/share-buttons";
-import { getAulaSugerida } from "@/services/aulas";
 import { getAllSlugs, getComments, getPost, getRelated } from "@/services/blog";
-import { prepararConteudo } from "@/utils/rich-content";
+import { getSuggestedLesson } from "@/services/lessons";
+import { prepareContent } from "@/utils/rich-content";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -59,17 +59,17 @@ export default async function PostPage({ params }: Props) {
 
   if (!post) notFound();
 
-  const [related, aula, comentarios] = await Promise.all([
+  const [related, lesson, comments] = await Promise.all([
     getRelated(post),
     // A chamada da lateral aponta para a aula do acervo que trata do mesmo
     // assunto; o título do post é o que aproxima os dois.
-    getAulaSugerida(post.title, post.category?.slug),
+    getSuggestedLesson(post.title, post.category?.slug),
     getComments(post.databaseId),
   ]);
 
   // Uma passada só no HTML do editor: ancora os títulos, monta o índice
   // lateral e separa o bloco de perguntas frequentes do corpo.
-  const { html, secoes, faq } = prepararConteudo(post.content);
+  const { html, sections, faq } = prepareContent(post.content);
 
   return (
     <>
@@ -142,7 +142,7 @@ export default async function PostPage({ params }: Props) {
               dangerouslySetInnerHTML={{ __html: html }}
             />
 
-            <PostFaq perguntas={faq} />
+            <PostFaq faqItems={faq} />
 
             <AuthorCard post={post} />
 
@@ -150,13 +150,13 @@ export default async function PostPage({ params }: Props) {
               <ShareButtons title={post.title} />
             </footer>
 
-            <PostComments postId={post.databaseId} comentarios={comentarios} />
+            <PostComments postId={post.databaseId} comments={comments} />
           </div>
 
           <PostSidebar
-            secoes={secoes}
-            relacionados={related.slice(0, 3)}
-            aula={aula}
+            sections={sections}
+            related={related.slice(0, 3)}
+            lesson={lesson}
           />
         </div>
       </article>

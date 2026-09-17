@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import { AulasSidebar } from "@/components/shared/player/aulas-sidebar";
-import { getContinuarAssistindo } from "@/services/aulas";
+import { LessonsSidebar } from "@/components/shared/player/lessons-sidebar";
+import { getContinueWatching } from "@/services/lessons";
 
 /**
  * Sidebar de trilhas + conteúdo.
@@ -8,7 +8,7 @@ import { getContinuarAssistindo } from "@/services/aulas";
  * A sidebar vive no layout, e não na página: trocar de trilha não a
  * remonta nem perde a posição de rolagem dela.
  */
-export default function AulasLayout({
+export default function LessonsLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -29,7 +29,7 @@ export default function AulasLayout({
 }
 
 async function Sidebar() {
-  const continuar = await getContinuarAssistindo();
+  const continueWatching = await getContinueWatching();
 
-  return <AulasSidebar continuar={continuar} />;
+  return <LessonsSidebar continueWatching={continueWatching} />;
 }

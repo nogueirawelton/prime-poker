@@ -13,24 +13,24 @@ function defaultHref(page: number) {
  * Listar todas funcionava com 3 páginas e vira um paredão com 50. `null`
  * marca onde entra a reticência.
  */
-function janela(current: number, total: number): Array<number | null> {
-  const RAIO = 1;
-  const paginas = new Set<number>([1, total]);
+function pageWindow(current: number, total: number): Array<number | null> {
+  const RADIUS = 1;
+  const pages = new Set<number>([1, total]);
 
-  for (let p = current - RAIO; p <= current + RAIO; p++) {
-    if (p >= 1 && p <= total) paginas.add(p);
+  for (let p = current - RADIUS; p <= current + RADIUS; p++) {
+    if (p >= 1 && p <= total) pages.add(p);
   }
 
-  const ordenadas = [...paginas].sort((a, b) => a - b);
-  const saida: Array<number | null> = [];
+  const sorted = [...pages].sort((a, b) => a - b);
+  const output: Array<number | null> = [];
 
-  for (const [indice, pagina] of ordenadas.entries()) {
-    const anterior = ordenadas[indice - 1];
-    if (anterior !== undefined && pagina - anterior > 1) saida.push(null);
-    saida.push(pagina);
+  for (const [index, page] of sorted.entries()) {
+    const previous = sorted[index - 1];
+    if (previous !== undefined && page - previous > 1) output.push(null);
+    output.push(page);
   }
 
-  return saida;
+  return output;
 }
 
 export function Pagination({
@@ -61,11 +61,11 @@ export function Pagination({
         </Link>
       )}
 
-      {janela(current, total).map((page, indice) =>
+      {pageWindow(current, total).map((page, index) =>
         page === null ? (
           <span
             // biome-ignore lint/suspicious/noArrayIndexKey: reticência não tem id
-            key={`gap-${indice}`}
+            key={`gap-${index}`}
             aria-hidden="true"
             className="grid h-11 place-items-center px-1 text-prime-light/40"
           >

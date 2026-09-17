@@ -37,7 +37,7 @@ final class Welcome {
 	 *
 	 * @var array<int, int>
 	 */
-	private static array $pendentes = array();
+	private static array $pending = array();
 
 	/**
 	 * Registra os hooks.
@@ -56,21 +56,21 @@ final class Welcome {
 	 * @param int $user_id ID do usuário.
 	 */
 	public static function queue( $user_id ): void {
-		self::$pendentes[] = (int) $user_id;
+		self::$pending[] = (int) $user_id;
 	}
 
 	/**
 	 * Envia os e-mails agendados.
 	 */
 	public static function dispatch(): void {
-		if ( array() === self::$pendentes ) {
+		if ( array() === self::$pending ) {
 			return;
 		}
 
 		/**
 		 * Enviar o e-mail de boas-vindas?
 		 *
-		 * @param bool $enviar Padrão: true.
+		 * @param bool $send_email Padrão: true.
 		 */
 		if ( ! apply_filters( 'prime_players_send_welcome_email', true ) ) {
 			return;
@@ -84,7 +84,7 @@ final class Welcome {
 			fastcgi_finish_request();
 		}
 
-		foreach ( array_unique( self::$pendentes ) as $user_id ) {
+		foreach ( array_unique( self::$pending ) as $user_id ) {
 			// Recarrega: o nome foi gravado depois do `prime_player_registered`.
 			clean_user_cache( $user_id );
 
@@ -99,7 +99,7 @@ final class Welcome {
 			self::send( $user, $front );
 		}
 
-		self::$pendentes = array();
+		self::$pending = array();
 	}
 
 	/**
@@ -114,9 +114,9 @@ final class Welcome {
 		$html = Layout::render(
 			array(
 				/* translators: %s: nome do site. */
-				'titulo'     => sprintf( __( 'Boas-vindas ao %s', 'prime-poker' ), $site ),
-				'saudacao'   => Layout::greeting( $user ),
-				'paragrafos' => array(
+				'title'     => sprintf( __( 'Boas-vindas ao %s', 'prime-poker' ), $site ),
+				'greeting'   => Layout::greeting( $user ),
+				'paragraphs' => array(
 					__( 'Sua conta foi criada. A partir de agora você acessa a área do jogador com o seu e-mail e a senha que escolheu no cadastro.', 'prime-poker' ),
 					sprintf(
 						/* translators: %s: nome do tier (ex.: Player Free). */
@@ -124,11 +124,11 @@ final class Welcome {
 						Tiers::label( Membership::get_tier( $user->ID ) ?? Tiers::FREE )
 					),
 				),
-				'botao'      => null === $front ? null : array(
-					'texto' => __( 'Acessar a área do jogador', 'prime-poker' ),
+				'button'      => null === $front ? null : array(
+					'text' => __( 'Acessar a área do jogador', 'prime-poker' ),
 					'url'   => $front . '/login/',
 				),
-				'notas'      => array(
+				'notes'      => array(
 					sprintf(
 						/* translators: %s: e-mail da conta. */
 						__( 'Este e-mail foi enviado para %s porque uma conta foi criada com ele no nosso site. Se não foi você, ignore esta mensagem.', 'prime-poker' ),

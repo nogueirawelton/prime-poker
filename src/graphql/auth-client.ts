@@ -29,12 +29,12 @@ const ENDPOINT = `${process.env.NEXT_PUBLIC_ADMIN_URL}/graphql`;
  *
  * Só aparecem com o debug do WPGraphQL ligado (`debugMessage`); com ele
  * desligado o erro vira um "Internal server error" genérico. Por isso isto é
- * só um atalho — a decisão final é a validação local em `falhaDeSessao`.
+ * só um atalho — a decisão final é a validação local em `isSessionFailure`.
  */
-const ERRO_DE_TOKEN =
+const TOKEN_ERROR =
   /expired token|signature verification|invalid.?(jwt|token)/i;
 
-async function cliente() {
+async function createAuthClient() {
   const token = (await cookies()).get("access_token")?.value;
 
   if (!token) redirect("/login");
@@ -52,13 +52,14 @@ async function cliente() {
  * ele não vale mais, a causa é a sessão; se vale, o erro é da consulta e deve
  * subir como erro de verdade, em vez de mandar alguém logado para o login.
  */
-async function falhaDeSessao(error: unknown) {
+async function isSessionFailure(error: unknown) {
   if (error instanceof ClientError) {
-    const mensagens = (error.response.errors ?? []).map(
-      (erro) => `${erro.message} ${erro.extensions?.debugMessage ?? ""}`,
+    const messages = (error.response.errors ?? []).map(
+      (gqlError) =>
+        `${gqlError.message} ${gqlError.extensions?.debugMessage ?? ""}`,
     );
 
-    if (mensagens.some((mensagem) => ERRO_DE_TOKEN.test(mensagem))) return true;
+    if (messages.some((message) => TOKEN_ERROR.test(message))) return true;
   }
 
   return !(await getSession());
@@ -69,12 +70,12 @@ export async function authQuery<T>(
   document: RequestDocument,
   variables?: Record<string, unknown>,
 ): Promise<T> {
-  const client = await cliente();
+  const client = await createAuthClient();
 
   try {
     return await client.request<T>(document, variables);
   } catch (error) {
-    if (await falhaDeSessao(error)) redirect("/login");
+    if (await isSessionFailure(error)) redirect("/login");
 
     throw error;
   }

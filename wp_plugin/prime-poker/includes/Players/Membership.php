@@ -72,7 +72,7 @@ final class Membership {
 			return false;
 		}
 
-		$anterior = self::get_tier( $user_id );
+		$previous = self::get_tier( $user_id );
 
 		// Remove só as OUTRAS roles de tier. `set_role()` apagaria qualquer
 		// role adicional — um jogador que também seja editor perderia o acesso
@@ -87,7 +87,7 @@ final class Membership {
 			$user->add_role( $tier );
 		}
 
-		if ( $anterior !== $tier ) {
+		if ( $previous !== $tier ) {
 			update_user_meta( $user_id, self::META_STARTED, time() );
 		}
 
@@ -99,7 +99,7 @@ final class Membership {
 
 		update_user_meta( $user_id, self::META_SOURCE, $source );
 
-		if ( $anterior !== $tier ) {
+		if ( $previous !== $tier ) {
 			/**
 			 * Disparado quando o tier de um jogador muda.
 			 *
@@ -109,10 +109,10 @@ final class Membership {
 			 *
 			 * @param int         $user_id  ID do usuário.
 			 * @param string      $tier     Novo tier.
-			 * @param string|null $anterior Tier anterior, ou null se não havia.
+			 * @param string|null $previous Tier anterior, ou null se não havia.
 			 * @param string      $source   Origem da mudança.
 			 */
-			do_action( 'prime_player_tier_changed', $user_id, $tier, $anterior, $source );
+			do_action( 'prime_player_tier_changed', $user_id, $tier, $previous, $source );
 		}
 
 		return true;
@@ -124,9 +124,9 @@ final class Membership {
 	 * @param int $user_id ID do usuário.
 	 */
 	public static function expires_at( int $user_id ): ?int {
-		$valor = get_user_meta( $user_id, self::META_EXPIRES, true );
+		$value = get_user_meta( $user_id, self::META_EXPIRES, true );
 
-		return '' === $valor || null === $valor ? null : (int) $valor;
+		return '' === $value || null === $value ? null : (int) $value;
 	}
 
 	/**
@@ -138,9 +138,9 @@ final class Membership {
 	 * @param int $user_id ID do usuário.
 	 */
 	public static function is_expired( int $user_id ): bool {
-		$expira = self::expires_at( $user_id );
+		$expires = self::expires_at( $user_id );
 
-		return null !== $expira && $expira <= time();
+		return null !== $expires && $expires <= time();
 	}
 
 	/**
@@ -155,12 +155,12 @@ final class Membership {
 	 * @param string $tier    Slug do tier mínimo.
 	 */
 	public static function has_at_least( int $user_id, string $tier ): bool {
-		$atual = self::get_tier( $user_id );
+		$current = self::get_tier( $user_id );
 
-		if ( null === $atual || ! Tiers::exists( $tier ) ) {
+		if ( null === $current || ! Tiers::exists( $tier ) ) {
 			return false;
 		}
 
-		return Tiers::level( $atual ) >= Tiers::level( $tier );
+		return Tiers::level( $current ) >= Tiers::level( $tier );
 	}
 }

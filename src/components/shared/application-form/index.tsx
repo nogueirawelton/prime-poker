@@ -29,23 +29,23 @@ export function Form() {
   } = useForm<FormData>({
     resolver: zodResolver(primeApplicationSchema),
     defaultValues: {
-      dadosPessoais: {
+      personalData: {
         nome_completo: "",
         email: "",
         numero_whatsapp: "",
         onde_mora: "",
       },
-      situacaoAtual: {
+      currentSituation: {
         idade: "",
         ocupacao: "",
         fonte_de_renda: "",
         discord: "",
       },
-      historicoOnline: {
+      onlineHistory: {
         nick_poker_stars: "",
         outros_sites: "",
       },
-      metasDedicacao: {
+      goalsCommitment: {
         disponibilidade: "",
         jogou_em_time: "",
         porque_se_inscreveu: "",
@@ -58,10 +58,10 @@ export function Form() {
     e?.preventDefault();
 
     const stepFields = {
-      "0": "dadosPessoais" as const,
-      "1": "situacaoAtual" as const,
-      "2": "historicoOnline" as const,
-      "3": "metasDedicacao" as const,
+      "0": "personalData" as const,
+      "1": "currentSituation" as const,
+      "2": "onlineHistory" as const,
+      "3": "goalsCommitment" as const,
     };
 
     const currentField = stepFields[value as keyof typeof stepFields];
@@ -79,10 +79,10 @@ export function Form() {
         // Os nomes dos campos do schema são os mesmos do Contact Form 7:
         // achatar os grupos já produz o payload esperado.
         await wp(FORM_ID, {
-          ...data.dadosPessoais,
-          ...data.situacaoAtual,
-          ...data.historicoOnline,
-          ...data.metasDedicacao,
+          ...data.personalData,
+          ...data.currentSituation,
+          ...data.onlineHistory,
+          ...data.goalsCommitment,
           ...getUtmParams(),
         });
 
@@ -130,13 +130,13 @@ export function Form() {
             <label htmlFor="nome_completo">Seu Nome Completo*</label>
             <Controller
               control={control}
-              name="dadosPessoais.nome_completo"
+              name="personalData.nome_completo"
               render={({ field: { onChange, value, ...field } }) => (
                 <TextInput
                   id="nome_completo"
                   onValueChange={onChange}
                   value={value}
-                  error={errors.dadosPessoais?.nome_completo}
+                  error={errors.personalData?.nome_completo}
                   className="h-12 rounded-md border border-white/10 bg-white/10 px-4 text-sm outline-none"
                   {...field}
                 />
@@ -147,12 +147,12 @@ export function Form() {
           <div className="flex flex-col gap-2 text-prime-light/75 text-sm lg:text-base">
             <label htmlFor="email">Seu E-mail*</label>
             <Controller
-              name="dadosPessoais.email"
+              name="personalData.email"
               control={control}
               render={({ field: { onChange, value, ...field } }) => (
                 <TextInput
                   id="email"
-                  error={errors.dadosPessoais?.email}
+                  error={errors.personalData?.email}
                   className="h-12 rounded-md border border-white/10 bg-white/10 px-4 text-sm outline-none"
                   onValueChange={onChange}
                   value={value}
@@ -167,14 +167,14 @@ export function Form() {
               Qual seu nº de WhatsApp (com DDD)*
             </label>
             <Controller
-              name="dadosPessoais.numero_whatsapp"
+              name="personalData.numero_whatsapp"
               control={control}
               render={({ field: { onChange, value, ...field } }) => (
                 <PhoneInput
                   id="numero_whatsapp"
                   onValueChange={onChange}
                   value={value}
-                  error={errors.dadosPessoais?.numero_whatsapp}
+                  error={errors.personalData?.numero_whatsapp}
                   className="!h-12 !rounded-md !bg-white/10 !text-sm"
                   containerClass="!border ! !rounded-md !border-white/20"
                   {...field}
@@ -186,14 +186,14 @@ export function Form() {
           <div className="flex flex-col gap-2 text-prime-light/75 text-sm lg:text-base">
             <label htmlFor="onde_mora">Onde você mora? (Cidade/Estado)*</label>
             <Controller
-              name="dadosPessoais.onde_mora"
+              name="personalData.onde_mora"
               control={control}
               render={({ field: { onChange, value, ...field } }) => (
                 <TextInput
                   id="onde_mora"
                   onValueChange={onChange}
                   value={value}
-                  error={errors.dadosPessoais?.onde_mora}
+                  error={errors.personalData?.onde_mora}
                   className="h-12 rounded-md border border-white/10 bg-white/10 px-4 text-sm outline-none"
                   {...field}
                 />
@@ -210,14 +210,14 @@ export function Form() {
           <div className="flex flex-col gap-2 text-prime-light/75 text-sm lg:text-base">
             <label htmlFor="idade">Sua idade*</label>
             <Controller
-              name="situacaoAtual.idade"
+              name="currentSituation.idade"
               control={control}
               render={({ field: { onChange, value, ...field } }) => (
                 <TextInput
                   id="idade"
                   onValueChange={onChange}
                   value={value}
-                  error={errors.situacaoAtual?.idade}
+                  error={errors.currentSituation?.idade}
                   className="h-12 rounded-md border border-white/10 bg-white/10 px-4 text-sm outline-none"
                   {...field}
                 />
@@ -230,14 +230,14 @@ export function Form() {
               Sua ocupação? (Trabalha? Estuda? Nada?)*
             </label>
             <Controller
-              name="situacaoAtual.ocupacao"
+              name="currentSituation.ocupacao"
               control={control}
               render={({ field: { onChange, value, ...field } }) => (
                 <TextInput
                   id="ocupacao"
                   onValueChange={onChange}
                   value={value}
-                  error={errors.situacaoAtual?.ocupacao}
+                  error={errors.currentSituation?.ocupacao}
                   className="h-12 rounded-md border border-white/10 bg-white/10 px-4 text-sm outline-none"
                   {...field}
                 />
@@ -251,14 +251,14 @@ export function Form() {
               guardada?*
             </label>
             <Controller
-              name="situacaoAtual.fonte_de_renda"
+              name="currentSituation.fonte_de_renda"
               control={control}
               render={({ field: { onChange, value, ...field } }) => (
                 <TextInput
                   id="fonte_de_renda"
                   onValueChange={onChange}
                   value={value}
-                  error={errors.situacaoAtual?.fonte_de_renda}
+                  error={errors.currentSituation?.fonte_de_renda}
                   className="h-12 rounded-md border border-white/10 bg-white/10 px-4 text-sm outline-none"
                   {...field}
                 />
@@ -269,14 +269,14 @@ export function Form() {
           <div className="flex flex-col gap-2 text-prime-light/75 text-sm lg:text-base">
             <label htmlFor="discord">Possui Discord? Qual login?*</label>
             <Controller
-              name="situacaoAtual.discord"
+              name="currentSituation.discord"
               control={control}
               render={({ field: { onChange, value, ...field } }) => (
                 <TextInput
                   id="discord"
                   onValueChange={onChange}
                   value={value}
-                  error={errors.situacaoAtual?.discord}
+                  error={errors.currentSituation?.discord}
                   className="h-12 rounded-md border border-white/10 bg-white/10 px-4 text-sm outline-none"
                   {...field}
                 />
@@ -296,14 +296,14 @@ export function Form() {
               SharkScope.)*
             </label>
             <Controller
-              name="historicoOnline.nick_poker_stars"
+              name="onlineHistory.nick_poker_stars"
               control={control}
               render={({ field: { onChange, value, ...field } }) => (
                 <TextInput
                   id="nick_poker_stars"
                   onValueChange={onChange}
                   value={value}
-                  error={errors.historicoOnline?.nick_poker_stars}
+                  error={errors.onlineHistory?.nick_poker_stars}
                   className="h-12 rounded-md border border-white/10 bg-white/10 px-4 text-sm outline-none"
                   {...field}
                 />
@@ -316,14 +316,14 @@ export function Form() {
               Joga em outros sites? Quais? Quais nicks?*
             </label>
             <Controller
-              name="historicoOnline.outros_sites"
+              name="onlineHistory.outros_sites"
               control={control}
               render={({ field: { onChange, value, ...field } }) => (
                 <TextInput
                   id="outros_sites"
                   onValueChange={onChange}
                   value={value}
-                  error={errors.historicoOnline?.outros_sites}
+                  error={errors.onlineHistory?.outros_sites}
                   className="h-12 rounded-md border border-white/10 bg-white/10 px-4 text-sm outline-none"
                   {...field}
                 />
@@ -343,14 +343,14 @@ export function Form() {
               e dias na semana)*
             </label>
             <Controller
-              name="metasDedicacao.disponibilidade"
+              name="goalsCommitment.disponibilidade"
               control={control}
               render={({ field: { onChange, value, ...field } }) => (
                 <TextInput
                   id="disponibilidade"
                   onValueChange={onChange}
                   value={value}
-                  error={errors.metasDedicacao?.disponibilidade}
+                  error={errors.goalsCommitment?.disponibilidade}
                   className="h-12 rounded-md border border-white/10 bg-white/10 px-4 text-sm outline-none"
                   {...field}
                 />
@@ -363,14 +363,14 @@ export function Form() {
               Já jogou em time? Se sim, quais?*
             </label>
             <Controller
-              name="metasDedicacao.jogou_em_time"
+              name="goalsCommitment.jogou_em_time"
               control={control}
               render={({ field: { onChange, value, ...field } }) => (
                 <TextInput
                   id="jogou_em_time"
                   onValueChange={onChange}
                   value={value}
-                  error={errors.metasDedicacao?.jogou_em_time}
+                  error={errors.goalsCommitment?.jogou_em_time}
                   className="h-12 rounded-md border border-white/10 bg-white/10 px-4 text-sm outline-none"
                   {...field}
                 />
@@ -383,14 +383,14 @@ export function Form() {
               Por que decidiu se inscrever para jogar no Prime?*
             </label>
             <Controller
-              name="metasDedicacao.porque_se_inscreveu"
+              name="goalsCommitment.porque_se_inscreveu"
               control={control}
               render={({ field: { onChange, value, ...field } }) => (
                 <TextInput
                   id="porque_se_inscreveu"
                   onValueChange={onChange}
                   value={value}
-                  error={errors.metasDedicacao?.porque_se_inscreveu}
+                  error={errors.goalsCommitment?.porque_se_inscreveu}
                   className="h-12 rounded-md border border-white/10 bg-white/10 px-4 text-sm outline-none"
                   {...field}
                 />
@@ -403,14 +403,14 @@ export function Form() {
               Alguém te indicou/sugeriu se inscrever no Prime? Se sim, quem?*
             </label>
             <Controller
-              name="metasDedicacao.indicacao"
+              name="goalsCommitment.indicacao"
               control={control}
               render={({ field: { onChange, value, ...field } }) => (
                 <TextInput
                   id="indicacao"
                   onValueChange={onChange}
                   value={value}
-                  error={errors.metasDedicacao?.indicacao}
+                  error={errors.goalsCommitment?.indicacao}
                   className="h-12 rounded-md border border-white/10 bg-white/10 px-4 text-sm outline-none"
                   {...field}
                 />

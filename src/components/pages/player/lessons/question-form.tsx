@@ -2,35 +2,35 @@
 
 import { PaperPlaneRightIcon, SpinnerGapIcon } from "@phosphor-icons/react";
 import { useActionState, useEffect, useRef } from "react";
-import { type DuvidaState, enviarDuvida } from "@/actions/aula";
+import { type QuestionState, sendQuestion } from "@/actions/lesson";
 
 /** Envio de dúvida ao instrutor. */
-export function DuvidaForm({
+export function QuestionForm({
   slug,
-  instrutor,
+  instructor,
 }: {
   slug: string;
-  instrutor: string;
+  instructor: string;
 }) {
   const form = useRef<HTMLFormElement>(null);
 
   // `bind` leva o slug ao servidor sem um campo escondido no formulário —
   // um input hidden seria editável pelo cliente.
-  const [estado, action, pendente] = useActionState<DuvidaState, FormData>(
-    enviarDuvida.bind(null, slug),
+  const [state, action, pending] = useActionState<QuestionState, FormData>(
+    sendQuestion.bind(null, slug),
     {},
   );
 
   useEffect(() => {
     // Limpa só quando o envio deu certo; com erro, o texto continua ali.
-    if (!pendente && !estado.error) form.current?.reset();
-  }, [pendente, estado]);
+    if (!pending && !state.error) form.current?.reset();
+  }, [pending, state]);
 
   return (
     <form ref={form} action={action} className="flex flex-col gap-2">
       <div className="flex items-end gap-3">
         <label htmlFor={`duvida-${slug}`} className="sr-only">
-          Sua dúvida para {instrutor}
+          Sua dúvida para {instructor}
         </label>
 
         {/* `input`, e não `textarea`: a altura fica travada na do botão de
@@ -39,20 +39,20 @@ export function DuvidaForm({
         <input
           id={`duvida-${slug}`}
           type="text"
-          name="texto"
+          name="text"
           maxLength={2000}
-          placeholder={`Digite sua dúvida para ${instrutor}...`}
-          aria-invalid={Boolean(estado.error)}
+          placeholder={`Digite sua dúvida para ${instructor}...`}
+          aria-invalid={Boolean(state.error)}
           className="h-12 flex-1 rounded-xl border border-white/10 bg-white/3 px-4 text-prime-light text-sm outline-none transition-colors duration-500 placeholder:text-prime-light/40 focus:border-prime-red/60"
         />
 
         <button
           type="submit"
-          disabled={pendente}
+          disabled={pending}
           aria-label="Enviar dúvida"
           className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-prime-red text-prime-light transition-all duration-500 hover:bg-prime-light hover:text-prime-red disabled:opacity-60"
         >
-          {pendente ? (
+          {pending ? (
             <SpinnerGapIcon className="size-5 animate-spin" />
           ) : (
             <PaperPlaneRightIcon className="size-5" weight="fill" />
@@ -60,9 +60,9 @@ export function DuvidaForm({
         </button>
       </div>
 
-      {estado.error && (
+      {state.error && (
         <small role="alert" className="text-prime-red text-xs">
-          {estado.error}
+          {state.error}
         </small>
       )}
     </form>

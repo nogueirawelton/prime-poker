@@ -10,7 +10,7 @@
  * este nome..."). Sem limpar, a mensagem chegaria ao usuário com marcação crua
  * e os padrões de tradução não casariam.
  */
-const ENTIDADES: Record<string, string> = {
+const ENTITIES: Record<string, string> = {
   "&lt;": "<",
   "&gt;": ">",
   "&amp;": "&",
@@ -20,9 +20,9 @@ const ENTIDADES: Record<string, string> = {
   "&nbsp;": " ",
 };
 
-export function limparMensagemWp(mensagem: string) {
-  return mensagem
-    .replace(/&(lt|gt|amp|quot|#039|hellip|nbsp);/g, (e) => ENTIDADES[e] ?? e)
+export function cleanWpMessage(message: string) {
+  return message
+    .replace(/&(lt|gt|amp|quot|#039|hellip|nbsp);/g, (e) => ENTITIES[e] ?? e)
     .replace(/<[^>]+>/g, "")
     .trim();
 }
@@ -36,15 +36,15 @@ export function limparMensagemWp(mensagem: string) {
  *
  * A ordem dos padrões importa — o primeiro que casar vence.
  */
-export function traduzirErroWp(
-  mensagem: string,
-  padroes: Array<[RegExp, string]>,
+export function translateWpError(
+  message: string,
+  patterns: Array<[RegExp, string]>,
   fallback: string,
 ) {
-  const limpa = limparMensagemWp(mensagem);
+  const cleaned = cleanWpMessage(message);
 
-  for (const [padrao, texto] of padroes) {
-    if (padrao.test(limpa)) return texto;
+  for (const [pattern, text] of patterns) {
+    if (pattern.test(cleaned)) return text;
   }
 
   return fallback;

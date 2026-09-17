@@ -3,32 +3,32 @@
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
-import { marcarComoLida, marcarTodasComoLidas } from "@/services/notificacoes";
+import { markAllAsRead, markAsRead } from "@/services/notifications";
 
 /**
  * Server Actions são endpoints públicos: o guard do layout não protege estas
  * chamadas, então cada uma confere a sessão por conta própria.
  */
-async function exigirSessao() {
-  const sessao = await getSession();
-  if (!sessao) redirect("/login");
+async function ensureSession() {
+  const session = await getSession();
+  if (!session) redirect("/login");
 }
 
 /** Alterna o estado de leitura de uma notificação. */
-export async function alternarLeitura(id: string, lida: boolean) {
-  await exigirSessao();
+export async function toggleReadState(id: string, read: boolean) {
+  await ensureSession();
 
-  await marcarComoLida(id, lida);
+  await markAsRead(id, read);
 
   // Sem o `refresh`, o selo do sino e a lista continuariam mostrando o estado
   // anterior até a próxima navegação.
   refresh();
 }
 
-export async function lerTodas() {
-  await exigirSessao();
+export async function markAllRead() {
+  await ensureSession();
 
-  await marcarTodasComoLidas();
+  await markAllAsRead();
 
   refresh();
 }

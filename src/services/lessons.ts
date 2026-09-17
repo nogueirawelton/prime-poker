@@ -3,12 +3,12 @@
  *
  * O WordPress ainda não expõe um CPT de aulas, então o catálogo aqui é um
  * mock determinístico: mesma entrada, mesma saída em qualquer processo. Toda a
- * UI conversa só com `listarAulas` / `getContinuarAssistindo`, então trocar
+ * UI conversa só com `listLessons` / `getContinueWatching`, então trocar
  * este arquivo por consultas ao WPGraphQL (nos moldes de `services/blog.ts`)
  * não toca em nenhum componente.
  */
 
-export type CategoriaSlug =
+export type TrackSlug =
   | "estrategia"
   | "mental-game"
   | "torneios"
@@ -17,100 +17,100 @@ export type CategoriaSlug =
   | "ferramentas"
   | "profissional";
 
-export type Categoria = {
-  slug: CategoriaSlug;
+export type Track = {
+  slug: TrackSlug;
   /** Nome completo, usado na sidebar. */
-  nome: string;
+  name: string;
   /** Nome curto para o selo sobre a capa. */
-  selo: string;
+  badge: string;
   /** Classes do selo — cores fora da paleta base identificam a trilha. */
-  cor: string;
+  color: string;
   /** Gradiente da capa enquanto não há thumbnail real. */
-  capa: string;
+  cover: string;
 };
 
-export const CATEGORIAS: Array<Categoria> = [
+export const TRACKS: Array<Track> = [
   {
     slug: "estrategia",
-    nome: "Estratégia",
-    selo: "Estratégia",
-    cor: "bg-prime-red text-prime-light",
-    capa: "from-prime-red/40 via-prime-darkgray to-prime-dark",
+    name: "Estratégia",
+    badge: "Estratégia",
+    color: "bg-prime-red text-prime-light",
+    cover: "from-prime-red/40 via-prime-darkgray to-prime-dark",
   },
   {
     slug: "mental-game",
-    nome: "Mental Game",
-    selo: "Mental Game",
-    cor: "bg-emerald-600 text-prime-light",
-    capa: "from-emerald-500/35 via-prime-darkgray to-prime-dark",
+    name: "Mental Game",
+    badge: "Mental Game",
+    color: "bg-emerald-600 text-prime-light",
+    cover: "from-emerald-500/35 via-prime-darkgray to-prime-dark",
   },
   {
     slug: "torneios",
-    nome: "Torneios",
-    selo: "Torneios",
-    cor: "bg-violet-600 text-prime-light",
-    capa: "from-violet-500/35 via-prime-darkgray to-prime-dark",
+    name: "Torneios",
+    badge: "Torneios",
+    color: "bg-violet-600 text-prime-light",
+    cover: "from-violet-500/35 via-prime-darkgray to-prime-dark",
   },
   {
     slug: "analise-de-maos",
-    nome: "Análise de Mãos",
-    selo: "Análise",
-    cor: "bg-orange-500 text-prime-dark",
-    capa: "from-orange-500/35 via-prime-darkgray to-prime-dark",
+    name: "Análise de Mãos",
+    badge: "Análise",
+    color: "bg-orange-500 text-prime-dark",
+    cover: "from-orange-500/35 via-prime-darkgray to-prime-dark",
   },
   {
     slug: "fundamentos",
-    nome: "Fundamentos",
-    selo: "Fundamentos",
-    cor: "bg-blue-600 text-prime-light",
-    capa: "from-blue-500/35 via-prime-darkgray to-prime-dark",
+    name: "Fundamentos",
+    badge: "Fundamentos",
+    color: "bg-blue-600 text-prime-light",
+    cover: "from-blue-500/35 via-prime-darkgray to-prime-dark",
   },
   {
     slug: "ferramentas",
-    nome: "Ferramentas",
-    selo: "Ferramentas",
-    cor: "bg-indigo-600 text-prime-light",
-    capa: "from-indigo-500/35 via-prime-darkgray to-prime-dark",
+    name: "Ferramentas",
+    badge: "Ferramentas",
+    color: "bg-indigo-600 text-prime-light",
+    cover: "from-indigo-500/35 via-prime-darkgray to-prime-dark",
   },
   {
     slug: "profissional",
-    nome: "Profissional",
-    selo: "Profissional",
-    cor: "bg-amber-500 text-prime-dark",
-    capa: "from-amber-500/35 via-prime-darkgray to-prime-dark",
+    name: "Profissional",
+    badge: "Profissional",
+    color: "bg-amber-500 text-prime-dark",
+    cover: "from-amber-500/35 via-prime-darkgray to-prime-dark",
   },
 ];
 
-export const NIVEIS = ["iniciante", "intermediario", "avancado"] as const;
-export type Nivel = (typeof NIVEIS)[number];
+export const LEVELS = ["iniciante", "intermediario", "avancado"] as const;
+export type Level = (typeof LEVELS)[number];
 
-export const NIVEL_LABEL: Record<Nivel, string> = {
+export const LEVEL_LABEL: Record<Level, string> = {
   iniciante: "Iniciante",
   intermediario: "Intermediário",
   avancado: "Avançado",
 };
 
-export const INSTRUTORES = [
+export const INSTRUCTORS = [
   "Felipe Martins",
   "Carla Mendes",
   "Rafael Moraes",
   "Lucas Rocha",
 ] as const;
 
-export type Aula = {
+export type Lesson = {
   id: string;
   slug: string;
-  titulo: string;
-  categoria: Categoria;
-  instrutor: string;
-  nivel: Nivel;
+  title: string;
+  track: Track;
+  instructor: string;
+  level: Level;
   /** Duração em segundos. */
-  duracao: number;
+  duration: number;
   /** Segundos já assistidos pelo jogador. */
-  assistido: number;
+  watched: number;
   /** Publicação, em ISO — a ordenação por data usa este campo. */
   data: string;
-  visualizacoes: number;
+  views: number;
 };
 
 /** Quantas aulas cada rolagem traz. */
@@ -126,16 +126,16 @@ export const PAGE_SIZE = 12;
  * `Math.random()` daria um catálogo diferente a cada render — e, com o servidor
  * paginando, a página 2 não seria a continuação da 1.
  */
-function pseudoAleatorio(semente: number) {
-  let estado = semente;
+function seededRandom(seed: number) {
+  let state = seed;
 
   return () => {
-    estado = (estado * 1664525 + 1013904223) % 4294967296;
-    return estado / 4294967296;
+    state = (state * 1664525 + 1013904223) % 4294967296;
+    return state / 4294967296;
   };
 }
 
-const TITULOS: Record<CategoriaSlug, Array<string>> = {
+const TITLES: Record<TrackSlug, Array<string>> = {
   estrategia: [
     "Como Explorar Range Advantage no Flop",
     "Barrel de Continuação: Quando e Como Usar",
@@ -189,53 +189,54 @@ const TITULOS: Record<CategoriaSlug, Array<string>> = {
 };
 
 /** Tamanho do acervo simulado. */
-const TOTAL_ACERVO = 128;
+const CATALOG_SIZE = 128;
 
-const ACERVO: Array<Aula> = (() => {
-  const random = pseudoAleatorio(20260830);
-  const agora = Date.UTC(2026, 7, 30);
-  const aulas: Array<Aula> = [];
+const CATALOG: Array<Lesson> = (() => {
+  const random = seededRandom(20260830);
+  const now = Date.UTC(2026, 7, 30);
+  const lessons: Array<Lesson> = [];
 
-  for (let i = 0; i < TOTAL_ACERVO; i++) {
-    const categoria = CATEGORIAS[i % CATEGORIAS.length];
-    const titulos = TITULOS[categoria.slug];
-    const titulo = titulos[Math.floor(random() * titulos.length)];
-    const duracao = Math.floor(600 + random() * 1200);
-    const progresso = random();
+  for (let i = 0; i < CATALOG_SIZE; i++) {
+    const track = TRACKS[i % TRACKS.length];
+    const titles = TITLES[track.slug];
+    const title = titles[Math.floor(random() * titles.length)];
+    const duration = Math.floor(600 + random() * 1200);
+    const progressRatio = random();
 
-    aulas.push({
+    lessons.push({
       id: `aula-${i + 1}`,
-      slug: `${categoria.slug}-${i + 1}`,
+      slug: `${track.slug}-${i + 1}`,
       // O acervo real terá títulos únicos; aqui o índice evita repetição.
-      titulo: i < titulos.length ? titulo : `${titulo} #${i + 1}`,
-      categoria,
-      instrutor: INSTRUTORES[Math.floor(random() * INSTRUTORES.length)],
-      nivel: NIVEIS[Math.floor(random() * NIVEIS.length)],
-      duracao,
+      title: i < titles.length ? title : `${title} #${i + 1}`,
+      track,
+      instructor: INSTRUCTORS[Math.floor(random() * INSTRUCTORS.length)],
+      level: LEVELS[Math.floor(random() * LEVELS.length)],
+      duration,
       // Só parte do acervo tem progresso: a maioria nunca foi aberta.
-      assistido: progresso > 0.75 ? Math.floor(duracao * (progresso - 0.7)) : 0,
-      data: new Date(agora - i * 86400000 * 2).toISOString(),
-      visualizacoes: Math.floor(random() * 4000),
+      watched:
+        progressRatio > 0.75 ? Math.floor(duration * (progressRatio - 0.7)) : 0,
+      data: new Date(now - i * 86400000 * 2).toISOString(),
+      views: Math.floor(random() * 4000),
     });
   }
 
-  return aulas;
+  return lessons;
 })();
 
 /* -------------------------------------------------------------------------- */
 /*                            Filtros e ordenação                             */
 /* -------------------------------------------------------------------------- */
 
-export const ORDENS = [
+export const SORT_ORDERS = [
   "recentes",
   "antigas",
   "populares",
   "curtas",
   "longas",
 ] as const;
-export type Ordem = (typeof ORDENS)[number];
+export type SortOrder = (typeof SORT_ORDERS)[number];
 
-export const ORDEM_LABEL: Record<Ordem, string> = {
+export const ORDER_LABEL: Record<SortOrder, string> = {
   recentes: "Mais recentes",
   antigas: "Mais antigas",
   populares: "Mais assistidas",
@@ -244,64 +245,64 @@ export const ORDEM_LABEL: Record<Ordem, string> = {
 };
 
 /** Estado completo da listagem — espelha os parâmetros da URL. */
-export type FiltroAulas = {
-  busca?: string;
+export type LessonFilter = {
+  search?: string;
   /** Trilha: o mesmo parâmetro que a sidebar controla. */
-  categoria?: CategoriaSlug;
-  instrutor?: string;
+  track?: TrackSlug;
+  instructor?: string;
   /** Intervalo de publicação, em `AAAA-MM-DD`. Os dois lados são opcionais. */
-  de?: string;
-  ate?: string;
-  ordem?: Ordem;
+  from?: string;
+  to?: string;
+  order?: SortOrder;
 };
 
 /** Acima de 95% a aula conta como concluída: ninguém assiste os créditos. */
-const LIMIAR_CONCLUIDA = 0.95;
+const COMPLETION_THRESHOLD = 0.95;
 
-function normalizar(texto: string) {
+function normalize(text: string) {
   // Sem acentos: "estrategia" precisa encontrar "Estratégia".
-  return texto
+  return text
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
 }
 
-function combina(aula: Aula, filtro: FiltroAulas) {
-  if (filtro.categoria && aula.categoria.slug !== filtro.categoria)
+function matches(lesson: Lesson, filter: LessonFilter) {
+  if (filter.track && lesson.track.slug !== filter.track) return false;
+  if (filter.instructor && lesson.instructor !== filter.instructor)
     return false;
-  if (filtro.instrutor && aula.instrutor !== filtro.instrutor) return false;
 
   // Compara só a parte da data: o intervalo é inclusivo nas duas pontas, e
   // uma aula publicada às 14h do dia "até" não pode ficar de fora.
-  const dia = aula.data.slice(0, 10);
-  if (filtro.de && dia < filtro.de) return false;
-  if (filtro.ate && dia > filtro.ate) return false;
+  const day = lesson.data.slice(0, 10);
+  if (filter.from && day < filter.from) return false;
+  if (filter.to && day > filter.to) return false;
 
-  if (filtro.busca) {
-    const termo = normalizar(filtro.busca);
-    const alvo = normalizar(
-      `${aula.titulo} ${aula.instrutor} ${aula.categoria.nome}`,
+  if (filter.search) {
+    const term = normalize(filter.search);
+    const target = normalize(
+      `${lesson.title} ${lesson.instructor} ${lesson.track.name}`,
     );
-    if (!alvo.includes(termo)) return false;
+    if (!target.includes(term)) return false;
   }
 
   return true;
 }
 
-const COMPARADORES: Record<Ordem, (a: Aula, b: Aula) => number> = {
+const COMPARATORS: Record<SortOrder, (a: Lesson, b: Lesson) => number> = {
   recentes: (a, b) => b.data.localeCompare(a.data),
   antigas: (a, b) => a.data.localeCompare(b.data),
-  populares: (a, b) => b.visualizacoes - a.visualizacoes,
-  curtas: (a, b) => a.duracao - b.duracao,
-  longas: (a, b) => b.duracao - a.duracao,
+  populares: (a, b) => b.views - a.views,
+  curtas: (a, b) => a.duration - b.duration,
+  longas: (a, b) => b.duration - a.duration,
 };
 
-export type PaginaAulas = {
-  aulas: Array<Aula>;
+export type LessonsResult = {
+  lessons: Array<Lesson>;
   /** Total de resultados do filtro, não do acervo. */
   total: number;
   /** Se existe página seguinte — é o que destrava a rolagem infinita. */
-  temMais: boolean;
+  hasMore: boolean;
 };
 
 /**
@@ -310,21 +311,21 @@ export type PaginaAulas = {
  * A paginação é do servidor, e não um `slice` no cliente: o acervo tem 128
  * aulas hoje e não faz sentido baixá-lo inteiro para mostrar 12.
  */
-export async function listarAulas(
-  filtro: FiltroAulas = {},
-  pagina = 1,
-): Promise<PaginaAulas> {
-  const resultado = ACERVO.filter((aula) => combina(aula, filtro)).sort(
-    COMPARADORES[filtro.ordem ?? "recentes"],
+export async function listLessons(
+  filter: LessonFilter = {},
+  page = 1,
+): Promise<LessonsResult> {
+  const result = CATALOG.filter((lesson) => matches(lesson, filter)).sort(
+    COMPARATORS[filter.order ?? "recentes"],
   );
 
-  const inicio = (Math.max(1, pagina) - 1) * PAGE_SIZE;
-  const aulas = resultado.slice(inicio, inicio + PAGE_SIZE);
+  const start = (Math.max(1, page) - 1) * PAGE_SIZE;
+  const lessons = result.slice(start, start + PAGE_SIZE);
 
   return {
-    aulas,
-    total: resultado.length,
-    temMais: inicio + aulas.length < resultado.length,
+    lessons,
+    total: result.length,
+    hasMore: start + lessons.length < result.length,
   };
 }
 
@@ -336,56 +337,57 @@ export async function listarAulas(
  * mesmo slug da categoria do post. Sem nenhuma palavra em comum devolve
  * `null`: uma sugestão aleatória é pior do que nenhuma.
  */
-export async function getAulaSugerida(
-  assunto: string,
-  categoriaSlug?: string,
-): Promise<Aula | null> {
-  const palavras = normalizar(assunto)
+export async function getSuggestedLesson(
+  subject: string,
+  trackSlug?: string,
+): Promise<Lesson | null> {
+  const words = normalize(subject)
     .split(/[^a-z0-9]+/)
-    .filter((palavra) => palavra.length > 3);
+    .filter((word) => word.length > 3);
 
-  if (palavras.length === 0 && !categoriaSlug) return null;
+  if (words.length === 0 && !trackSlug) return null;
 
-  let melhor: { aula: Aula; pontos: number } | null = null;
+  let best: { lesson: Lesson; score: number } | null = null;
 
-  for (const aula of ACERVO) {
-    const alvo = normalizar(aula.titulo);
-    let pontos = palavras.filter((palavra) => alvo.includes(palavra)).length;
+  for (const lesson of CATALOG) {
+    const target = normalize(lesson.title);
+    let score = words.filter((word) => target.includes(word)).length;
 
-    if (categoriaSlug && aula.categoria.slug === categoriaSlug) pontos += 1;
+    if (trackSlug && lesson.track.slug === trackSlug) score += 1;
 
-    if (pontos > 0 && (!melhor || pontos > melhor.pontos)) {
-      melhor = { aula, pontos };
+    if (score > 0 && (!best || score > best.score)) {
+      best = { lesson, score };
     }
   }
 
-  return melhor?.aula ?? null;
+  return best?.lesson ?? null;
 }
 
 /** O acervo inteiro. Serve às estatísticas do painel, não à listagem. */
-export async function getAcervo(): Promise<Array<Aula>> {
-  return ACERVO;
+export async function getCatalog(): Promise<Array<Lesson>> {
+  return CATALOG;
 }
 
 /** Uma aula pelo slug; `null` quando não existe. */
-export async function getAulaPorSlug(slug: string): Promise<Aula | null> {
-  return ACERVO.find((aula) => aula.slug === slug) ?? null;
+export async function getLessonBySlug(slug: string): Promise<Lesson | null> {
+  return CATALOG.find((lesson) => lesson.slug === slug) ?? null;
 }
 
 /** A aula mais recente ainda em andamento — o card fixo da sidebar. */
-export async function getContinuarAssistindo(): Promise<Aula | null> {
-  const emAndamento = ACERVO.filter(
-    (aula) =>
-      aula.assistido > 0 && aula.assistido / aula.duracao < LIMIAR_CONCLUIDA,
-  ).sort(COMPARADORES.recentes);
+export async function getContinueWatching(): Promise<Lesson | null> {
+  const inProgress = CATALOG.filter(
+    (lesson) =>
+      lesson.watched > 0 &&
+      lesson.watched / lesson.duration < COMPLETION_THRESHOLD,
+  ).sort(COMPARATORS.recentes);
 
-  return emAndamento[0] ?? null;
+  return inProgress[0] ?? null;
 }
 
 /** `1125` → `18:45`. */
-export function formatarDuracao(segundos: number) {
-  const minutos = Math.floor(segundos / 60);
-  const resto = Math.floor(segundos % 60);
+export function formatDuration(seconds: number) {
+  const minutes = Math.floor(seconds / 60);
+  const remainder = Math.floor(seconds % 60);
 
-  return `${minutos}:${String(resto).padStart(2, "0")}`;
+  return `${minutes}:${String(remainder).padStart(2, "0")}`;
 }

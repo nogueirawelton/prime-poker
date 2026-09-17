@@ -5,38 +5,38 @@ import {
   FlameIcon,
   GraduationCapIcon,
 } from "@phosphor-icons/react/dist/ssr";
-import type { Progresso } from "@/services/perfil";
+import type { Progress } from "@/services/profile";
 
 /** Números do estudo e o avanço em cada trilha. */
-export function ProgressoCard({
-  progresso,
-  salvas,
+export function ProgressCard({
+  progress,
+  savedLessons,
 }: {
-  progresso: Progresso;
-  salvas: number;
+  progress: Progress;
+  savedLessons: number;
 }) {
   return (
     <div className="flex flex-col gap-6">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Numero
-          icone={GraduationCapIcon}
-          valor={`${progresso.concluidas}/${progresso.total}`}
-          rotulo="Aulas concluídas"
+        <Stat
+          icon={GraduationCapIcon}
+          value={`${progress.completedCount}/${progress.total}`}
+          label="Aulas concluídas"
         />
-        <Numero
-          icone={ClockIcon}
-          valor={`${progresso.horas}h`}
-          rotulo="Tempo de estudo"
+        <Stat
+          icon={ClockIcon}
+          value={`${progress.hours}h`}
+          label="Tempo de estudo"
         />
-        <Numero
-          icone={FlameIcon}
-          valor={`${progresso.sequencia} dias`}
-          rotulo="Sequência"
+        <Stat
+          icon={FlameIcon}
+          value={`${progress.streak} dias`}
+          label="Sequência"
         />
-        <Numero
-          icone={BookmarkSimpleIcon}
-          valor={String(salvas)}
-          rotulo="Aulas salvas"
+        <Stat
+          icon={BookmarkSimpleIcon}
+          value={String(savedLessons)}
+          label="Aulas salvas"
         />
       </div>
 
@@ -46,33 +46,31 @@ export function ProgressoCard({
         </h2>
 
         <ul className="flex flex-col gap-4">
-          {progresso.trilhas.map((trilha) => {
-            const porcentagem = Math.round(
-              (trilha.concluidas / trilha.total) * 100,
+          {progress.tracks.map((track) => {
+            const percentage = Math.round(
+              (track.completedCount / track.total) * 100,
             );
 
             return (
-              <li key={trilha.categoria.slug} className="flex flex-col gap-1.5">
+              <li key={track.track.slug} className="flex flex-col gap-1.5">
                 <div className="flex items-baseline justify-between gap-3 text-sm">
-                  <span className="text-prime-light">
-                    {trilha.categoria.nome}
-                  </span>
+                  <span className="text-prime-light">{track.track.name}</span>
                   <span className="text-prime-light/50 text-xs tabular-nums">
-                    {trilha.concluidas}/{trilha.total}
+                    {track.completedCount}/{track.total}
                   </span>
                 </div>
 
                 <div
                   role="progressbar"
-                  aria-valuenow={porcentagem}
+                  aria-valuenow={percentage}
                   aria-valuemin={0}
                   aria-valuemax={100}
-                  aria-label={`Progresso em ${trilha.categoria.nome}`}
+                  aria-label={`Progresso em ${track.track.name}`}
                   className="h-1.5 overflow-hidden rounded-full bg-prime-light/10"
                 >
                   <div
                     className="h-full rounded-full bg-prime-red transition-all duration-700"
-                    style={{ width: `${porcentagem}%` }}
+                    style={{ width: `${percentage}%` }}
                   />
                 </div>
               </li>
@@ -84,27 +82,27 @@ export function ProgressoCard({
   );
 }
 
-function Numero({
-  icone: Icone,
-  valor,
-  rotulo,
+function Stat({
+  icon: ItemIcon,
+  value,
+  label,
 }: {
-  icone: Icon;
-  valor: string;
-  rotulo: string;
+  icon: Icon;
+  value: string;
+  label: string;
 }) {
   return (
     <div className="flex items-center gap-4 rounded-xl border border-white/10 bg-white/3 p-5">
       <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-prime-red/15 text-prime-red">
-        <Icone className="size-5" weight="fill" aria-hidden="true" />
+        <ItemIcon className="size-5" weight="fill" aria-hidden="true" />
       </span>
 
       <span>
         <strong className="block font-black text-prime-light text-xl">
-          {valor}
+          {value}
         </strong>
         <span className="block text-prime-light/50 text-xs uppercase tracking-wide">
-          {rotulo}
+          {label}
         </span>
       </span>
     </div>

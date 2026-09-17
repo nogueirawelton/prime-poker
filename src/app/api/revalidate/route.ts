@@ -19,20 +19,20 @@ import { CACHE_TAGS, isCacheTag } from "@/lib/cache-tags";
  * veria a versão velha, como se o cache não tivesse sido limpo.
  */
 export async function GET(request: NextRequest) {
-  const solicitadas = request.nextUrl.searchParams.getAll("tag");
-  const desconhecidas = solicitadas.filter((tag) => !isCacheTag(tag));
+  const requested = request.nextUrl.searchParams.getAll("tag");
+  const unknownTags = requested.filter((tag) => !isCacheTag(tag));
 
-  if (desconhecidas.length > 0) {
+  if (unknownTags.length > 0) {
     return Response.json(
       {
-        message: `Tag desconhecida: ${desconhecidas.map((tag) => `"${tag}"`).join(", ")}`,
+        message: `Tag desconhecida: ${unknownTags.map((tag) => `"${tag}"`).join(", ")}`,
         tags: CACHE_TAGS,
       },
       { status: 400 },
     );
   }
 
-  const tags = solicitadas.length > 0 ? solicitadas : CACHE_TAGS;
+  const tags = requested.length > 0 ? requested : CACHE_TAGS;
 
   try {
     for (const tag of tags) {

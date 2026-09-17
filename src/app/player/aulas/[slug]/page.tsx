@@ -3,13 +3,13 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Breadcrumbs } from "@/components/pages/blog/breadcrumbs";
-import { AulaAcoes } from "@/components/pages/player/aulas/aula-acoes";
-import { AulaCard } from "@/components/pages/player/aulas/aula-card";
-import { AulaPlayer } from "@/components/pages/player/aulas/aula-player";
-import { Duvidas } from "@/components/pages/player/aulas/duvidas";
-import { Materiais } from "@/components/pages/player/aulas/materiais";
-import { getAula, getProximas } from "@/services/aula-detalhe";
-import { formatarDuracao } from "@/services/aulas";
+import { LessonActions } from "@/components/pages/player/lessons/lesson-actions";
+import { LessonCard } from "@/components/pages/player/lessons/lesson-card";
+import { LessonPlayer } from "@/components/pages/player/lessons/lesson-player";
+import { Materials } from "@/components/pages/player/lessons/materials";
+import { Questions } from "@/components/pages/player/lessons/questions";
+import { getLesson, getNextLessons } from "@/services/lesson-detail";
+import { formatDuration } from "@/services/lessons";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -23,30 +23,30 @@ const numberFormatter = new Intl.NumberFormat("pt-BR");
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const aula = await getAula(slug);
+  const lesson = await getLesson(slug);
 
-  if (!aula) return {};
+  if (!lesson) return {};
 
-  return { title: `${aula.titulo} | Prime Poker Team` };
+  return { title: `${lesson.title} | Prime Poker Team` };
 }
 
-export default function AulaPage({ params }: Props) {
+export default function LessonPage({ params }: Props) {
   // A aula depende do slug e do estado do jogador, que só existem em tempo de
   // requisição: tudo atrás do boundary, como nas outras telas da área.
   return (
-    <Suspense fallback={<Esqueleto />}>
-      <Conteudo params={params} />
+    <Suspense fallback={<Skeleton />}>
+      <Content params={params} />
     </Suspense>
   );
 }
 
-async function Conteudo({ params }: Props) {
+async function Content({ params }: Props) {
   const { slug } = await params;
-  const aula = await getAula(slug);
+  const lesson = await getLesson(slug);
 
-  if (!aula) notFound();
+  if (!lesson) notFound();
 
-  const proximas = await getProximas(aula);
+  const nextLessons = await getNextLessons(lesson);
 
   return (
     <div className="mx-auto flex w-full max-w-screen-2xl flex-col gap-6 px-4 py-6 lg:px-8">
@@ -54,75 +54,75 @@ async function Conteudo({ params }: Props) {
         items={[
           { label: "Aulas", href: "/player/aulas" },
           {
-            label: aula.categoria.nome,
-            href: `/player/aulas?cat=${aula.categoria.slug}`,
+            label: lesson.track.name,
+            href: `/player/aulas?cat=${lesson.track.slug}`,
           },
-          { label: aula.titulo },
+          { label: lesson.title },
         ]}
       />
 
-      <AulaPlayer capa={aula.categoria.capa} titulo={aula.titulo} />
+      <LessonPlayer cover={lesson.track.cover} title={lesson.title} />
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <h1 className="font-bold text-2xl text-prime-light leading-tight lg:text-3xl">
-            {aula.titulo}
+            {lesson.title}
           </h1>
 
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-prime-light/60 text-sm">
             <span className="font-medium text-prime-light/80">
-              {aula.instrutor}
+              {lesson.instructor}
             </span>
-            <time dateTime={aula.data}>
-              {dateFormatter.format(new Date(aula.data))}
+            <time dateTime={lesson.data}>
+              {dateFormatter.format(new Date(lesson.data))}
             </time>
-            <span>{formatarDuracao(aula.duracao)}</span>
+            <span>{formatDuration(lesson.duration)}</span>
             <span className="flex items-center gap-1.5">
               <EyeIcon className="size-4" aria-hidden="true" />
-              {numberFormatter.format(aula.visualizacoes)} visualizações
+              {numberFormatter.format(lesson.views)} visualizações
             </span>
           </div>
         </div>
 
-        <AulaAcoes
-          slug={aula.slug}
-          salva={aula.salva}
-          concluida={aula.concluida}
+        <LessonActions
+          slug={lesson.slug}
+          saved={lesson.saved}
+          completed={lesson.completed}
         />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_24rem]">
-        <Secao titulo="Descrição">
+        <Section title="Descrição">
           {/* `rich-text` é a tipografia do conteúdo vindo do editor, a mesma
               usada nos posts do blog. */}
           <div
             className="rich-text"
-            dangerouslySetInnerHTML={{ __html: aula.descricao }}
+            dangerouslySetInnerHTML={{ __html: lesson.description }}
           />
-        </Secao>
+        </Section>
 
-        <Secao titulo="Material de apoio">
-          <Materiais materiais={aula.materiais} />
-        </Secao>
+        <Section title="Material de apoio">
+          <Materials materials={lesson.materials} />
+        </Section>
       </div>
 
-      <Secao titulo="Dúvidas com o instrutor">
-        <Duvidas
-          slug={aula.slug}
-          duvidas={aula.duvidas}
-          instrutor={aula.instrutor}
+      <Section title="Dúvidas com o instrutor">
+        <Questions
+          slug={lesson.slug}
+          questions={lesson.questions}
+          instructor={lesson.instructor}
         />
-      </Secao>
+      </Section>
 
-      {proximas.length > 0 && (
+      {nextLessons.length > 0 && (
         <section className="flex flex-col gap-4">
           <h2 className="font-bold text-lg text-prime-light uppercase">
-            Continue na trilha {aula.categoria.nome}
+            Continue na trilha {lesson.track.name}
           </h2>
 
           <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-            {proximas.map((proxima) => (
-              <AulaCard key={proxima.id} aula={proxima} />
+            {nextLessons.map((nextLesson) => (
+              <LessonCard key={nextLesson.id} lesson={nextLesson} />
             ))}
           </div>
         </section>
@@ -131,17 +131,17 @@ async function Conteudo({ params }: Props) {
   );
 }
 
-function Secao({
-  titulo,
+function Section({
+  title,
   children,
 }: {
-  titulo: string;
+  title: string;
   children: React.ReactNode;
 }) {
   return (
     <section className="flex flex-col overflow-hidden rounded-xl border border-white/10 bg-white/3">
       <h2 className="border-white/10 border-b px-5 py-4 font-bold text-prime-light text-sm uppercase tracking-wide">
-        {titulo}
+        {title}
       </h2>
 
       <div className="p-5">{children}</div>
@@ -149,7 +149,7 @@ function Secao({
   );
 }
 
-function Esqueleto() {
+function Skeleton() {
   return (
     <div
       aria-hidden="true"

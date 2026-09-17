@@ -40,9 +40,9 @@ export async function wp(formId: string, data: Record<string, unknown>) {
   }
 
   if (result.status !== "mail_sent") {
-    const invalido = result.invalid_fields?.[0]?.message;
+    const invalidField = result.invalid_fields?.[0]?.message;
     throw new Error(
-      invalido || result.message || "Não foi possível concluir o envio.",
+      invalidField || result.message || "Não foi possível concluir o envio.",
     );
   }
 

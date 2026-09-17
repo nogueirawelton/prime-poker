@@ -53,9 +53,9 @@ final class Headless {
 		 *
 		 * @param string $url URL de destino.
 		 */
-		$destino = (string) apply_filters( 'prime_players_admin_redirect_url', home_url( '/' ) );
+		$destination = (string) apply_filters( 'prime_players_admin_redirect_url', home_url( '/' ) );
 
-		wp_safe_redirect( $destino );
+		wp_safe_redirect( $destination );
 		exit;
 	}
 

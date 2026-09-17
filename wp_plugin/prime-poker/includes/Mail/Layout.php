@@ -34,10 +34,10 @@ final class Layout {
 	 *     botao?: array{texto: string, url: string},
 	 *     notas?: array<int, string>,
 	 *     link_reserva?: bool
-	 * } $dados Conteúdo.
+	 * } $data Conteúdo.
 	 */
-	public static function render( array $dados ): string {
-		$botao = $dados['botao'] ?? null;
+	public static function render( array $data ): string {
+		$button = $data['button'] ?? null;
 		$site  = self::site_name();
 
 		ob_start();
@@ -47,7 +47,7 @@ final class Layout {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title><?php echo esc_html( $dados['titulo'] ); ?></title>
+<title><?php echo esc_html( $data['title'] ); ?></title>
 </head>
 <body style="margin:0;padding:0;background:#0a0a0a;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;">
@@ -64,43 +64,43 @@ final class Layout {
 				<tr>
 					<td style="padding:32px;">
 						<h1 style="margin:0 0 16px;font-size:22px;font-weight:900;text-transform:uppercase;">
-							<?php echo esc_html( $dados['titulo'] ); ?>
+							<?php echo esc_html( $data['title'] ); ?>
 						</h1>
 
-						<?php if ( ! empty( $dados['saudacao'] ) ) : ?>
+						<?php if ( ! empty( $data['greeting'] ) ) : ?>
 							<p style="margin:0 0 12px;font-size:15px;line-height:1.6;color:rgba(255,255,255,0.85);">
-								<?php echo esc_html( $dados['saudacao'] ); ?>
+								<?php echo esc_html( $data['greeting'] ); ?>
 							</p>
 						<?php endif; ?>
 
-						<?php foreach ( $dados['paragrafos'] ?? array() as $paragrafo ) : ?>
+						<?php foreach ( $data['paragraphs'] ?? array() as $paragraph ) : ?>
 							<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:rgba(255,255,255,0.85);">
-								<?php echo esc_html( $paragrafo ); ?>
+								<?php echo esc_html( $paragraph ); ?>
 							</p>
 						<?php endforeach; ?>
 
-						<?php if ( $botao ) : ?>
+						<?php if ( $button ) : ?>
 							<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:8px;">
 								<tr>
 									<td style="border-radius:6px;background:#ff1820;">
-										<a href="<?php echo esc_url( $botao['url'] ); ?>" style="display:inline-block;padding:16px 28px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;text-transform:uppercase;letter-spacing:1px;">
-											<?php echo esc_html( $botao['texto'] ); ?>
+										<a href="<?php echo esc_url( $button['url'] ); ?>" style="display:inline-block;padding:16px 28px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;text-transform:uppercase;letter-spacing:1px;">
+											<?php echo esc_html( $button['text'] ); ?>
 										</a>
 									</td>
 								</tr>
 							</table>
 						<?php endif; ?>
 
-						<?php foreach ( $dados['notas'] ?? array() as $i => $nota ) : ?>
+						<?php foreach ( $data['notes'] ?? array() as $i => $note ) : ?>
 							<p style="margin:<?php echo 0 === $i ? '24px' : '12px'; ?> 0 0;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.6);">
-								<?php echo esc_html( $nota ); ?>
+								<?php echo esc_html( $note ); ?>
 							</p>
 						<?php endforeach; ?>
 
-						<?php if ( $botao && ! empty( $dados['link_reserva'] ) ) : ?>
+						<?php if ( $button && ! empty( $data['fallback_link'] ) ) : ?>
 							<p style="margin:24px 0 0;font-size:12px;line-height:1.6;color:rgba(255,255,255,0.45);word-break:break-all;">
 								<?php esc_html_e( 'Se o botão não funcionar, copie e cole este endereço no navegador:', 'prime-poker' ); ?><br>
-								<a href="<?php echo esc_url( $botao['url'] ); ?>" style="color:#ff1820;"><?php echo esc_html( $botao['url'] ); ?></a>
+								<a href="<?php echo esc_url( $button['url'] ); ?>" style="color:#ff1820;"><?php echo esc_html( $button['url'] ); ?></a>
 							</p>
 						<?php endif; ?>
 					</td>

@@ -70,15 +70,15 @@ final class Expiration {
 		 *
 		 * @param string $tier Slug do tier.
 		 */
-		$destino = (string) apply_filters( 'prime_players_expiration_tier', Tiers::FREE );
+		$destination = (string) apply_filters( 'prime_players_expiration_tier', Tiers::FREE );
 
-		if ( ! Tiers::exists( $destino ) ) {
+		if ( ! Tiers::exists( $destination ) ) {
 			return;
 		}
 
-		$vencidos = get_users(
+		$expired = get_users(
 			array(
-				'role__in'   => array_values( array_diff( Tiers::slugs(), array( $destino ) ) ),
+				'role__in'   => array_values( array_diff( Tiers::slugs(), array( $destination ) ) ),
 				'meta_query' => array(
 					array(
 						'key'     => Membership::META_EXPIRES,
@@ -92,12 +92,12 @@ final class Expiration {
 			)
 		);
 
-		foreach ( $vencidos as $user_id ) {
-			Membership::set_tier( (int) $user_id, $destino, null, 'expiration' );
+		foreach ( $expired as $user_id ) {
+			Membership::set_tier( (int) $user_id, $destination, null, 'expiration' );
 		}
 
 		// Lote cheio quase certamente significa que sobrou fila.
-		if ( count( $vencidos ) >= self::BATCH ) {
+		if ( count( $expired ) >= self::BATCH ) {
 			wp_schedule_single_event( time() + MINUTE_IN_SECONDS, self::HOOK );
 		}
 	}

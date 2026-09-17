@@ -53,17 +53,17 @@ const ROLES_VERSION = '1.0.0';
  */
 spl_autoload_register(
 	static function ( string $class ): void {
-		$prefixo = __NAMESPACE__ . '\\';
+		$prefix = __NAMESPACE__ . '\\';
 
-		if ( ! str_starts_with( $class, $prefixo ) ) {
+		if ( ! str_starts_with( $class, $prefix ) ) {
 			return;
 		}
 
-		$relativo = substr( $class, strlen( $prefixo ) );
-		$arquivo  = __DIR__ . '/includes/' . str_replace( '\\', '/', $relativo ) . '.php';
+		$relative = substr( $class, strlen( $prefix ) );
+		$file  = __DIR__ . '/includes/' . str_replace( '\\', '/', $relative ) . '.php';
 
-		if ( is_readable( $arquivo ) ) {
-			require_once $arquivo;
+		if ( is_readable( $file ) ) {
+			require_once $file;
 		}
 	}
 );

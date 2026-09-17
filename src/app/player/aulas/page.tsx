@@ -1,23 +1,23 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { AulasLista } from "@/components/pages/player/aulas/aulas-lista";
-import { AulasSearch } from "@/components/pages/player/aulas/aulas-search";
-import { GRID } from "@/components/pages/player/aulas/grid";
-import { AulasTrilhasMobile } from "@/components/shared/player/aulas-sidebar";
+import { GRID } from "@/components/pages/player/lessons/grid";
+import { LessonsList } from "@/components/pages/player/lessons/lessons-list";
+import { LessonsSearch } from "@/components/pages/player/lessons/lessons-search";
+import { MobileTracks } from "@/components/shared/player/lessons-sidebar";
 import {
-  type AulasSearchParams,
-  contarFiltros,
-  parseFiltro,
-} from "@/lib/aulas-params";
-import { listarAulas } from "@/services/aulas";
+  countFilters,
+  type LessonsSearchParams,
+  parseFilter,
+} from "@/lib/lessons-params";
+import { listLessons } from "@/services/lessons";
 
 export const metadata: Metadata = {
   title: "Aulas | Prime Poker Team",
 };
 
-type Props = { searchParams: Promise<AulasSearchParams> };
+type Props = { searchParams: Promise<LessonsSearchParams> };
 
-export default function AulasPage({ searchParams }: Props) {
+export default function LessonsPage({ searchParams }: Props) {
   return (
     <div className="flex flex-col gap-8 px-4 py-8 lg:px-8">
       <header>
@@ -33,33 +33,33 @@ export default function AulasPage({ searchParams }: Props) {
           requisição. Atrás dos boundaries, o cabeçalho continua
           prerenderizado no shell estático. */}
       <Suspense fallback={<div className="h-10 lg:hidden" />}>
-        <AulasTrilhasMobile />
+        <MobileTracks />
       </Suspense>
 
       <Suspense fallback={<div className="h-14" />}>
-        <Controles searchParams={searchParams} />
+        <Controls searchParams={searchParams} />
       </Suspense>
 
-      <Suspense fallback={<Esqueleto />}>
-        <Resultados searchParams={searchParams} />
+      <Suspense fallback={<Skeleton />}>
+        <Results searchParams={searchParams} />
       </Suspense>
     </div>
   );
 }
 
-async function Controles({ searchParams }: Props) {
-  const filtro = parseFiltro(await searchParams);
+async function Controls({ searchParams }: Props) {
+  const filter = parseFilter(await searchParams);
 
-  return <AulasSearch filtrosAtivos={contarFiltros(filtro)} />;
+  return <LessonsSearch activeFilters={countFilters(filter)} />;
 }
 
-async function Resultados({ searchParams }: Props) {
+async function Results({ searchParams }: Props) {
   const params = await searchParams;
-  const filtro = parseFiltro(params);
+  const filter = parseFilter(params);
 
-  const { aulas, total, temMais } = await listarAulas(filtro);
+  const { lessons, total, hasMore } = await listLessons(filter);
 
-  if (aulas.length === 0) {
+  if (lessons.length === 0) {
     return (
       <div className="rounded-xl border border-white/10 border-dashed p-16 text-center">
         <p className="text-prime-light">
@@ -81,17 +81,17 @@ async function Resultados({ searchParams }: Props) {
 
       {/* A `key` derivada da URL descarta a lista acumulada quando o filtro
           muda — sem ela, os resultados antigos continuariam na rolagem. */}
-      <AulasLista
+      <LessonsList
         key={JSON.stringify(params)}
-        inicial={aulas}
-        temMais={temMais}
+        initial={lessons}
+        hasMore={hasMore}
         params={params}
       />
     </div>
   );
 }
 
-function Esqueleto() {
+function Skeleton() {
   return (
     <div className={GRID} aria-hidden="true">
       {Array.from({ length: 8 }, (_, index) => index).map((index) => (

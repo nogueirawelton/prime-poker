@@ -13,22 +13,22 @@ const ReactPlayer = dynamic(() => import("react-player"), { ssr: false });
  * Enquanto o CMS não devolve a URL do vídeo, mostra a capa da trilha com o
  * botão de play desabilitado — um player vazio pareceria quebrado.
  */
-export function AulaPlayer({
+export function LessonPlayer({
   url,
-  capa,
-  titulo,
+  cover,
+  title,
 }: {
   url?: string;
   /** Gradiente da trilha, usado no lugar do poster. */
-  capa: string;
-  titulo: string;
+  cover: string;
+  title: string;
 }) {
   if (!url) {
     return (
       <div
         className={twMerge(
           "flex aspect-video w-full items-center justify-center rounded-xl border border-white/10 bg-gradient-to-br",
-          capa,
+          cover,
         )}
       >
         <div className="flex flex-col items-center gap-3 text-center">
@@ -55,7 +55,7 @@ export function AulaPlayer({
         playsInline
         width="100%"
         height="100%"
-        title={titulo}
+        title={title}
       />
     </div>
   );

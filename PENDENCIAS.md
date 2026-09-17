@@ -116,7 +116,7 @@ Precisa estar certa antes de qualquer outra etapa.
 **👤 Você**
 - [x] ❓ Segredo na rota → **decisão: a rota fica aberta** (sem `REVALIDATE_SECRET`).
 - [x] Commit + push do código na `staging` (feito por você: `6c3f6d2`)
-- [ ] ⚠️ O `6c3f6d2` foi **antes** do botão na barra superior: o `Revalidation.php` com o
+- [x] ⚠️ O `6c3f6d2` foi **antes** do botão na barra superior: o `Revalidation.php` com o
       botão ainda não está commitado nem no WP. Commitar e subir o plugin de novo
       (mesma versão 1.7.0, só substituir o arquivo). (o front novo precisa estar no ar
       para aceitar várias tags e a tag `seo`).
@@ -181,14 +181,14 @@ Base de todas as etapas da área do jogador.
       `Authorization: Bearer` do cookie. Se o WP recusar, confere o token localmente:
       sessão inválida → `/login`; sessão válida → o erro sobe como erro de verdade
       (não manda alguém logado para o login por causa de uma query quebrada).
-- [x] `services/perfil.ts` → `getPerfil()` real via `viewer` (`graphql/queries/player/VIEWER.ts`),
+- [x] `services/profile.ts` → `getProfile()` real via `viewer` (`graphql/queries/player/VIEWER.ts`),
       deduplicado por requisição (menu + painel = uma ida ao WP). Conta sem usuário no WP → `/login`.
 - [x] Cor do selo por tier no front (free cinza, basic azul, gold âmbar, platinum violeta);
       rótulo vem do WP. Usuário sem tier (equipe) não mostra selo.
 - [x] Menu do header com nome, iniciais e tier (atrás de Suspense; o fallback é o menu
       funcional com "Minha conta"). TODO do código removido.
 - [x] Card do perfil não repete o e-mail como `@usuario` quando são iguais.
-- [x] `utils/iniciais.ts`: a mesma função estava copiada em 5 componentes — unificada.
+- [x] `utils/initials.ts`: a mesma função estava copiada em 5 componentes — unificada.
 - [x] Testado no build de produção com os 4 usuários: `/player/` e `/player/aulas/` → 200,
       nome, e-mail, tier, iniciais e "Membro desde" corretos; sem cookie → 307 `/login`.
 
@@ -201,26 +201,26 @@ Desligar em *GraphQL → Settings → Enable GraphQL Debug Mode*. O front não d
 
 ---
 
-## Etapa 5 — Recuperação de senha + e-mail de boas-vindas 🟡 código pronto — falta subir e testar
+## Etapa 5 — Recuperação de senha + e-mail de boas-vindas ✅ concluída (17/09/2026)
 
 **👤 Você**
 - [x] SMTP funcionando (etapa 0).
 - [x] ❓ Texto e assunto do e-mail → **a critério do Claude**.
-- [ ] Commit + push na `staging`.
-- [ ] Subir o plugin **1.9.0** no WP.
-- [ ] Em *Configurações → Cache do site*, garantir a **produção na primeira linha** (é o
+- [x] Commit + push na `staging`.
+- [x] Subir o plugin **1.9.0** no WP.
+- [x] Em *Configurações → Cache do site*, garantir a **produção na primeira linha** (é o
       destino padrão dos links) e a staging na segunda.
-- [ ] Testar na staging com um e-mail que você recebe (os `teste.*@primepokerteam.com.br`
+- [x] Testar na staging com um e-mail que você recebe (os `teste.*@primepokerteam.com.br`
       provavelmente não têm caixa — troque o e-mail de um deles no painel ou use sua conta):
       1. Login → "Esqueci minha senha" → informar o e-mail.
       2. Conferir o e-mail: visual, assunto, link apontando para a **staging**.
       3. Abrir o link, salvar a nova senha → volta para o login → entrar com a nova.
       4. Abrir o mesmo link de novo → deve dizer que é inválido/já usado.
-- [ ] Testar o **cadastro** na staging com um e-mail seu: a conta é criada rápido (o e-mail
+- [x] Testar o **cadastro** na staging com um e-mail seu: a conta é criada rápido (o e-mail
       sai depois da resposta) e chega "Boas-vindas ao Prime Poker Team!" com o seu nome e o
       botão apontando para a staging.
-- [ ] ❓ Avisar a equipe (admin) a cada cadastro novo? Hoje ninguém da equipe é notificado.
-- [ ] Me contar o resultado (e mandar print do e-mail, se algo parecer estranho).
+- [] ❓ Avisar a equipe (admin) a cada cadastro novo? Hoje ninguém é notificado — **em aberto, não bloqueia**.
+- [x] Me contar o resultado (e mandar print do e-mail, se algo parecer estranho).
 
 **🤖 Claude**
 - [x] Conferido no código do WPGraphQL: `sendPasswordResetEmail` usa os filtros
@@ -235,7 +235,7 @@ Desligar em *GraphQL → Settings → Enable GraphQL Debug Mode*. O front não d
       token com segredo antigo continuava aceito por até 30 dias). Agora redefinir a senha
       ou trocá-la no painel gira o segredo e o refresh antigo é recusado.
 - [x] `password-recovery-dialog.tsx`: `setTimeout` (TODO) trocado pela action
-      `solicitarRedefinicao`, mantendo a mensagem neutra; só falha de rede vira erro.
+      `requestPasswordReset`, mantendo a mensagem neutra; só falha de rede vira erro.
 - [x] Página `(auth)/redefinir-senha` + `reset-password-form.tsx`: nova senha e confirmação
       (mín. 8, como no cadastro); link vencido/usado/incompleto troca o formulário por
       "Pedir um novo link"; sucesso limpa os cookies deste navegador e leva ao login.
@@ -247,21 +247,44 @@ Desligar em *GraphQL → Settings → Enable GraphQL Debug Mode*. O front não d
 - [x] Layout de e-mail e resolução do endereço do front extraídos (`Mail/Layout.php`,
       `Front.php`) — redefinição de senha e boas-vindas usam os mesmos.
 - [x] Action de cadastro envia `X-Prime-Front-Url`.
+- [x] **Logout lento corrigido** (apontado por você): o `revalidatePath("/", "layout")` invalidava
+      o cache do servidor para todos a cada saída, e a home era remontada consultando o WP. Removido
+      — apagar os cookies na Server Action já limpa o cache do navegador. Adicionado overlay
+      "Saindo…" enquanto a saída não termina. Validado por você.
 - [x] Testes: plugin com WP simulado (16 cenários — link por ambiente, domínio de atacante,
       HTML só no e-mail certo, giro do segredo, refresh antigo recusado, revogado intacto);
       mensagem real do WP para chave inválida casa com a tradução; página no build de
       produção sem parâmetros (link incompleto) e com parâmetros (formulário com key e
       login decodificado).
-- [ ] Conferir o fluxo real na staging depois do seu teste.
+- [x] Fluxo real na staging validado por você (redefinição e boas-vindas).
 
 **✅ Pronto quando:** você recebe o e-mail, troca a senha e entra com a nova; e um cadastro
 novo recebe o e-mail de boas-vindas.
 
 ---
 
+## Manutenção — código em inglês ✅ concluída (17/09/2026)
+
+Regra registrada no `CLAUDE.md`: todo código em inglês; comentários, textos de interface, rotas,
+valores de URL/dados e contratos externos (CF7, ACF, WP) continuam em português.
+
+- [x] Front: ~2.500 identificadores renomeados com análise do TypeScript (não busca-e-troca),
+      com checagem de conflito de escopo, sombreamento e chaves duplicadas antes de aplicar.
+- [x] 23 arquivos/pastas de código renomeados (`services/lessons.ts`, `components/pages/player/lessons/`,
+      `dashboard/`, `notifications/`…); pastas de rota em `src/app` intactas.
+- [x] Nomes de campos de formulário (`password`, `name`, `lastName`, `confirmPassword`,
+      `acceptTerms`, `text`) trocados nos dois lados; `path` dos erros do zod corrigido.
+- [x] Plugin PHP: variáveis, método `count_posts` e chaves do layout de e-mail em inglês.
+- [x] Verificado: typecheck, lint (só avisos/erros que já existiam em arquivos não tocados),
+      `php -l`, testes simulados do plugin, build de produção e páginas reais com usuário logado
+      (painel, aulas com filtros/ordenação/datas, aula, notificações com `?filtro=`, blog, login,
+      cadastro, redefinição, sitemap).
+
+---
+
 ## Etapa 6 — Aulas: estrutura no WP
 
-Substitui o mock de `services/aulas.ts` e `services/aula-detalhe.ts`.
+Substitui o mock de `services/lessons.ts` e `services/lesson-detail.ts`.
 
 **👤 Você**
 - [ ] ❓ **Hospedagem dos vídeos:** YouTube não listado, Vimeo, Panda Video, Bunny ou arquivo no WP?
@@ -301,16 +324,16 @@ e um usuário free não recebe o vídeo de uma aula gold.
 - [ ] Testar em staging com os usuários de cada tier e me dizer o que ficou estranho.
 
 **🤖 Claude**
-- [ ] `services/aulas.ts`: trocar o acervo gerado por queries (`listarAulas`, `getAulaPorSlug`,
-      `getAcervo`, `getAulaSugerida`), mantendo as assinaturas — os componentes não mudam.
-- [ ] Trilhas e instrutores do filtro vindos do WP (hoje `CATEGORIAS` e `INSTRUTORES` são fixos).
+- [ ] `services/lessons.ts`: trocar o acervo gerado por queries (`listLessons`, `getLessonBySlug`,
+      `getCatalog`, `getSuggestedLesson`), mantendo as assinaturas — os componentes não mudam.
+- [ ] Trilhas e instrutores do filtro vindos do WP (hoje `TRACKS` e `INSTRUCTORS` são fixos).
 - [ ] Converter a chave de `cor` da trilha nas classes do selo e do gradiente da capa.
-- [ ] `aula-card.tsx`: usar a imagem destacada no lugar do gradiente provisório.
-- [ ] `aulas/[slug]/page.tsx`: passar a `url` do vídeo para o `AulaPlayer` (hoje nunca passa)
+- [ ] `lesson-card.tsx`: usar a imagem destacada no lugar do gradiente provisório.
+- [ ] `aulas/[slug]/page.tsx`: passar a `url` do vídeo para o `LessonPlayer` (hoje nunca passa)
       e usar a descrição do editor.
 - [ ] Materiais com link de download real (tamanho vindo da media library).
 - [ ] Estado de "sem acesso" conforme a regra definida na etapa 6.
-- [ ] `aula-card.tsx`: implementar o menu de ações ⋮ (salvar, marcar como assistida,
+- [ ] `lesson-card.tsx`: implementar o menu de ações ⋮ (salvar, marcar como assistida,
       compartilhar) — TODO no código.
 - [ ] Post do blog → "aula sugerida" usando as aulas reais.
 - [ ] Contabilizar a visualização ao abrir a aula.
@@ -330,9 +353,9 @@ funcionam só com dados do WP.
 - [ ] Plugin: user meta para progresso por aula, salvas, concluídas e dias de estudo.
 - [ ] Plugin GraphQL: campos `meuProgresso`, `salva`, `concluida` na `Aula`; mutations
       `alternarAulaSalva`, `alternarAulaConcluida`, `registrarProgresso`; `viewer.sequenciaEstudo`.
-- [ ] `services/aula-detalhe.ts` e `services/perfil.ts`: remover os `Set`/`Map` em memória
+- [ ] `services/lesson-detail.ts` e `services/profile.ts`: remover os `Set`/`Map` em memória
       e a sequência fixa `7` (TODO).
-- [ ] `AulaPlayer`: enviar o progresso periodicamente (a cada ~15s e ao pausar/sair)
+- [ ] `LessonPlayer`: enviar o progresso periodicamente (a cada ~15s e ao pausar/sair)
       e retomar de onde parou.
 - [ ] "Continuar assistindo", painel de progresso por trilha e horas assistidas com dados reais.
 
@@ -354,8 +377,8 @@ do mesmo ponto; salvas e concluídas persistem.
 - [ ] Plugin: comentários do CPT aula restritos a `access_player_area` (leitura e escrita),
       com aprovação automática ou moderação conforme sua decisão.
 - [ ] Plugin GraphQL: `ehInstrutor` no comentário.
-- [ ] `enviarDuvida` e a listagem de dúvidas usando os comentários reais (via `authMutate`).
-- [ ] Remover a conversa de exemplo (`duvidasIniciais`).
+- [ ] `sendQuestion` e a listagem de dúvidas usando os comentários reais (via `authMutate`).
+- [ ] Remover a conversa de exemplo (`initialQuestions`).
 - [ ] Notificar o jogador quando a dúvida for respondida (liga com a etapa 10).
 
 **✅ Pronto quando:** você pergunta em staging, responde pelo WP e a resposta aparece como instrutor.
@@ -376,7 +399,7 @@ do mesmo ponto; salvas e concluídas persistem.
       mutations `marcarNotificacao(id, lida)` e `marcarTodasLidas`.
 - [ ] Plugin: gerar a notificação automaticamente ao publicar aula, ao responder dúvida
       e nas conquistas escolhidas.
-- [ ] `services/notificacoes.ts` e `actions/notificacoes.ts` ligados no WP; sino, painel
+- [ ] `services/notifications.ts` e `actions/notifications.ts` ligados no WP; sino, painel
       e página de notificações com dados reais.
 
 **✅ Pronto quando:** publicar uma aula gera a notificação, e o "lida" persiste entre dispositivos.
@@ -430,7 +453,6 @@ do mesmo ponto; salvas e concluídas persistem.
 | 2 | 1 | Nomes finais dos campos do formulário de inscrição |
 | 3 | 1 | Newsletter só por e-mail ou integrada a uma ferramenta |
 | 4 | 2 | Serviço/URL do feed do Instagram |
-| 5 | 5 | Texto do e-mail de redefinição de senha |
 | 6 | 6 | Onde hospedar os vídeos |
 | 7 | 6 | Regra de acesso por tier e o que o bloqueado vê |
 | 8 | 6 | Trilhas e níveis definitivos |

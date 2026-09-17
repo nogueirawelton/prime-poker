@@ -14,26 +14,26 @@ import { toast } from "react-toastify";
 import { type RegisterState, registerUser } from "@/actions/auth";
 import { IconInput } from "@/components/ui/form/icon-input";
 
-const ESTADO_INICIAL: RegisterState = { status: "idle" };
+const INITIAL_STATE: RegisterState = { status: "idle" };
 
 /** Botão de mostrar/ocultar reaproveitado pelos dois campos de senha. */
-function ToggleSenha({
-  visivel,
+function PasswordToggle({
+  visible,
   onToggle,
 }: {
-  visivel: boolean;
+  visible: boolean;
   onToggle: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onToggle}
-      aria-label={visivel ? "Ocultar senha" : "Mostrar senha"}
+      aria-label={visible ? "Ocultar senha" : "Mostrar senha"}
       // `aria-pressed` comunica o estado do botão a leitores de tela.
-      aria-pressed={visivel}
+      aria-pressed={visible}
       className="grid size-10 place-items-center rounded-md text-prime-light/50 transition-colors duration-500 hover:text-prime-light"
     >
-      {visivel ? (
+      {visible ? (
         <EyeSlashIcon className="size-5" />
       ) : (
         <EyeIcon className="size-5" />
@@ -43,43 +43,43 @@ function ToggleSenha({
 }
 
 export function RegisterForm() {
-  const nomeId = useId();
-  const sobrenomeId = useId();
+  const nameId = useId();
+  const lastNameId = useId();
   const emailId = useId();
-  const senhaId = useId();
-  const confirmarId = useId();
-  const aceiteId = useId();
+  const passwordId = useId();
+  const confirmId = useId();
+  const acceptTermsId = useId();
 
   const router = useRouter();
 
-  const [verSenha, setVerSenha] = useState(false);
-  const [verConfirmar, setVerConfirmar] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
-  const [estado, formAction, pending] = useActionState(
+  const [state, formAction, pending] = useActionState(
     registerUser,
-    ESTADO_INICIAL,
+    INITIAL_STATE,
   );
 
   // O React reinicia o formulário depois que a action responde, então os
   // campos voltam ao `defaultValue` — que aqui é o que o servidor devolveu.
   // As senhas não são preservadas de propósito e ficam em branco.
-  const valores = estado.values;
-  const erros = estado.errors;
+  const values = state.values;
+  const errors = state.errors;
 
   useEffect(() => {
-    if (estado.status === "error" && estado.message) {
-      toast.error(estado.message);
+    if (state.status === "error" && state.message) {
+      toast.error(state.message);
       return;
     }
 
-    if (estado.status === "success") {
+    if (state.status === "success") {
       // Ainda não há sessão: a conta existe no WP, mas quem autentica é o login.
       toast.success(
         "Usuário cadastrado com sucesso! Use suas credenciais para acessar.",
       );
       router.push("/login");
     }
-  }, [estado, router]);
+  }, [state, router]);
 
   return (
     // `noValidate`: sem isso a validação nativa do HTML5 dispara antes da
@@ -89,39 +89,39 @@ export function RegisterForm() {
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
           <label
-            htmlFor={nomeId}
+            htmlFor={nameId}
             className="font-semibold text-prime-light text-sm"
           >
             Nome
           </label>
 
           <IconInput
-            id={nomeId}
-            name="nome"
+            id={nameId}
+            name="name"
             icon={UserIcon}
             autoComplete="given-name"
             placeholder="Seu nome"
-            defaultValue={valores?.nome}
-            error={erros?.nome}
+            defaultValue={values?.name}
+            error={errors?.name}
           />
         </div>
 
         <div className="flex flex-col gap-1.5">
           <label
-            htmlFor={sobrenomeId}
+            htmlFor={lastNameId}
             className="font-semibold text-prime-light text-sm"
           >
             Sobrenome
           </label>
 
           <IconInput
-            id={sobrenomeId}
-            name="sobrenome"
+            id={lastNameId}
+            name="lastName"
             icon={UserIcon}
             autoComplete="family-name"
             placeholder="Seu sobrenome"
-            defaultValue={valores?.sobrenome}
-            error={erros?.sobrenome}
+            defaultValue={values?.lastName}
+            error={errors?.lastName}
           />
         </div>
       </div>
@@ -141,8 +141,8 @@ export function RegisterForm() {
           type="email"
           autoComplete="email"
           placeholder="seu@email.com"
-          defaultValue={valores?.email}
-          error={erros?.email}
+          defaultValue={values?.email}
+          error={errors?.email}
         />
 
         <small className="text-prime-light/50 text-xs">
@@ -152,24 +152,24 @@ export function RegisterForm() {
 
       <div className="flex flex-col gap-1.5">
         <label
-          htmlFor={senhaId}
+          htmlFor={passwordId}
           className="font-semibold text-prime-light text-sm"
         >
           Senha
         </label>
 
         <IconInput
-          id={senhaId}
-          name="senha"
+          id={passwordId}
+          name="password"
           icon={LockIcon}
-          type={verSenha ? "text" : "password"}
+          type={showPassword ? "text" : "password"}
           autoComplete="new-password"
           placeholder="Mínimo de 8 caracteres"
-          error={erros?.senha}
+          error={errors?.password}
           action={
-            <ToggleSenha
-              visivel={verSenha}
-              onToggle={() => setVerSenha((atual) => !atual)}
+            <PasswordToggle
+              visible={showPassword}
+              onToggle={() => setShowPassword((current) => !current)}
             />
           }
         />
@@ -177,24 +177,24 @@ export function RegisterForm() {
 
       <div className="flex flex-col gap-1.5">
         <label
-          htmlFor={confirmarId}
+          htmlFor={confirmId}
           className="font-semibold text-prime-light text-sm"
         >
           Confirmar senha
         </label>
 
         <IconInput
-          id={confirmarId}
-          name="confirmarSenha"
+          id={confirmId}
+          name="confirmPassword"
           icon={LockIcon}
-          type={verConfirmar ? "text" : "password"}
+          type={showConfirm ? "text" : "password"}
           autoComplete="new-password"
           placeholder="Repita a senha"
-          error={erros?.confirmarSenha}
+          error={errors?.confirmPassword}
           action={
-            <ToggleSenha
-              visivel={verConfirmar}
-              onToggle={() => setVerConfirmar((atual) => !atual)}
+            <PasswordToggle
+              visible={showConfirm}
+              onToggle={() => setShowConfirm((current) => !current)}
             />
           }
         />
@@ -203,16 +203,16 @@ export function RegisterForm() {
       <div className="flex flex-col gap-1.5">
         <div className="flex items-start gap-2.5">
           <input
-            id={aceiteId}
-            name="aceite"
+            id={acceptTermsId}
+            name="acceptTerms"
             type="checkbox"
-            defaultChecked={valores?.aceite}
-            aria-invalid={Boolean(erros?.aceite)}
+            defaultChecked={values?.acceptTerms}
+            aria-invalid={Boolean(errors?.acceptTerms)}
             className="mt-0.5 size-4 shrink-0 accent-prime-red"
           />
 
           <label
-            htmlFor={aceiteId}
+            htmlFor={acceptTermsId}
             className="text-prime-light/70 text-xs leading-relaxed"
           >
             Li e aceito a{" "}
@@ -228,9 +228,9 @@ export function RegisterForm() {
           </label>
         </div>
 
-        {erros?.aceite && (
+        {errors?.acceptTerms && (
           <small role="alert" className="text-prime-red text-xs">
-            {erros.aceite}
+            {errors.acceptTerms}
           </small>
         )}
       </div>

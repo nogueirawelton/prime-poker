@@ -16,11 +16,11 @@ import { JWT_VERIFY_OPTIONS } from "./jwt";
  * motivo do `server-only` no topo.
  */
 const getKey = cache(async () => {
-  const segredo = process.env.WP_JWT_SECRET;
+  const secret = process.env.WP_JWT_SECRET;
 
-  if (!segredo) throw new Error("WP_JWT_SECRET não está definido");
+  if (!secret) throw new Error("WP_JWT_SECRET não está definido");
 
-  return new TextEncoder().encode(segredo);
+  return new TextEncoder().encode(secret);
 });
 
 /** Formato do payload emitido pelo plugin. */

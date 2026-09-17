@@ -17,7 +17,7 @@ type Props = { searchParams: Promise<{ key?: string; login?: string }> };
  * envio: validar antes custaria uma ida ao servidor e ainda assim a chave
  * poderia vencer entre a abertura e o envio.
  */
-export default function RedefinirSenhaPage({ searchParams }: Props) {
+export default function ResetPasswordPage({ searchParams }: Props) {
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -32,7 +32,7 @@ export default function RedefinirSenhaPage({ searchParams }: Props) {
       {/* Os parâmetros só existem em tempo de requisição: atrás do boundary,
           o título continua no shell estático. */}
       <Suspense fallback={<div className="h-64" />}>
-        <Formulario searchParams={searchParams} />
+        <FormLoader searchParams={searchParams} />
       </Suspense>
 
       <p className="text-center text-prime-light/70 text-sm">
@@ -48,8 +48,8 @@ export default function RedefinirSenhaPage({ searchParams }: Props) {
   );
 }
 
-async function Formulario({ searchParams }: Props) {
+async function FormLoader({ searchParams }: Props) {
   const { key = "", login = "" } = await searchParams;
 
-  return <ResetPasswordForm chave={key} login={login} />;
+  return <ResetPasswordForm resetKey={key} login={login} />;
 }

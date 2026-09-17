@@ -33,16 +33,16 @@ final class Front {
 	 * (produção, por convenção). `null` sem nenhum endereço configurado.
 	 */
 	public static function url(): ?string {
-		$permitidos = Revalidation::urls();
+		$allowed = Revalidation::urls();
 
-		if ( array() === $permitidos ) {
+		if ( array() === $allowed ) {
 			return null;
 		}
 
-		$pedido = isset( $_SERVER[ self::HEADER ] )
+		$requested = isset( $_SERVER[ self::HEADER ] )
 			? untrailingslashit( esc_url_raw( wp_unslash( (string) $_SERVER[ self::HEADER ] ) ) )
 			: '';
 
-		return in_array( $pedido, $permitidos, true ) ? $pedido : $permitidos[0];
+		return in_array( $requested, $allowed, true ) ? $requested : $allowed[0];
 	}
 }

@@ -7,62 +7,62 @@ import {
 } from "@phosphor-icons/react";
 import { useTransition } from "react";
 import { twMerge } from "tailwind-merge";
-import { concluirAula, salvarAula } from "@/actions/aula";
+import { completeLesson, saveLesson } from "@/actions/lesson";
 
 /** Salvar e marcar como concluído — os dois estados da aula para o jogador. */
-export function AulaAcoes({
+export function LessonActions({
   slug,
-  salva,
-  concluida,
+  saved,
+  completed,
 }: {
   slug: string;
-  salva: boolean;
-  concluida: boolean;
+  saved: boolean;
+  completed: boolean;
 }) {
-  const [pendente, startTransition] = useTransition();
+  const [pending, startTransition] = useTransition();
 
   return (
     <div className="flex shrink-0 items-center gap-3">
       <button
         type="button"
-        disabled={pendente}
-        onClick={() => startTransition(() => salvarAula(slug))}
-        aria-pressed={salva}
+        disabled={pending}
+        onClick={() => startTransition(() => saveLesson(slug))}
+        aria-pressed={saved}
         className={twMerge(
           "flex h-11 items-center gap-2 rounded-md border px-4 font-semibold text-sm transition-all duration-500 disabled:opacity-60",
-          salva
+          saved
             ? "border-prime-red bg-prime-red/15 text-prime-light"
             : "border-white/20 text-prime-light hover:bg-white/5",
         )}
       >
         <BookmarkSimpleIcon
           className="size-4"
-          weight={salva ? "fill" : "bold"}
+          weight={saved ? "fill" : "bold"}
         />
-        {salva ? "Salva" : "Salvar"}
+        {saved ? "Salva" : "Salvar"}
       </button>
 
       <button
         type="button"
-        disabled={pendente}
-        onClick={() => startTransition(() => concluirAula(slug))}
-        aria-pressed={concluida}
+        disabled={pending}
+        onClick={() => startTransition(() => completeLesson(slug))}
+        aria-pressed={completed}
         className={twMerge(
           "flex h-11 items-center gap-2 rounded-md px-4 font-semibold text-sm transition-all duration-500 disabled:opacity-60",
-          concluida
+          completed
             ? "bg-emerald-600 text-prime-light hover:bg-emerald-500"
             : "bg-prime-red text-prime-light hover:bg-prime-light hover:text-prime-red",
         )}
       >
-        {pendente ? (
+        {pending ? (
           <SpinnerGapIcon className="size-4 animate-spin" />
         ) : (
           <CheckCircleIcon
             className="size-4"
-            weight={concluida ? "fill" : "bold"}
+            weight={completed ? "fill" : "bold"}
           />
         )}
-        {concluida ? "Concluída" : "Marcar como concluída"}
+        {completed ? "Concluída" : "Marcar como concluída"}
       </button>
     </div>
   );

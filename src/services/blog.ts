@@ -122,12 +122,12 @@ function toPost(node: PostNode, html?: string | null): Post {
 }
 
 /** Vira `undefined` para o campo sumir do `where` em vez de virar `null`. */
-function opcional(value: string | undefined) {
-  const limpo = value?.trim();
-  return limpo ? limpo : undefined;
+function optional(value: string | undefined) {
+  const clean = value?.trim();
+  return clean ? clean : undefined;
 }
 
-async function buscar(
+async function queryPosts(
   variables: Record<string, unknown>,
   tags: Array<string>,
 ): Promise<Array<Post>> {
@@ -149,12 +149,12 @@ export async function getPage(
   page = 1,
   filter: PostFilter = {},
 ): Promise<Array<Post>> {
-  return buscar(
+  return queryPosts(
     {
       first: PAGE_SIZE,
       offset: Math.max(0, (page - 1) * PAGE_SIZE),
-      search: opcional(filter.search),
-      categoryName: opcional(filter.category),
+      search: optional(filter.search),
+      categoryName: optional(filter.category),
     },
     [POSTS_CACHE_TAG],
   );
@@ -164,8 +164,8 @@ export async function getPage(
 export async function getTotal(filter: PostFilter = {}): Promise<number> {
   const data = await query<{ postsTotal?: number }>(POSTS_TOTAL, {
     variables: {
-      search: opcional(filter.search),
-      categoryName: opcional(filter.category),
+      search: optional(filter.search),
+      categoryName: optional(filter.category),
     },
     profile: "hours",
     tags: [POSTS_CACHE_TAG],
@@ -180,7 +180,7 @@ export async function getTotalPages(filter: PostFilter = {}) {
 
 /** Os posts mais recentes — usado nos destaques da home. */
 export async function getLatest(limit = 3): Promise<Array<Post>> {
-  return buscar({ first: limit }, [POSTS_CACHE_TAG]);
+  return queryPosts({ first: limit }, [POSTS_CACHE_TAG]);
 }
 
 /**
@@ -189,7 +189,7 @@ export async function getLatest(limit = 3): Promise<Array<Post>> {
  * Sem nenhum sticky, cai nos mais recentes — a seção nunca fica vazia.
  */
 export async function getFeatured(limit = 3): Promise<Array<Post>> {
-  const sticky = await buscar({ first: limit, isSticky: true }, [
+  const sticky = await queryPosts({ first: limit, isSticky: true }, [
     POSTS_CACHE_TAG,
   ]);
 
@@ -232,8 +232,8 @@ export async function getCategory(slug: string): Promise<Category | null> {
  * inclusive quando o post não tem categoria alguma.
  */
 export async function getRelated(post: Post, limit = 3): Promise<Array<Post>> {
-  const mesmaCategoria = post.category
-    ? await buscar(
+  const sameCategory = post.category
+    ? await queryPosts(
         {
           first: limit,
           categoryName: post.category.slug,
@@ -243,17 +243,17 @@ export async function getRelated(post: Post, limit = 3): Promise<Array<Post>> {
       )
     : [];
 
-  if (mesmaCategoria.length >= limit) return mesmaCategoria;
+  if (sameCategory.length >= limit) return sameCategory;
 
-  const recentes = await buscar({ first: limit + 1, notIn: [post.id] }, [
+  const recentes = await queryPosts({ first: limit + 1, notIn: [post.id] }, [
     POSTS_CACHE_TAG,
   ]);
 
-  const vistos = new Set(mesmaCategoria.map((item) => item.id));
+  const seen = new Set(sameCategory.map((item) => item.id));
 
   return [
-    ...mesmaCategoria,
-    ...recentes.filter((item) => !vistos.has(item.id)),
+    ...sameCategory,
+    ...recentes.filter((item) => !seen.has(item.id)),
   ].slice(0, limit);
 }
 
@@ -348,9 +348,9 @@ export async function getComments(postId: number): Promise<Array<Comment>> {
 
   const nodes = data?.comments?.nodes ?? [];
 
-  const porId = new Map<string, Comment>();
+  const byId = new Map<string, Comment>();
   for (const node of nodes) {
-    porId.set(node.id, {
+    byId.set(node.id, {
       id: node.id,
       author: node.author?.node?.name?.trim() || "Anônimo",
       date: node.date,
@@ -359,20 +359,20 @@ export async function getComments(postId: number): Promise<Array<Comment>> {
     });
   }
 
-  const raiz: Array<Comment> = [];
+  const root: Array<Comment> = [];
   for (const node of nodes) {
-    const comentario = porId.get(node.id);
-    if (!comentario) continue;
+    const comment = byId.get(node.id);
+    if (!comment) continue;
 
     // Resposta cujo pai não veio (moderado, apagado) sobe para a raiz em vez
     // de sumir da conversa.
-    const pai = node.parentId ? porId.get(node.parentId) : undefined;
-    if (pai) {
-      pai.replies.push(comentario);
+    const parent = node.parentId ? byId.get(node.parentId) : undefined;
+    if (parent) {
+      parent.replies.push(comment);
     } else {
-      raiz.push(comentario);
+      root.push(comment);
     }
   }
 
-  return raiz;
+  return root;
 }

@@ -84,9 +84,9 @@ final class GraphQL {
 						return null;
 					}
 
-					$expira = Membership::expires_at( $user_id );
+					$expires = Membership::expires_at( $user_id );
 
-					return null === $expira ? null : gmdate( 'c', $expira );
+					return null === $expires ? null : gmdate( 'c', $expires );
 				},
 			)
 		);

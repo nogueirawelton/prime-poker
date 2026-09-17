@@ -93,32 +93,32 @@ final class PasswordReset {
 			$front . self::PATH
 		);
 
-		$horas = (int) round( (int) apply_filters( 'password_reset_expiration', DAY_IN_SECONDS ) / HOUR_IN_SECONDS );
+		$hours = (int) round( (int) apply_filters( 'password_reset_expiration', DAY_IN_SECONDS ) / HOUR_IN_SECONDS );
 
 		self::$html = Layout::render(
 			array(
-				'titulo'       => __( 'Redefinir sua senha', 'prime-poker' ),
-				'saudacao'     => Layout::greeting( $user ),
-				'paragrafos'   => array(
+				'title'       => __( 'Redefinir sua senha', 'prime-poker' ),
+				'greeting'     => Layout::greeting( $user ),
+				'paragraphs'   => array(
 					sprintf(
 						/* translators: %s: e-mail da conta. */
 						__( 'Recebemos um pedido para redefinir a senha da conta %s. Clique no botão abaixo para criar uma nova senha.', 'prime-poker' ),
 						$user->user_email
 					),
 				),
-				'botao'        => array(
-					'texto' => __( 'Criar nova senha', 'prime-poker' ),
+				'button'        => array(
+					'text' => __( 'Criar nova senha', 'prime-poker' ),
 					'url'   => $link,
 				),
-				'notas'        => array(
+				'notes'        => array(
 					sprintf(
 						/* translators: %d: horas de validade do link. */
-						_n( 'O link vale por %d hora e só pode ser usado uma vez.', 'O link vale por %d horas e só pode ser usado uma vez.', $horas, 'prime-poker' ),
-						$horas
+						_n( 'O link vale por %d hora e só pode ser usado uma vez.', 'O link vale por %d horas e só pode ser usado uma vez.', $hours, 'prime-poker' ),
+						$hours
 					),
 					__( 'Se você não pediu a redefinição, ignore este e-mail: sua senha continua a mesma.', 'prime-poker' ),
 				),
-				'link_reserva' => true,
+				'fallback_link' => true,
 			)
 		);
 
@@ -183,9 +183,9 @@ final class PasswordReset {
 
 		// `$userdata` traz o hash gravado (WP 5.8+); o `get_userdata` cobre
 		// versões anteriores.
-		$nova = $userdata['user_pass'] ?? get_userdata( (int) $user_id )->user_pass ?? '';
+		$new_hash = $userdata['user_pass'] ?? get_userdata( (int) $user_id )->user_pass ?? '';
 
-		if ( '' !== $nova && $nova !== $old_user_data->user_pass ) {
+		if ( '' !== $new_hash && $new_hash !== $old_user_data->user_pass ) {
 			self::rotate_secret( (int) $user_id );
 		}
 	}
@@ -220,9 +220,9 @@ final class PasswordReset {
 			return $token;
 		}
 
-		$atual = (string) get_user_meta( (int) $token->data->user->id, self::JWT_SECRET_META, true );
+		$current = (string) get_user_meta( (int) $token->data->user->id, self::JWT_SECRET_META, true );
 
-		if ( '' === $atual || ! hash_equals( $atual, (string) $token->data->user->user_secret ) ) {
+		if ( '' === $current || ! hash_equals( $current, (string) $token->data->user->user_secret ) ) {
 			return new \WP_Error(
 				'invalid-jwt',
 				__( 'Sessão encerrada. Entre novamente.', 'prime-poker' )

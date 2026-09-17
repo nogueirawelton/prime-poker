@@ -52,10 +52,10 @@ final class Registration {
 
 		// Usuário de equipe criado pelo painel com outra role (editor, autor):
 		// não é jogador, não recebe tier.
-		$padrao = (string) get_option( 'default_role' );
-		$outras = array_diff( $user->roles, array( $padrao, '' ) );
+		$default_role = (string) get_option( 'default_role' );
+		$other_roles = array_diff( $user->roles, array( $default_role, '' ) );
 
-		if ( array() !== $outras ) {
+		if ( array() !== $other_roles ) {
 			return;
 		}
 
@@ -74,11 +74,11 @@ final class Registration {
 		// Sem isso todo jogador acumularia também a role padrão do site
 		// (normalmente `subscriber`), que não concede nada de útil aqui e
 		// polui a lista de usuários.
-		if ( '' !== $padrao && ! Tiers::exists( $padrao ) ) {
+		if ( '' !== $default_role && ! Tiers::exists( $default_role ) ) {
 			$user = get_userdata( $user_id );
 
-			if ( $user instanceof \WP_User && in_array( $padrao, $user->roles, true ) ) {
-				$user->remove_role( $padrao );
+			if ( $user instanceof \WP_User && in_array( $default_role, $user->roles, true ) ) {
+				$user->remove_role( $default_role );
 			}
 		}
 	}

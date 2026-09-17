@@ -2,11 +2,11 @@ import {
   DownloadSimpleIcon,
   FileTextIcon,
 } from "@phosphor-icons/react/dist/ssr";
-import type { Material } from "@/services/aula-detalhe";
+import type { Material } from "@/services/lesson-detail";
 
 /** Material de apoio da aula. */
-export function Materiais({ materiais }: { materiais: Array<Material> }) {
-  if (materiais.length === 0) {
+export function Materials({ materials }: { materials: Array<Material> }) {
+  if (materials.length === 0) {
     return (
       <p className="text-prime-light/50 text-sm">
         Esta aula não tem material de apoio.
@@ -16,9 +16,9 @@ export function Materiais({ materiais }: { materiais: Array<Material> }) {
 
   return (
     <ul className="flex flex-col gap-3">
-      {materiais.map((material) => (
+      {materials.map((material) => (
         <li
-          key={material.nome}
+          key={material.name}
           className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/3 p-3"
         >
           <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-white/5 text-prime-light/60">
@@ -27,10 +27,10 @@ export function Materiais({ materiais }: { materiais: Array<Material> }) {
 
           <span className="min-w-0 flex-1">
             <span className="block truncate text-prime-light text-sm">
-              {material.nome}
+              {material.name}
             </span>
             <span className="block text-prime-light/40 text-xs">
-              {material.tamanho}
+              {material.size}
             </span>
           </span>
 

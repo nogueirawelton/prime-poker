@@ -10,46 +10,46 @@ import {
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useId, useState } from "react";
 import { toast } from "react-toastify";
-import { type RedefinirSenhaState, redefinirSenha } from "@/actions/auth";
+import { type ResetPasswordState, resetPassword } from "@/actions/auth";
 import { IconInput } from "@/components/ui/form/icon-input";
 import { PasswordRecoveryDialog } from "./password-recovery-dialog";
 
-const ESTADO_INICIAL: RedefinirSenhaState = { status: "idle" };
+const INITIAL_STATE: ResetPasswordState = { status: "idle" };
 
 export function ResetPasswordForm({
-  chave,
+  resetKey,
   login,
 }: {
-  chave: string;
+  resetKey: string;
   login: string;
 }) {
-  const senhaId = useId();
-  const confirmarId = useId();
+  const passwordId = useId();
+  const confirmId = useId();
   const router = useRouter();
 
-  const [visivel, setVisivel] = useState(false);
-  const [estado, formAction, pending] = useActionState(
-    redefinirSenha,
-    ESTADO_INICIAL,
+  const [visible, setVisible] = useState(false);
+  const [state, formAction, pending] = useActionState(
+    resetPassword,
+    INITIAL_STATE,
   );
 
   useEffect(() => {
-    if (estado.status === "error" && estado.message && !estado.linkInvalido) {
-      toast.error(estado.message);
+    if (state.status === "error" && state.message && !state.invalidLink) {
+      toast.error(state.message);
     }
 
-    if (estado.status === "success") {
+    if (state.status === "success") {
       toast.success("Senha redefinida! Entre com a nova senha.");
       router.push("/login");
     }
-  }, [estado, router]);
+  }, [state, router]);
 
   // Sem chave na URL não há o que redefinir: o formulário só levaria a um erro.
-  if (!chave || !login || estado.linkInvalido) {
+  if (!resetKey || !login || state.invalidLink) {
     return (
-      <LinkInvalido
-        mensagem={
-          estado.message ??
+      <InvalidLink
+        message={
+          state.message ??
           "Este link está incompleto. Peça um novo para redefinir a senha."
         }
       />
@@ -59,12 +59,12 @@ export function ResetPasswordForm({
   const toggle = (
     <button
       type="button"
-      onClick={() => setVisivel((atual) => !atual)}
-      aria-label={visivel ? "Ocultar senha" : "Mostrar senha"}
-      aria-pressed={visivel}
+      onClick={() => setVisible((current) => !current)}
+      aria-label={visible ? "Ocultar senha" : "Mostrar senha"}
+      aria-pressed={visible}
       className="grid size-10 place-items-center rounded-md text-prime-light/50 transition-colors duration-500 hover:text-prime-light"
     >
-      {visivel ? (
+      {visible ? (
         <EyeSlashIcon className="size-5" />
       ) : (
         <EyeIcon className="size-5" />
@@ -75,45 +75,45 @@ export function ResetPasswordForm({
   return (
     // `noValidate`: quem valida é o servidor, com as mensagens do schema.
     <form noValidate action={formAction} className="flex flex-col gap-4">
-      <input type="hidden" name="key" value={chave} />
+      <input type="hidden" name="key" value={resetKey} />
       <input type="hidden" name="login" value={login} />
 
       <div className="flex flex-col gap-1.5">
         <label
-          htmlFor={senhaId}
+          htmlFor={passwordId}
           className="font-semibold text-prime-light text-sm"
         >
           Nova senha
         </label>
 
         <IconInput
-          id={senhaId}
-          name="senha"
+          id={passwordId}
+          name="password"
           icon={LockIcon}
-          type={visivel ? "text" : "password"}
+          type={visible ? "text" : "password"}
           autoComplete="new-password"
           placeholder="Mínimo de 8 caracteres"
-          error={estado.errors?.senha}
+          error={state.errors?.password}
           action={toggle}
         />
       </div>
 
       <div className="flex flex-col gap-1.5">
         <label
-          htmlFor={confirmarId}
+          htmlFor={confirmId}
           className="font-semibold text-prime-light text-sm"
         >
           Confirmar nova senha
         </label>
 
         <IconInput
-          id={confirmarId}
-          name="confirmarSenha"
+          id={confirmId}
+          name="confirmPassword"
           icon={LockIcon}
-          type={visivel ? "text" : "password"}
+          type={visible ? "text" : "password"}
           autoComplete="new-password"
           placeholder="Repita a senha"
-          error={estado.errors?.confirmarSenha}
+          error={state.errors?.confirmPassword}
         />
       </div>
 
@@ -132,12 +132,12 @@ export function ResetPasswordForm({
   );
 }
 
-function LinkInvalido({ mensagem }: { mensagem: string }) {
+function InvalidLink({ message }: { message: string }) {
   return (
     <div className="flex flex-col items-center gap-4 rounded-lg border border-prime-red/40 bg-prime-red/5 p-6 text-center">
       <WarningCircleIcon className="size-10 text-prime-red" weight="fill" />
 
-      <p className="text-prime-light/80 text-sm">{mensagem}</p>
+      <p className="text-prime-light/80 text-sm">{message}</p>
 
       <PasswordRecoveryDialog>
         <button

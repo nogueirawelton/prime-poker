@@ -1,14 +1,14 @@
-import { getPerfil } from "@/services/perfil";
+import { getProfile } from "@/services/profile";
 import { PlayerMenu } from "./player-menu";
 
 /**
  * Busca o perfil e entrega ao menu, no mesmo molde do sino de notificações.
  *
- * O `getPerfil` é deduplicado por requisição: no painel, que também mostra o
+ * O `getProfile` é deduplicado por requisição: no painel, que também mostra o
  * perfil, isto não custa uma segunda ida ao WordPress.
  */
 export async function PlayerMenuData() {
-  const perfil = await getPerfil();
+  const profile = await getProfile();
 
-  return <PlayerMenu nome={perfil.nome} tier={perfil.tier?.label ?? null} />;
+  return <PlayerMenu name={profile.name} tier={profile.tier?.label ?? null} />;
 }

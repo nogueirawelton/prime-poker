@@ -4,8 +4,8 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import { authQuery } from "@/graphql/auth-client";
 import { VIEWER } from "@/graphql/queries/player/VIEWER";
-import { getConcluidas } from "./aula-detalhe";
-import { CATEGORIAS, type Categoria, getAcervo } from "./aulas";
+import { getCompletedSlugs } from "./lesson-detail";
+import { getCatalog, TRACKS, type Track } from "./lessons";
 
 /**
  * Perfil e progresso do jogador.
@@ -24,19 +24,19 @@ export type Tier = {
   slug: TierSlug;
   label: string;
   /** Classes do selo. */
-  cor: string;
+  color: string;
 };
 
-export type Perfil = {
+export type Profile = {
   id: number;
-  nome: string;
-  usuario: string;
+  name: string;
+  username: string;
   email: string;
   /** `null` para quem não tem tier — membro da equipe logado, por exemplo. */
   tier: Tier | null;
   /** ISO, ou `null` para tier sem vencimento. */
-  expiraEm: string | null;
-  membroDesde: string;
+  expiresAt: string | null;
+  memberSince: string;
 };
 
 /**
@@ -45,15 +45,15 @@ export type Perfil = {
  * O rótulo vem do WordPress (`playerTierLabel`), que é a fonte de verdade dos
  * nomes; só a aparência mora aqui, porque é decisão visual do front.
  */
-const CORES: Record<TierSlug, string> = {
+const COLORS: Record<TierSlug, string> = {
   player_free: "bg-white/5 text-prime-light/70 border-white/15",
   player_basic: "bg-sky-500/15 text-sky-400 border-sky-500/40",
   player_gold: "bg-amber-500/15 text-amber-400 border-amber-500/40",
   player_platinum: "bg-violet-500/15 text-violet-300 border-violet-400/40",
 };
 
-function ehTier(slug: string | null | undefined): slug is TierSlug {
-  return !!slug && slug in CORES;
+function isTier(slug: string | null | undefined): slug is TierSlug {
+  return !!slug && slug in COLORS;
 }
 
 type ViewerResponse = {
@@ -75,7 +75,7 @@ type ViewerResponse = {
  * `cache` do React deduplica dentro da mesma requisição: o menu do header e o
  * painel pedem o perfil, e isso vira uma ida só ao WordPress.
  */
-export const getPerfil = cache(async (): Promise<Perfil> => {
+export const getProfile = cache(async (): Promise<Profile> => {
   const { viewer } = await authQuery<ViewerResponse>(VIEWER);
 
   // Token aceito pelo proxy mas sem usuário no WordPress: conta excluída
@@ -86,18 +86,18 @@ export const getPerfil = cache(async (): Promise<Perfil> => {
 
   return {
     id: viewer.databaseId,
-    nome: viewer.name?.trim() || viewer.username,
-    usuario: viewer.username,
+    name: viewer.name?.trim() || viewer.username,
+    username: viewer.username,
     email: viewer.email ?? "",
-    tier: ehTier(slug)
+    tier: isTier(slug)
       ? {
           slug,
           label: viewer.playerTierLabel ?? slug,
-          cor: CORES[slug],
+          color: COLORS[slug],
         }
       : null,
-    expiraEm: viewer.playerTierExpiresAt,
-    membroDesde: viewer.registeredDate ?? new Date().toISOString(),
+    expiresAt: viewer.playerTierExpiresAt,
+    memberSince: viewer.registeredDate ?? new Date().toISOString(),
   };
 });
 
@@ -105,20 +105,20 @@ export const getPerfil = cache(async (): Promise<Perfil> => {
 /*                                  Progresso                                 */
 /* -------------------------------------------------------------------------- */
 
-export type ProgressoTrilha = {
-  categoria: Categoria;
-  concluidas: number;
+export type TrackProgress = {
+  track: Track;
+  completedCount: number;
   total: number;
 };
 
-export type Progresso = {
-  concluidas: number;
+export type Progress = {
+  completedCount: number;
   total: number;
   /** Horas assistidas, somando o progresso parcial de cada aula. */
-  horas: number;
+  hours: number;
   /** Dias seguidos de estudo. */
-  sequencia: number;
-  trilhas: Array<ProgressoTrilha>;
+  streak: number;
+  tracks: Array<TrackProgress>;
 };
 
 /**
@@ -127,41 +127,47 @@ export type Progresso = {
  * Uma aula conta como concluída quando o jogador a marcou como tal ou quando
  * passou de 95% dela — assistir aos créditos não deveria ser requisito.
  */
-export async function getProgresso(): Promise<Progresso> {
-  const [acervo, marcadas] = await Promise.all([getAcervo(), getConcluidas()]);
+export async function getProgress(): Promise<Progress> {
+  const [catalog, markedCompleted] = await Promise.all([
+    getCatalog(),
+    getCompletedSlugs(),
+  ]);
 
-  const concluida = (slug: string, assistido: number, duracao: number) =>
-    marcadas.has(slug) || assistido / duracao >= 0.95;
+  const completed = (slug: string, watched: number, duration: number) =>
+    markedCompleted.has(slug) || watched / duration >= 0.95;
 
-  const trilhas = CATEGORIAS.map((categoria) => {
-    const daTrilha = acervo.filter(
-      (aula) => aula.categoria.slug === categoria.slug,
+  const tracks = TRACKS.map((track) => {
+    const trackLessons = catalog.filter(
+      (lesson) => lesson.track.slug === track.slug,
     );
 
     return {
-      categoria,
-      concluidas: daTrilha.filter((aula) =>
-        concluida(aula.slug, aula.assistido, aula.duracao),
+      track,
+      completedCount: trackLessons.filter((lesson) =>
+        completed(lesson.slug, lesson.watched, lesson.duration),
       ).length,
-      total: daTrilha.length,
+      total: trackLessons.length,
     };
   });
 
-  const segundos = acervo.reduce(
-    (total, aula) =>
+  const seconds = catalog.reduce(
+    (total, lesson) =>
       total +
-      (concluida(aula.slug, aula.assistido, aula.duracao)
-        ? aula.duracao
-        : aula.assistido),
+      (completed(lesson.slug, lesson.watched, lesson.duration)
+        ? lesson.duration
+        : lesson.watched),
     0,
   );
 
   return {
-    concluidas: trilhas.reduce((total, trilha) => total + trilha.concluidas, 0),
-    total: acervo.length,
-    horas: Math.round(segundos / 3600),
+    completedCount: tracks.reduce(
+      (total, track) => total + track.completedCount,
+      0,
+    ),
+    total: catalog.length,
+    hours: Math.round(seconds / 3600),
     // TODO: sequência real depende de um histórico de sessões no CMS.
-    sequencia: 7,
-    trilhas,
+    streak: 7,
+    tracks,
   };
 }

@@ -53,9 +53,9 @@ final class GraphQL {
 	 * Declara os campos.
 	 */
 	public static function register(): void {
-		foreach ( self::WHERE_ARGS_TYPES as $tipo ) {
+		foreach ( self::WHERE_ARGS_TYPES as $type ) {
 			register_graphql_field(
-				$tipo,
+				$type,
 				'offset',
 				array(
 					'type'        => 'Int',
@@ -74,7 +74,7 @@ final class GraphQL {
 					'search'       => array( 'type' => 'String' ),
 					'categoryName' => array( 'type' => 'String' ),
 				),
-				'resolve'     => static fn( $root, array $args ): int => self::contar(
+				'resolve'     => static fn( $root, array $args ): int => self::count_posts(
 					isset( $args['search'] ) ? (string) $args['search'] : '',
 					isset( $args['categoryName'] ) ? (string) $args['categoryName'] : ''
 				),
@@ -90,7 +90,7 @@ final class GraphQL {
 				'resolve'     => static function ( $category ): int {
 					$slug = $category->slug ?? '';
 
-					return '' === $slug ? 0 : self::contar( '', (string) $slug );
+					return '' === $slug ? 0 : self::count_posts( '', (string) $slug );
 				},
 			)
 		);
@@ -130,7 +130,7 @@ final class GraphQL {
 	 * @param string $search   Termo de busca, ou string vazia.
 	 * @param string $category Slug da categoria, ou string vazia.
 	 */
-	private static function contar( string $search, string $category ): int {
+	private static function count_posts( string $search, string $category ): int {
 		$args = array(
 			'post_type'           => 'post',
 			'post_status'         => 'publish',

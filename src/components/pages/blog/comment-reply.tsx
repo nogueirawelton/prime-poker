@@ -12,13 +12,13 @@ export function CommentReply({
   postId: number;
   parentId: string;
 }) {
-  const [aberto, setAberto] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
-  if (!aberto) {
+  if (!isOpen) {
     return (
       <button
         type="button"
-        onClick={() => setAberto(true)}
+        onClick={() => setIsOpen(true)}
         className="mt-2 flex items-center gap-1.5 text-prime-light/50 text-xs transition-colors duration-300 hover:text-prime-red"
       >
         <ArrowBendUpLeftIcon className="size-4" weight="bold" />
@@ -32,15 +32,15 @@ export function CommentReply({
       <CommentForm
         postId={postId}
         parentId={parentId}
-        compacto
+        compact
         // Fecha sozinho depois do envio: a confirmação já apareceu no lugar
         // do formulário e a resposta entra na lista na próxima visita.
-        onEnviado={() => setTimeout(() => setAberto(false), 4000)}
+        onSubmitted={() => setTimeout(() => setIsOpen(false), 4000)}
       />
 
       <button
         type="button"
-        onClick={() => setAberto(false)}
+        onClick={() => setIsOpen(false)}
         className="mt-2 text-prime-light/40 text-xs underline underline-offset-2 transition-colors duration-300 hover:text-prime-light"
       >
         Cancelar

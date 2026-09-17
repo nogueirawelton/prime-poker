@@ -49,7 +49,7 @@ final class Revalidation {
 	 *
 	 * @var array<string, true>
 	 */
-	private static array $pendentes = array();
+	private static array $pending = array();
 
 	/**
 	 * Registra os hooks.
@@ -107,9 +107,9 @@ final class Revalidation {
 				return array( 'home' );
 		}
 
-		$tipo = get_post_type_object( $post->post_type );
+		$type = get_post_type_object( $post->post_type );
 
-		if ( $tipo && ! empty( $tipo->show_in_graphql ) ) {
+		if ( $type && ! empty( $type->show_in_graphql ) ) {
 			return array( 'cms' );
 		}
 
@@ -138,11 +138,11 @@ final class Revalidation {
 			return;
 		}
 
-		$antes = $post_before instanceof \WP_Post ? $post_before->post_status : 'new';
+		$before = $post_before instanceof \WP_Post ? $post_before->post_status : 'new';
 
 		// Só interessa o que o site exibe: estava publicado ou passou a estar.
 		// Rascunho salvo de novo não muda nada no front.
-		if ( 'publish' !== $post->post_status && 'publish' !== $antes ) {
+		if ( 'publish' !== $post->post_status && 'publish' !== $before ) {
 			return;
 		}
 
@@ -257,7 +257,7 @@ final class Revalidation {
 	 */
 	private static function queue( array $tags ): void {
 		foreach ( $tags as $tag ) {
-			self::$pendentes[ $tag ] = true;
+			self::$pending[ $tag ] = true;
 		}
 	}
 
@@ -267,11 +267,11 @@ final class Revalidation {
 	 * @return array<int, string>
 	 */
 	public static function urls(): array {
-		$linhas = preg_split( '/\R/', (string) get_option( self::OPTION, '' ) ) ?: array();
+		$lines = preg_split( '/\R/', (string) get_option( self::OPTION, '' ) ) ?: array();
 		$urls   = array();
 
-		foreach ( $linhas as $linha ) {
-			$url = esc_url_raw( trim( $linha ) );
+		foreach ( $lines as $line ) {
+			$url = esc_url_raw( trim( $line ) );
 
 			if ( '' !== $url ) {
 				$urls[] = untrailingslashit( $url );
@@ -285,12 +285,12 @@ final class Revalidation {
 	 * Envia as tags acumuladas a cada front configurado.
 	 */
 	public static function dispatch(): void {
-		if ( array() === self::$pendentes ) {
+		if ( array() === self::$pending ) {
 			return;
 		}
 
-		$tags            = array_keys( self::$pendentes );
-		self::$pendentes = array();
+		$tags            = array_keys( self::$pending );
+		self::$pending = array();
 
 		self::send( $tags, false );
 	}
@@ -319,12 +319,12 @@ final class Revalidation {
 			array_map( static fn( $tag ) => 'tag=' . rawurlencode( (string) $tag ), $tags )
 		);
 
-		$resultados = array();
+		$results = array();
 
 		foreach ( self::urls() as $base ) {
 			$url = $base . '/api/revalidate/' . ( '' !== $query ? '?' . $query : '' );
 
-			$resposta = wp_remote_get(
+			$response = wp_remote_get(
 				$url,
 				array(
 					'blocking' => $blocking,
@@ -332,12 +332,12 @@ final class Revalidation {
 				)
 			);
 
-			$resultados[ $base ] = is_wp_error( $resposta )
-				? $resposta->get_error_message()
-				: (int) wp_remote_retrieve_response_code( $resposta );
+			$results[ $base ] = is_wp_error( $response )
+				? $response->get_error_message()
+				: (int) wp_remote_retrieve_response_code( $response );
 		}
 
-		return $resultados;
+		return $results;
 	}
 
 	/* ---------------------------------------------------------------------- */
@@ -367,9 +367,9 @@ final class Revalidation {
 			array(
 				'type'              => 'string',
 				'default'           => '',
-				'sanitize_callback' => static function ( $valor ): string {
-					$linhas = preg_split( '/\R/', (string) $valor ) ?: array();
-					$urls   = array_filter( array_map( static fn( $l ) => esc_url_raw( trim( $l ) ), $linhas ) );
+				'sanitize_callback' => static function ( $value ): string {
+					$lines = preg_split( '/\R/', (string) $value ) ?: array();
+					$urls   = array_filter( array_map( static fn( $l ) => esc_url_raw( trim( $l ) ), $lines ) );
 
 					return implode( "\n", array_unique( $urls ) );
 				},
@@ -446,19 +446,19 @@ final class Revalidation {
 	 * Aviso com o retorno de cada endereço, em qualquer tela do painel.
 	 */
 	public static function flush_notice(): void {
-		$resultado = get_transient( self::result_key() );
+		$result = get_transient( self::result_key() );
 
-		if ( ! is_array( $resultado ) ) {
+		if ( ! is_array( $result ) ) {
 			return;
 		}
 
 		delete_transient( self::result_key() );
 
-		$falhou = array_filter( $resultado, static fn( $status ) => 200 !== $status );
-		$classe = array() === $resultado || array() !== $falhou ? 'notice-warning' : 'notice-success';
+		$failed = array_filter( $result, static fn( $status ) => 200 !== $status );
+		$css_class = array() === $result || array() !== $failed ? 'notice-warning' : 'notice-success';
 		?>
-		<div class="notice <?php echo esc_attr( $classe ); ?> is-dismissible">
-			<?php if ( array() === $resultado ) : ?>
+		<div class="notice <?php echo esc_attr( $css_class ); ?> is-dismissible">
+			<?php if ( array() === $result ) : ?>
 				<p>
 					<?php esc_html_e( 'Nenhum endereço configurado para limpar o cache.', 'prime-poker' ); ?>
 					<?php if ( current_user_can( 'manage_options' ) ) : ?>
@@ -466,7 +466,7 @@ final class Revalidation {
 					<?php endif; ?>
 				</p>
 			<?php else : ?>
-				<?php foreach ( $resultado as $base => $status ) : ?>
+				<?php foreach ( $result as $base => $status ) : ?>
 					<p>
 						<code><?php echo esc_html( (string) $base ); ?></code> →
 						<?php

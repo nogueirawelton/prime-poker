@@ -2,21 +2,21 @@
 
 import { SpinnerGapIcon } from "@phosphor-icons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { carregarAulas } from "@/actions/aulas";
-import type { AulasSearchParams } from "@/lib/aulas-params";
-import type { Aula } from "@/services/aulas";
-import { AulaCard } from "./aula-card";
+import { loadLessons } from "@/actions/lessons";
+import type { LessonsSearchParams } from "@/lib/lessons-params";
+import type { Lesson } from "@/services/lessons";
 import { GRID } from "./grid";
+import { LessonCard } from "./lesson-card";
 
 /** Distância em que o sentinela começa a carregar o próximo lote. */
-const MARGEM = "600px";
+const MARGIN = "600px";
 
 type Props = {
   /** Primeiro lote, renderizado no servidor. */
-  inicial: Array<Aula>;
-  temMais: boolean;
+  initial: Array<Lesson>;
+  hasMore: boolean;
   /** Parâmetros crus da URL: a action revalida antes de consultar. */
-  params: AulasSearchParams;
+  params: LessonsSearchParams;
 };
 
 /**
@@ -30,65 +30,65 @@ type Props = {
  * componente com `key` derivada da URL — sem isso os resultados do filtro
  * anterior continuariam acumulados na lista.
  */
-export function AulasLista({ inicial, temMais, params }: Props) {
-  const [aulas, setAulas] = useState(inicial);
-  const [pagina, setPagina] = useState(1);
-  const [fim, setFim] = useState(!temMais);
-  const [carregando, setCarregando] = useState(false);
-  const [erro, setErro] = useState(false);
+export function LessonsList({ initial, hasMore, params }: Props) {
+  const [lessons, setLessons] = useState(initial);
+  const [page, setPage] = useState(1);
+  const [reachedEnd, setReachedEnd] = useState(!hasMore);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
 
-  const sentinela = useRef<HTMLDivElement>(null);
+  const sentinel = useRef<HTMLDivElement>(null);
 
-  const carregarMais = useCallback(async () => {
-    setCarregando(true);
-    setErro(false);
+  const loadMore = useCallback(async () => {
+    setLoading(true);
+    setError(false);
 
     try {
-      const proxima = pagina + 1;
-      const resultado = await carregarAulas(params, proxima);
+      const nextPage = page + 1;
+      const result = await loadLessons(params, nextPage);
 
       // Concatena em vez de substituir: a rolagem infinita é acumulativa.
-      setAulas((atuais) => [...atuais, ...resultado.aulas]);
-      setPagina(proxima);
-      if (!resultado.temMais) setFim(true);
+      setLessons((currentItems) => [...currentItems, ...result.lessons]);
+      setPage(nextPage);
+      if (!result.hasMore) setReachedEnd(true);
     } catch {
       // Sem lote novo, o observer pararia de disparar: o botão de "tentar
       // de novo" é a única saída para quem perdeu a conexão no meio.
-      setErro(true);
+      setError(true);
     } finally {
-      setCarregando(false);
+      setLoading(false);
     }
-  }, [pagina, params]);
+  }, [page, params]);
 
   useEffect(() => {
-    const alvo = sentinela.current;
-    if (!alvo || fim || erro) return;
+    const target = sentinel.current;
+    if (!target || reachedEnd || error) return;
 
     const observer = new IntersectionObserver(
-      ([entrada]) => {
-        if (entrada.isIntersecting) carregarMais();
+      ([entry]) => {
+        if (entry.isIntersecting) loadMore();
       },
-      { rootMargin: MARGEM },
+      { rootMargin: MARGIN },
     );
 
-    observer.observe(alvo);
+    observer.observe(target);
 
     return () => observer.disconnect();
-  }, [carregarMais, fim, erro]);
+  }, [loadMore, reachedEnd, error]);
 
   return (
     <>
       <div className={GRID}>
-        {aulas.map((aula) => (
-          <AulaCard key={aula.id} aula={aula} />
+        {lessons.map((lesson) => (
+          <LessonCard key={lesson.id} lesson={lesson} />
         ))}
       </div>
 
       {/* `aria-live`: quem usa leitor de tela precisa saber que a lista cresceu. */}
       <div aria-live="polite" className="flex justify-center py-10">
-        {!fim && !erro && (
-          <div ref={sentinela} className="flex items-center gap-2">
-            {carregando && (
+        {!reachedEnd && !error && (
+          <div ref={sentinel} className="flex items-center gap-2">
+            {loading && (
               <>
                 <SpinnerGapIcon className="size-5 animate-spin text-prime-red" />
                 <span className="text-prime-light/60 text-sm">
@@ -99,17 +99,17 @@ export function AulasLista({ inicial, temMais, params }: Props) {
           </div>
         )}
 
-        {erro && (
+        {error && (
           <button
             type="button"
-            onClick={carregarMais}
+            onClick={loadMore}
             className="h-11 rounded-md border border-white/20 px-5 font-semibold text-prime-light text-sm transition-all duration-500 hover:bg-prime-light hover:text-prime-dark"
           >
             Não foi possível carregar. Tentar de novo
           </button>
         )}
 
-        {fim && aulas.length > 0 && (
+        {reachedEnd && lessons.length > 0 && (
           <p className="text-prime-light/40 text-sm">
             Você chegou ao fim do acervo.
           </p>

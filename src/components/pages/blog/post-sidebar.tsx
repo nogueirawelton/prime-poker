@@ -1,9 +1,9 @@
 import { ArrowRightIcon, PlayCircleIcon } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
 import { FormDialog } from "@/components/shared/form-dialog";
-import { type Aula, formatarDuracao } from "@/services/aulas";
 import type { Post } from "@/services/blog";
-import type { Secao } from "@/utils/rich-content";
+import { formatDuration, type Lesson } from "@/services/lessons";
+import type { Section } from "@/utils/rich-content";
 import { TableOfContents } from "./table-of-contents";
 
 /**
@@ -13,23 +13,23 @@ import { TableOfContents } from "./table-of-contents";
  * abaixo de `lg`, onde empilhar tudo isso antes do texto só atrapalharia.
  */
 export function PostSidebar({
-  secoes,
-  relacionados,
-  aula,
+  sections,
+  related,
+  lesson,
 }: {
-  secoes: Array<Secao>;
-  relacionados: Array<Post>;
+  sections: Array<Section>;
+  related: Array<Post>;
   /** Aula do acervo sobre o mesmo assunto, quando existe uma. */
-  aula: Aula | null;
+  lesson: Lesson | null;
 }) {
   return (
     <aside className="hidden lg:block">
       <div className="sticky top-32 flex flex-col gap-6">
-        <TableOfContents secoes={secoes} />
+        <TableOfContents sections={sections} />
 
-        <Aprofundar aula={aula} />
+        <GoDeeper lesson={lesson} />
 
-        {relacionados.length > 0 && (
+        {related.length > 0 && (
           <nav
             aria-label="Artigos relacionados"
             className="rounded-xl border border-white/10 bg-white/3 p-5"
@@ -39,7 +39,7 @@ export function PostSidebar({
             </strong>
 
             <ul className="mt-4 flex flex-col gap-4">
-              {relacionados.map((post) => (
+              {related.map((post) => (
                 <li key={post.id}>
                   <Link
                     href={`/blog/${post.slug}`}
@@ -68,8 +68,8 @@ export function PostSidebar({
  * ficar com um buraco, e quem chegou até aqui é justamente quem vale
  * convidar.
  */
-function Aprofundar({ aula }: { aula: Aula | null }) {
-  if (!aula) {
+function GoDeeper({ lesson }: { lesson: Lesson | null }) {
+  if (!lesson) {
     return (
       <div className="rounded-xl border border-prime-red/40 bg-prime-red/5 p-5">
         <strong className="block font-bold text-lg text-prime-light">
@@ -110,16 +110,16 @@ function Aprofundar({ aula }: { aula: Aula | null }) {
 
         <span className="min-w-0">
           <span className="block font-semibold text-prime-light text-sm leading-snug">
-            {aula.titulo}
+            {lesson.title}
           </span>
           <span className="mt-0.5 block text-prime-light/50 text-xs">
-            {aula.instrutor} · {formatarDuracao(aula.duracao)}
+            {lesson.instructor} · {formatDuration(lesson.duration)}
           </span>
         </span>
       </div>
 
       <Link
-        href={`/player/aulas/${aula.slug}`}
+        href={`/player/aulas/${lesson.slug}`}
         className="mt-4 flex h-11 w-full items-center justify-center rounded-md bg-prime-red font-semibold text-prime-light text-sm transition-all duration-500 hover:bg-prime-light hover:text-prime-red"
       >
         Assistir aula
