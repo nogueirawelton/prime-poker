@@ -90,6 +90,7 @@ export const POST_SLUGS = gql`
     ) {
       nodes {
         slug
+        modifiedGmt
       }
     }
   }

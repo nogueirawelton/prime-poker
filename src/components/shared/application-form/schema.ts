@@ -6,7 +6,7 @@ export const primeApplicationSchema = z.object({
   // 1. DADOS PESSOAIS
   dadosPessoais: z.object({
     nome_completo: z.string().min(2, "Campo obrigatório!"),
-    email: z.string().min(2, "Campo obrigatório!"),
+    email: z.email("Informe um e-mail válido."),
     numero_whatsapp: z.string().min(2, "Campo obrigatório!"),
     onde_mora: z.string().min(2, "Campo obrigatório!"),
   }),

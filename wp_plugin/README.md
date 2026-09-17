@@ -129,13 +129,45 @@ já expõe, pelo mesmo motivo da seção acima.
 - **Jogadores não entram no `wp-admin`.** Quem também é da equipe (tem
   `edit_posts`) continua com acesso normal.
 
+### Revalidação do cache do front
+
+O Next guarda as respostas do GraphQL em cache por horas. O módulo
+`includes/Cache/Revalidation.php` avisa o front a cada mudança, chamando
+`GET {site}/api/revalidate/?tag=…&tag=…` em cada endereço configurado.
+
+**Configuração:** *Configurações → Cache do site* → um endereço por linha
+(produção e staging), sem caminho. Na mesma tela há o botão **Limpar cache
+agora**, que limpa tudo e mostra o retorno de cada endereço.
+
+| Mudança no WP | Tags enviadas |
+|---|---|
+| Post publicado, editado, despublicado, na lixeira ou excluído | `posts`, `categories` |
+| Página `home` | `home`, `seo` |
+| Outras páginas | `seo` |
+| Instrutor (`instructor`) ou Depoimento (`testimonial`) | `home` |
+| Categoria criada, editada ou excluída | `categories`, `posts` |
+| Tag criada, editada ou excluída | `home` |
+| Comentário aprovado, editado, reprovado ou excluído | `comments:<ID do post>` |
+| Qualquer outro tipo com "Show in GraphQL" | `cms` (limpa tudo) |
+
+- Só dispara para o que o site exibe: salvar um rascunho não chama o front.
+- As tags de uma requisição são acumuladas e enviadas **uma vez**, no
+  `shutdown`, sem bloquear quem clicou em "Publicar". Uma falha na chamada
+  nunca impede a publicação — no pior caso o conteúdo aparece quando o cache
+  vencer sozinho.
+- As tags são contrato com `src/lib/cache-tags.ts`: renomear lá exige renomear
+  aqui. Um CPT novo cai em `cms` até ganhar o próprio mapeamento em
+  `tags_for_post()`.
+- Filtro `prime_poker_revalidate_tags` para acrescentar ou remover tags.
+
 ### Desativação e desinstalação
 
 Desativar remove só o agendamento do cron — roles e dados dos jogadores ficam.
 
 Desinstalar remapeia todos os jogadores para `subscriber` **antes** de remover
 as roles (remover sem remapear deixaria contas sem role nenhuma, capazes de
-logar e de nada mais), e então apaga os metadados e a option de versão.
+logar e de nada mais), e então apaga os metadados, a option de versão e os
+endereços da revalidação de cache.
 
 ## Pendências no WordPress
 
@@ -148,9 +180,8 @@ Independentes deste plugin, mas necessárias para a área do jogador funcionar:
    liberar só o cadastro via GraphQL. Ligar a option publica também o
    formulário nativo do `wp-login.php`, que este plugin passa a redirecionar
    para o front.
-2. **Não há autenticação.** O schema não tem mutation de `login` — falta um
-   plugin de JWT. Enquanto isso, o front não consegue abrir sessão e portanto
-   não consegue ler o tier de ninguém.
+2. ~~**Não há autenticação.**~~ Resolvido: o WPGraphQL JWT Authentication
+   está instalado e o `login` responde (verificado em 16/09/2026).
 
 ## Como o cadastro via WPGraphQL funciona
 

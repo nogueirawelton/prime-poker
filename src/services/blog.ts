@@ -7,6 +7,7 @@ import {
   POSTS,
   POSTS_TOTAL,
 } from "@/graphql/queries/blog/POSTS";
+import { CATEGORIES_CACHE_TAG, POSTS_CACHE_TAG } from "@/lib/cache-tags";
 
 export type Category = { name: string; slug: string };
 
@@ -155,7 +156,7 @@ export async function getPage(
       search: opcional(filter.search),
       categoryName: opcional(filter.category),
     },
-    ["posts"],
+    [POSTS_CACHE_TAG],
   );
 }
 
@@ -167,7 +168,7 @@ export async function getTotal(filter: PostFilter = {}): Promise<number> {
       categoryName: opcional(filter.category),
     },
     profile: "hours",
-    tags: ["posts"],
+    tags: [POSTS_CACHE_TAG],
   });
 
   return data?.postsTotal ?? 0;
@@ -179,7 +180,7 @@ export async function getTotalPages(filter: PostFilter = {}) {
 
 /** Os posts mais recentes — usado nos destaques da home. */
 export async function getLatest(limit = 3): Promise<Array<Post>> {
-  return buscar({ first: limit }, ["posts"]);
+  return buscar({ first: limit }, [POSTS_CACHE_TAG]);
 }
 
 /**
@@ -188,7 +189,9 @@ export async function getLatest(limit = 3): Promise<Array<Post>> {
  * Sem nenhum sticky, cai nos mais recentes — a seção nunca fica vazia.
  */
 export async function getFeatured(limit = 3): Promise<Array<Post>> {
-  const sticky = await buscar({ first: limit, isSticky: true }, ["posts"]);
+  const sticky = await buscar({ first: limit, isSticky: true }, [
+    POSTS_CACHE_TAG,
+  ]);
 
   return sticky.length > 0 ? sticky : getLatest(limit);
 }
@@ -208,7 +211,7 @@ export async function getCategories(): Promise<Array<Category>> {
   }>(CATEGORIES, {
     variables: { first: MAX_INDEX },
     profile: "hours",
-    tags: ["posts", "categories"],
+    tags: [POSTS_CACHE_TAG, CATEGORIES_CACHE_TAG],
   });
 
   return (data?.categories?.nodes ?? [])
@@ -236,14 +239,14 @@ export async function getRelated(post: Post, limit = 3): Promise<Array<Post>> {
           categoryName: post.category.slug,
           notIn: [post.id],
         },
-        ["posts"],
+        [POSTS_CACHE_TAG],
       )
     : [];
 
   if (mesmaCategoria.length >= limit) return mesmaCategoria;
 
   const recentes = await buscar({ first: limit + 1, notIn: [post.id] }, [
-    "posts",
+    POSTS_CACHE_TAG,
   ]);
 
   const vistos = new Set(mesmaCategoria.map((item) => item.id));
@@ -254,21 +257,36 @@ export async function getRelated(post: Post, limit = 3): Promise<Array<Post>> {
   ].slice(0, limit);
 }
 
+/** Slug e última edição de todos os posts publicados — base do sitemap. */
+export async function getPostIndex(): Promise<
+  Array<{ slug: string; modified: string }>
+> {
+  const data = await query<{
+    posts?: { nodes?: Array<{ slug: string; modifiedGmt: string }> };
+  }>(POST_SLUGS, {
+    variables: { first: MAX_INDEX },
+    profile: "hours",
+    tags: [POSTS_CACHE_TAG],
+  });
+
+  // O WordPress devolve a data sem fuso; o sitemap exige um. `modifiedGmt` é
+  // UTC, então basta declarar o `Z`.
+  return (data?.posts?.nodes ?? []).map((node) => ({
+    slug: node.slug,
+    modified: `${node.modifiedGmt}Z`,
+  }));
+}
+
 /** Slugs para o `generateStaticParams` das páginas de post. */
 export async function getAllSlugs(): Promise<Array<string>> {
-  const data = await query<{ posts?: { nodes?: Array<{ slug: string }> } }>(
-    POST_SLUGS,
-    { variables: { first: MAX_INDEX }, profile: "hours", tags: ["posts"] },
-  );
-
-  return (data?.posts?.nodes ?? []).map((node) => node.slug);
+  return (await getPostIndex()).map((node) => node.slug);
 }
 
 export async function getPost(slug: string): Promise<PostDetail | null> {
   const data = await query<{ post?: PostNode | null }>(POST, {
     variables: { slug },
     profile: "hours",
-    tags: ["posts", `post:${slug}`],
+    tags: [POSTS_CACHE_TAG, `post:${slug}`],
   });
 
   const node = data?.post;

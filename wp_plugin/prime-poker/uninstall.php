@@ -51,6 +51,7 @@ foreach ( Tiers::slugs() as $prime_tier ) {
 }
 
 delete_option( 'prime_players_roles_version' );
+delete_option( 'prime_poker_revalidate_urls' );
 
 wp_clear_scheduled_hook( 'prime_players_check_expirations' );
 
