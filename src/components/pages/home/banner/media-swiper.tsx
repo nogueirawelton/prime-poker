@@ -54,7 +54,7 @@ function Slide({
         loop
         muted
         playing
-        className="size-full! [&_video]:size-full [&_video]:object-cover"
+        className="size-full! object-cover!"
       />
     </div>
   );
