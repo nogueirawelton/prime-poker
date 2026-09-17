@@ -13,6 +13,7 @@ import { usePathname } from "next/navigation";
 import { DropdownMenu } from "radix-ui";
 import { twMerge } from "tailwind-merge";
 import { logout } from "@/actions/auth";
+import { iniciais } from "@/utils/iniciais";
 
 const LINKS = [
   { href: "/player/aulas", label: "Aulas", icone: PlayCircleIcon },
@@ -28,27 +29,38 @@ const LINKS = [
  *
  * `/player` só fica ativo em correspondência exata: sendo prefixo de todas as
  * outras rotas, ele acenderia junto com elas.
+ *
+ * Sem `nome`, é o estado de carregamento: o fallback do Suspense no header
+ * renderiza o menu já funcional enquanto o perfil chega do WordPress.
  */
-export function PlayerMenu() {
+export function PlayerMenu({
+  nome,
+  tier,
+}: {
+  nome?: string;
+  tier?: string | null;
+}) {
   const pathname = usePathname();
 
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger className="flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors duration-500 hover:bg-white/5">
-        {/* TODO: trocar pelo nome/avatar do usuário quando a sessão trouxer
-            os dados do WordPress. */}
         <span className="hidden flex-col items-end sm:flex">
-          <span className="font-semibold text-prime-light text-sm">
-            Minha conta
+          <span className="max-w-40 truncate font-semibold text-prime-light text-sm">
+            {nome ?? "Minha conta"}
           </span>
           <span className="flex items-center gap-1.5 text-[11px] text-prime-light/50">
             <span className="size-1.5 rounded-full bg-emerald-500" />
-            Online
+            {tier ?? "Online"}
           </span>
         </span>
 
-        <span className="flex size-10 items-center justify-center rounded-full bg-white/10 text-prime-light">
-          <UserIcon className="size-5" weight="bold" />
+        <span className="flex size-10 items-center justify-center rounded-full bg-white/10 font-bold text-prime-light text-sm">
+          {nome ? (
+            iniciais(nome)
+          ) : (
+            <UserIcon className="size-5" weight="bold" />
+          )}
         </span>
 
         <CaretDownIcon

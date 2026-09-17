@@ -5,6 +5,7 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import { twMerge } from "tailwind-merge";
 import type { Perfil } from "@/services/perfil";
+import { iniciais } from "@/utils/iniciais";
 
 const dataLonga = new Intl.DateTimeFormat("pt-BR", {
   month: "long",
@@ -16,15 +17,6 @@ const dataCurta = new Intl.DateTimeFormat("pt-BR", {
   month: "2-digit",
   year: "numeric",
 });
-
-function iniciais(nome: string) {
-  return nome
-    .split(" ")
-    .slice(0, 2)
-    .map((parte) => parte[0])
-    .join("")
-    .toUpperCase();
-}
 
 /** Identificação do jogador: quem é, qual o plano e até quando. */
 export function PerfilCard({ perfil }: { perfil: Perfil }) {
@@ -40,18 +32,24 @@ export function PerfilCard({ perfil }: { perfil: Perfil }) {
             {perfil.nome}
           </h1>
 
-          <span
-            className={twMerge(
-              "flex items-center gap-1.5 rounded-full border px-3 py-1 font-bold text-[11px] uppercase",
-              perfil.tier.cor,
-            )}
-          >
-            <CrownSimpleIcon className="size-3.5" weight="fill" />
-            {perfil.tier.label}
-          </span>
+          {perfil.tier && (
+            <span
+              className={twMerge(
+                "flex items-center gap-1.5 rounded-full border px-3 py-1 font-bold text-[11px] uppercase",
+                perfil.tier.cor,
+              )}
+            >
+              <CrownSimpleIcon className="size-3.5" weight="fill" />
+              {perfil.tier.label}
+            </span>
+          )}
         </div>
 
-        <p className="mt-1 text-prime-light/50 text-sm">@{perfil.usuario}</p>
+        {/* Quem se cadastra pelo site tem o e-mail como usuário: repetir o
+            mesmo endereço logo abaixo só polui o card. */}
+        {perfil.usuario !== perfil.email && (
+          <p className="mt-1 text-prime-light/50 text-sm">@{perfil.usuario}</p>
+        )}
 
         <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-prime-light/60 text-sm">
           <span className="flex items-center gap-1.5">

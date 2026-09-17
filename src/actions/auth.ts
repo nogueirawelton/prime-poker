@@ -2,12 +2,14 @@
 
 import { ClientError } from "graphql-request";
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { mutate } from "@/graphql/client";
 import { LOGIN } from "@/graphql/mutations/auth/LOGIN";
 import { REGISTER_USER } from "@/graphql/mutations/auth/REGISTER_USER";
+import { RESET_USER_PASSWORD } from "@/graphql/mutations/auth/RESET_USER_PASSWORD";
+import { SEND_PASSWORD_RESET_EMAIL } from "@/graphql/mutations/auth/SEND_PASSWORD_RESET_EMAIL";
 import {
   ACCESS_OPTS,
   REMEMBER_COOKIE,
@@ -311,4 +313,162 @@ export async function registerUser(
       ),
     };
   }
+}
+
+/* -------------------------------------------------------------------------- */
+/*                            Redefinição de senha                            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Endereço de onde o pedido saiu (produção, staging, preview).
+ *
+ * Vai ao WordPress para o link do e-mail voltar ao mesmo ambiente. O plugin só
+ * aceita endereços da lista em Configurações → Cache do site; qualquer outro
+ * cai no endereço de produção.
+ */
+async function origemDoPedido() {
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  const protocolo = h.get("x-forwarded-proto") ?? "https";
+
+  return host ? `${protocolo}://${host}` : "";
+}
+
+export type SolicitarRedefinicaoState = { ok: boolean; error?: string };
+
+/**
+ * Dispara o e-mail de redefinição.
+ *
+ * Responde `ok` exista a conta ou não — a mesma neutralidade do WPGraphQL.
+ * Só uma falha de comunicação com o WordPress vira erro, porque aí nenhum
+ * e-mail sai para ninguém e a pessoa precisa saber que deve tentar de novo.
+ */
+export async function solicitarRedefinicao(
+  email: string,
+): Promise<SolicitarRedefinicaoState> {
+  const validado = z.email().safeParse(email.trim().toLowerCase());
+
+  if (!validado.success) {
+    return { ok: false, error: "Informe um e-mail válido." };
+  }
+
+  try {
+    await mutate(
+      SEND_PASSWORD_RESET_EMAIL,
+      { username: validado.data },
+      { "X-Prime-Front-Url": await origemDoPedido() },
+    );
+  } catch (error) {
+    // Erro de GraphQL aqui é recusa do WP (ex.: e-mail vazio), não falha de
+    // rede — e responder diferente revelaria algo sobre a conta.
+    if (!(error instanceof ClientError)) {
+      console.error("solicitarRedefinicao:", error);
+      return { ok: false, error: "Não foi possível enviar. Tente novamente." };
+    }
+
+    console.error("solicitarRedefinicao:", error.response.errors?.[0]?.message);
+  }
+
+  return { ok: true };
+}
+
+const redefinicaoSchema = z
+  .object({
+    key: z.string().min(1),
+    login: z.string().min(1),
+    senha: z.string().min(8, "A senha precisa de ao menos 8 caracteres."),
+    confirmarSenha: z.string(),
+  })
+  .refine((dados) => dados.senha === dados.confirmarSenha, {
+    message: "As senhas não conferem.",
+    path: ["confirmarSenha"],
+  });
+
+export type RedefinirSenhaState = {
+  status: "idle" | "invalid" | "error" | "success";
+  errors?: { senha?: string; confirmarSenha?: string };
+  message?: string;
+  /** Link vencido ou já usado: a tela troca o formulário pelo pedido de um novo. */
+  linkInvalido?: boolean;
+};
+
+const ERROS_REDEFINICAO: Array<[RegExp, string]> = [
+  [
+    /expired|expirad/i,
+    "Este link expirou. Peça um novo para redefinir a senha.",
+  ],
+  [
+    /invalid|inválid|key is required|login is required/i,
+    "Este link é inválido ou já foi usado. Peça um novo para redefinir a senha.",
+  ],
+];
+
+/** Grava a nova senha com a chave recebida por e-mail. */
+export async function redefinirSenha(
+  _anterior: RedefinirSenhaState,
+  formData: FormData,
+): Promise<RedefinirSenhaState> {
+  const validado = redefinicaoSchema.safeParse({
+    key: String(formData.get("key") ?? ""),
+    login: String(formData.get("login") ?? ""),
+    senha: String(formData.get("senha") ?? ""),
+    confirmarSenha: String(formData.get("confirmarSenha") ?? ""),
+  });
+
+  if (!validado.success) {
+    const { fieldErrors } = z.flattenError(validado.error);
+
+    if (fieldErrors.key || fieldErrors.login) {
+      return {
+        status: "error",
+        linkInvalido: true,
+        message:
+          "Este link está incompleto. Peça um novo para redefinir a senha.",
+      };
+    }
+
+    return {
+      status: "invalid",
+      errors: {
+        senha: fieldErrors.senha?.[0],
+        confirmarSenha: fieldErrors.confirmarSenha?.[0],
+      },
+    };
+  }
+
+  try {
+    await mutate(RESET_USER_PASSWORD, {
+      key: validado.data.key,
+      login: validado.data.login,
+      password: validado.data.senha,
+    });
+  } catch (error) {
+    const bruta =
+      error instanceof ClientError
+        ? (error.response.errors?.[0]?.message ?? "")
+        : "";
+
+    console.error("redefinirSenha:", bruta || error);
+
+    const message = traduzirErroWp(
+      bruta,
+      ERROS_REDEFINICAO,
+      "Não foi possível redefinir a senha. Tente novamente.",
+    );
+
+    return {
+      status: "error",
+      message,
+      linkInvalido: ERROS_REDEFINICAO.some(([padrao]) => padrao.test(bruta)),
+    };
+  }
+
+  // Sessões antigas caíram no WordPress (segredo JWT trocado). Os cookies
+  // deste navegador também saem, para o próximo acesso ser com a senha nova.
+  const jar = await cookies();
+  jar.delete("access_token");
+  jar.delete("refresh_token");
+  jar.delete(REMEMBER_COOKIE);
+
+  return { status: "success" };
 }

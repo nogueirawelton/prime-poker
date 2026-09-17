@@ -514,7 +514,7 @@ final class Revalidation {
 								placeholder="https://primepokerteam.com.br"
 							><?php echo esc_textarea( (string) get_option( self::OPTION, '' ) ); ?></textarea>
 							<p class="description">
-								<?php esc_html_e( 'Um por linha, sem caminho: produção e staging.', 'prime-poker' ); ?>
+								<?php esc_html_e( 'Um por linha, sem caminho: produção primeiro, depois staging. Também definem para onde apontam os links dos e-mails de redefinição de senha.', 'prime-poker' ); ?>
 							</p>
 						</td>
 					</tr>

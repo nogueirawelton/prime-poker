@@ -1,4 +1,5 @@
 import type { Duvida } from "@/services/aula-detalhe";
+import { iniciais } from "@/utils/iniciais";
 import { DuvidaForm } from "./duvida-form";
 
 const formatador = new Intl.DateTimeFormat("pt-BR", {
@@ -9,15 +10,6 @@ const formatador = new Intl.DateTimeFormat("pt-BR", {
 });
 
 /** Iniciais para o avatar, enquanto não há foto vinda do CMS. */
-function iniciais(nome: string) {
-  return nome
-    .split(" ")
-    .slice(0, 2)
-    .map((parte) => parte[0])
-    .join("")
-    .toUpperCase();
-}
-
 /**
  * Conversa com o instrutor da aula.
  *

@@ -2,8 +2,8 @@
 /**
  * Plugin Name:       Prime Poker
  * Plugin URI:        https://primepokerteam.com.br
- * Description:       Customizações do WordPress para o Prime Poker Team: tipos de jogador (tiers), cadastro headless, autenticação e revalidação do cache do front.
- * Version:           1.7.0
+ * Description:       Customizações do WordPress para o Prime Poker Team: tipos de jogador (tiers), cadastro headless, autenticação, redefinição de senha e revalidação do cache do front.
+ * Version:           1.8.0
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Author:            Prime Poker Team
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-const VERSION = '1.7.0';
+const VERSION = '1.8.0';
 
 /**
  * Versão das DEFINIÇÕES de roles — independente da versão do plugin.
@@ -84,6 +84,7 @@ add_action(
 		Players\Admin::boot();
 		Players\Headless::boot();
 		Players\GraphQL::boot();
+		Players\PasswordReset::boot();
 
 		Blog\GraphQL::boot();
 

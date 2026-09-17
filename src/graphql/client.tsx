@@ -35,6 +35,11 @@ export async function query<T>(
 export async function mutate<T>(
   document: RequestDocument,
   variables?: Record<string, unknown>,
+  headers?: Record<string, string>,
 ): Promise<T> {
-  return client.request<T>(document, variables);
+  return client.request<T>({
+    document,
+    variables,
+    requestHeaders: headers,
+  });
 }

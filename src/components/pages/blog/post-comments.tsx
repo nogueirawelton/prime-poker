@@ -1,5 +1,6 @@
 import { ChatCircleIcon } from "@phosphor-icons/react/dist/ssr";
 import type { Comment } from "@/services/blog";
+import { iniciais } from "@/utils/iniciais";
 import { CommentForm } from "./comment-form";
 import { CommentReply } from "./comment-reply";
 
@@ -8,15 +9,6 @@ const formatador = new Intl.DateTimeFormat("pt-BR", {
   month: "long",
   year: "numeric",
 });
-
-function iniciais(nome: string) {
-  return nome
-    .split(" ")
-    .slice(0, 2)
-    .map((parte) => parte[0])
-    .join("")
-    .toUpperCase();
-}
 
 /** Quantos comentários existem, contando as respostas. */
 function contar(comentarios: Array<Comment>): number {

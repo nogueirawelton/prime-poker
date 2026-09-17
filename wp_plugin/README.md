@@ -129,6 +129,26 @@ já expõe, pelo mesmo motivo da seção acima.
 - **Jogadores não entram no `wp-admin`.** Quem também é da equipe (tem
   `edit_posts`) continua com acesso normal.
 
+### Redefinição de senha
+
+`includes/Players/PasswordReset.php`. Vale para o `sendPasswordResetEmail` do
+WPGraphQL, o "Perdeu a senha?" do `wp-login.php` e o "Enviar redefinição de
+senha" da lista de usuários — os três passam pelos mesmos filtros do núcleo.
+
+- **E-mail em HTML** com a identidade do site, botão e link de reserva. O link
+  aponta para `{site}/redefinir-senha/?key=…&login=…`.
+- **Qual site recebe o link:** o front informa o próprio endereço no cabeçalho
+  `X-Prime-Front-Url`, aceito só se estiver em *Configurações → Cache do site*.
+  Fora da lista (ou sem cabeçalho), vale o **primeiro** endereço da lista.
+  Sem nenhum endereço configurado, o e-mail padrão do WordPress é mantido.
+  A lista impede que alguém peça a redefinição de uma conta alheia informando
+  o próprio domínio e receba a chave pelo e-mail legítimo.
+- **Sessões encerradas ao trocar a senha** (redefinição ou painel): o segredo
+  JWT do usuário é regenerado. O plugin JWT grava esse segredo no refresh
+  token, mas só confere se ele foi *revogado*, nunca se ainda é o atual — por
+  isso o filtro `graphql_jwt_auth_validate_token` passa a recusar refresh
+  token com segredo antigo. O access token em uso vale até expirar (1 hora).
+
 ### Revalidação do cache do front
 
 O Next guarda as respostas do GraphQL em cache por horas. O módulo

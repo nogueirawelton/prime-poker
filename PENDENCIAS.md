@@ -151,7 +151,7 @@ Precisa estar certa antes de qualquer outra etapa.
 
 ---
 
-## Etapa 4 — Cliente GraphQL autenticado + perfil
+## Etapa 4 — Cliente GraphQL autenticado + perfil ✅ concluída (17/09/2026)
 
 Base de todas as etapas da área do jogador.
 
@@ -163,10 +163,9 @@ Base de todas as etapas da área do jogador.
       pelo token de cada um (basic, gold, platinum).
 - [x] ~~`WP_JWT_SECRET` diferente do WP~~ → **falso alarme**: o `.env.local` está certo (valor
       entre aspas; meu teste lia as aspas junto). Conferido do jeito que o Next lê: idêntico.
-- [ ] Na Vercel (produção e staging): conferir que `WP_JWT_SECRET` é o mesmo valor do
+- [x] Na Vercel (produção e staging): conferir que `WP_JWT_SECRET` é o mesmo valor do
       `wp-config.php`. Lá o valor vai **sem aspas** (a UI da Vercel não interpreta o `.env`).
-- [ ] Teste rápido na staging (depois do deploy com o ajuste de relógio): logar com
-      `teste.free` e ver se entra na área do jogador.
+- [x] Teste rápido na staging: logar com `teste.free` e entrar na área do jogador — ✅ você confirmou.
 
 **🤖 Claude**
 - [x] Verificado: login dos 4 usuários OK (authToken + refreshToken) e query `viewer`
@@ -178,30 +177,71 @@ Base de todas as etapas da área do jogador.
       de login. Criado `lib/jwt.ts` com `clockTolerance: 30`, usado pelo proxy e pelo
       `getSession()`. Testado no build de produção: `/player/` com token recém-emitido → 200;
       sem cookie ou com token adulterado → 307 para `/login`.
-- [ ] Criar `authQuery`/`authMutate` em `graphql/`: sem `"use cache"`, com
-      `Authorization: Bearer <access_token>` lido do cookie.
-- [ ] `services/perfil.ts` → `getPerfil()` real via `viewer { name username email registeredDate playerTier playerTierLabel playerTierExpiresAt }`.
-- [ ] Mapear a cor do selo por tier no front.
-- [ ] `player-menu.tsx`: trocar "Minha conta" pelo nome e as iniciais do usuário (TODO no código).
-- [ ] Tratar token expirado ou sem permissão (redirecionar ao login, sem tela quebrada).
+- [x] `graphql/auth-client.ts`: `authQuery`/`authMutate` sem cache, com
+      `Authorization: Bearer` do cookie. Se o WP recusar, confere o token localmente:
+      sessão inválida → `/login`; sessão válida → o erro sobe como erro de verdade
+      (não manda alguém logado para o login por causa de uma query quebrada).
+- [x] `services/perfil.ts` → `getPerfil()` real via `viewer` (`graphql/queries/player/VIEWER.ts`),
+      deduplicado por requisição (menu + painel = uma ida ao WP). Conta sem usuário no WP → `/login`.
+- [x] Cor do selo por tier no front (free cinza, basic azul, gold âmbar, platinum violeta);
+      rótulo vem do WP. Usuário sem tier (equipe) não mostra selo.
+- [x] Menu do header com nome, iniciais e tier (atrás de Suspense; o fallback é o menu
+      funcional com "Minha conta"). TODO do código removido.
+- [x] Card do perfil não repete o e-mail como `@usuario` quando são iguais.
+- [x] `utils/iniciais.ts`: a mesma função estava copiada em 5 componentes — unificada.
+- [x] Testado no build de produção com os 4 usuários: `/player/` e `/player/aulas/` → 200,
+      nome, e-mail, tier, iniciais e "Membro desde" corretos; sem cookie → 307 `/login`.
+
+**⚠️ Achado (seu, no WP):** o **modo debug do WPGraphQL está ligado em produção** — erros
+devolvem `debugMessage` com detalhes internos ("Signature verification failed", "Expired token").
+Desligar em *GraphQL → Settings → Enable GraphQL Debug Mode*. O front não depende disso.
+- [x] Desligar o debug do WPGraphQL — conferido: erros não trazem mais `debugMessage`.
 
 **✅ Pronto quando:** cada usuário de teste vê o próprio nome, e-mail, tier e vencimento.
 
 ---
 
-## Etapa 5 — Recuperação de senha
+## Etapa 5 — Recuperação de senha 🟡 código pronto — falta subir e testar
 
 **👤 Você**
-- [ ] SMTP funcionando (etapa 0).
-- [ ] ❓ Texto e assunto do e-mail de redefinição (ou deixo um padrão e você ajusta).
+- [x] SMTP funcionando (etapa 0).
+- [x] ❓ Texto e assunto do e-mail → **a critério do Claude**.
+- [ ] Commit + push na `staging`.
+- [ ] Subir o plugin **1.8.0** no WP.
+- [ ] Em *Configurações → Cache do site*, garantir a **produção na primeira linha** (é o
+      destino padrão dos links) e a staging na segunda.
+- [ ] Testar na staging com um e-mail que você recebe (os `teste.*@primepokerteam.com.br`
+      provavelmente não têm caixa — troque o e-mail de um deles no painel ou use sua conta):
+      1. Login → "Esqueci minha senha" → informar o e-mail.
+      2. Conferir o e-mail: visual, assunto, link apontando para a **staging**.
+      3. Abrir o link, salvar a nova senha → volta para o login → entrar com a nova.
+      4. Abrir o mesmo link de novo → deve dizer que é inválido/já usado.
+- [ ] Me contar o resultado (e mandar print do e-mail, se algo parecer estranho).
 
 **🤖 Claude**
-- [ ] Plugin: filtro em `retrieve_password_message` para o link apontar para
-      `{SITE}/redefinir-senha/?key=…&login=…` em vez do `wp-login.php`.
-- [ ] `password-recovery-dialog.tsx`: trocar o `setTimeout` (TODO) pela mutation
-      `sendPasswordResetEmail`, mantendo a mensagem neutra.
-- [ ] Criar a página `(auth)/redefinir-senha` com a mutation `resetUserPassword`.
-- [ ] Testar o fluxo completo com e-mail real.
+- [x] Conferido no código do WPGraphQL: `sendPasswordResetEmail` usa os filtros
+      `retrieve_password_title`/`retrieve_password_message` e responde sucesso mesmo para
+      e-mail inexistente (sem enumeração de contas).
+- [x] Plugin `Players/PasswordReset.php`: e-mail em HTML (assunto "Redefinição de senha —
+      Prime Poker Team", saudação pelo nome, botão, validade de 24h, link de reserva) com
+      link para `/redefinir-senha/` do front.
+- [x] **Segurança:** o link só aponta para endereços cadastrados no WP; um domínio
+      informado por terceiros cai no endereço de produção.
+- [x] **Falha do plugin JWT corrigida:** trocar a senha não derrubava sessões (o refresh
+      token com segredo antigo continuava aceito por até 30 dias). Agora redefinir a senha
+      ou trocá-la no painel gira o segredo e o refresh antigo é recusado.
+- [x] `password-recovery-dialog.tsx`: `setTimeout` (TODO) trocado pela action
+      `solicitarRedefinicao`, mantendo a mensagem neutra; só falha de rede vira erro.
+- [x] Página `(auth)/redefinir-senha` + `reset-password-form.tsx`: nova senha e confirmação
+      (mín. 8, como no cadastro); link vencido/usado/incompleto troca o formulário por
+      "Pedir um novo link"; sucesso limpa os cookies deste navegador e leva ao login.
+- [x] `robots.ts` bloqueia `/redefinir-senha/`.
+- [x] Testes: plugin com WP simulado (16 cenários — link por ambiente, domínio de atacante,
+      HTML só no e-mail certo, giro do segredo, refresh antigo recusado, revogado intacto);
+      mensagem real do WP para chave inválida casa com a tradução; página no build de
+      produção sem parâmetros (link incompleto) e com parâmetros (formulário com key e
+      login decodificado).
+- [ ] Conferir o fluxo real na staging depois do seu teste.
 
 **✅ Pronto quando:** você recebe o e-mail, troca a senha e entra com a nova.
 

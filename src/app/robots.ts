@@ -17,7 +17,13 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
       // Área logada, autenticação e endpoints não têm o que indexar.
-      disallow: ["/player/", "/login/", "/cadastro/", "/api/"],
+      disallow: [
+        "/player/",
+        "/login/",
+        "/cadastro/",
+        "/redefinir-senha/",
+        "/api/",
+      ],
     },
     sitemap: `${SITE}/sitemap.xml`,
   };

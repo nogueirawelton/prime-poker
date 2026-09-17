@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { NotificationBellData } from "./notification-bell-server";
 import { PlayerMenu } from "./player-menu";
+import { PlayerMenuData } from "./player-menu-server";
 
 /**
  * Header da área logada.
@@ -32,7 +33,11 @@ export function PlayerHeader() {
             <NotificationBellData />
           </Suspense>
 
-          <PlayerMenu />
+          {/* Mesmo motivo do sino: o nome é do usuário. O fallback já é o
+              menu funcional, só sem o nome. */}
+          <Suspense fallback={<PlayerMenu />}>
+            <PlayerMenuData />
+          </Suspense>
         </div>
       </div>
     </header>

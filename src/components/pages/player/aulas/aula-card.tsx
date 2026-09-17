@@ -7,17 +7,9 @@ import {
 import Link from "next/link";
 import { twMerge } from "tailwind-merge";
 import { type Aula, formatarDuracao } from "@/services/aulas";
+import { iniciais } from "@/utils/iniciais";
 
 /** Iniciais do instrutor: o avatar real ainda não vem do CMS. */
-function iniciais(nome: string) {
-  return nome
-    .split(" ")
-    .slice(0, 2)
-    .map((parte) => parte[0])
-    .join("")
-    .toUpperCase();
-}
-
 export function AulaCard({ aula }: { aula: Aula }) {
   const progresso = Math.min(
     100,

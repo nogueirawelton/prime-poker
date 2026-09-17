@@ -1,13 +1,5 @@
 import type { PostDetail } from "@/services/blog";
-
-function iniciais(nome: string) {
-  return nome
-    .split(" ")
-    .slice(0, 2)
-    .map((parte) => parte[0])
-    .join("")
-    .toUpperCase();
-}
+import { iniciais } from "@/utils/iniciais";
 
 /**
  * Quem escreveu o artigo, ao fim da leitura.
