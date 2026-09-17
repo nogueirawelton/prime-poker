@@ -1,6 +1,8 @@
 "use client";
 
-import { ListIcon, UserIcon } from "@phosphor-icons/react/dist/ssr";
+// TODO: reativar junto com o botão "Entrar" (área logada oculta na master).
+// import { ListIcon, UserIcon } from "@phosphor-icons/react/dist/ssr";
+import { ListIcon } from "@phosphor-icons/react/dist/ssr";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -170,17 +172,19 @@ export function Header() {
               </Link>
             ))}
 
+            {/* Blog oculto na master — reativar quando for ao ar. */}
             {/* Rota real, não âncora. */}
-            <Link href="/blog">Blog</Link>
+            {/* <Link href="/blog">Blog</Link> */}
           </nav>
 
-          <Link
+          {/* Área logada oculta na master — reativar quando for ao ar. */}
+          {/* <Link
             href="/login"
             className="flex h-11 shrink-0 items-center gap-2 rounded-md bg-prime-red px-5 font-semibold text-prime-light text-sm uppercase transition-all duration-500 hover:bg-prime-light hover:text-prime-red"
           >
             <UserIcon className="size-5" weight="bold" />
             Entrar
-          </Link>
+          </Link> */}
         </div>
 
         <MenuMobileTrigger>

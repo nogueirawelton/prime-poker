@@ -1,7 +1,8 @@
 import type { Home } from "@/@types/pages/Home";
 import { Banner } from "@/components/pages/home/banner";
 import { BePart } from "@/components/pages/home/be-part";
-import { BlogHighlights } from "@/components/pages/home/blog-highlights";
+// Blog oculto na master — reativar quando for ao ar.
+// import { BlogHighlights } from "@/components/pages/home/blog-highlights";
 import { Evolution } from "@/components/pages/home/evolution";
 import { Faq } from "@/components/pages/home/faq";
 import { HeadCoachs } from "@/components/pages/home/head-coachs";
@@ -32,7 +33,7 @@ export default async function HomePage() {
       <Evolution content={page.homeFields.evolution} />
       <BePart content={page.homeFields.bePart} />
       <Faq content={page.homeFields.faq} />
-      <BlogHighlights />
+      {/* <BlogHighlights /> */}
       <Instagram />
     </main>
   );

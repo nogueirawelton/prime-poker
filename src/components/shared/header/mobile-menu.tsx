@@ -1,6 +1,8 @@
 "use client";
 
-import { UserIcon, XIcon } from "@phosphor-icons/react/dist/ssr";
+// TODO: reativar junto com o botão "Entrar" (área logada oculta na master).
+// import { UserIcon, XIcon } from "@phosphor-icons/react/dist/ssr";
+import { XIcon } from "@phosphor-icons/react/dist/ssr";
 import Image from "next/image";
 import Link from "next/link";
 import { Dialog } from "radix-ui";
@@ -18,7 +20,9 @@ const ANCHORS = [
 ];
 
 /** Rotas reais: navegam normalmente, sem preventDefault. */
-const ROUTES = [{ href: "/blog", label: "Blog" }];
+// Blog oculto na master — reativar quando for ao ar.
+// const ROUTES = [{ href: "/blog", label: "Blog" }];
+const ROUTES: { href: string; label: string }[] = [];
 
 export function MenuMobileTrigger({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -88,7 +92,8 @@ export function MenuMobileTrigger({ children }: { children: ReactNode }) {
               ))}
             </nav>
 
-            <Dialog.Close asChild>
+            {/* Área logada oculta na master — reativar quando for ao ar. */}
+            {/* <Dialog.Close asChild>
               <Link
                 href="/login"
                 className="mt-10 flex h-14 items-center justify-center gap-2 rounded-md bg-prime-red font-semibold text-prime-light text-sm uppercase transition-all duration-500 hover:bg-prime-light hover:text-prime-red"
@@ -96,7 +101,7 @@ export function MenuMobileTrigger({ children }: { children: ReactNode }) {
                 <UserIcon className="size-5" weight="bold" />
                 Entrar
               </Link>
-            </Dialog.Close>
+            </Dialog.Close> */}
           </div>
         </Dialog.Content>
       </Dialog.Portal>

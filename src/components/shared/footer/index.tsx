@@ -79,7 +79,8 @@ export function Footer() {
             <SectionLinks />
           </nav>
 
-          <nav aria-label="Conteúdo e conta">
+          {/* Blog e área logada ocultos na master — reativar quando forem ao ar. */}
+          {/* <nav aria-label="Conteúdo e conta">
             <strong className="font-bold text-prime-light text-sm uppercase">
               Conteúdo
             </strong>
@@ -101,7 +102,7 @@ export function Footer() {
                 </Link>
               </li>
             </ul>
-          </nav>
+          </nav> */}
 
           <div>
             <strong className="font-bold text-prime-light text-sm uppercase">
