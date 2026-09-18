@@ -1,2 +1,0 @@
-- [ ] SMTP
-- [ ] Mudar nome dos campos do form

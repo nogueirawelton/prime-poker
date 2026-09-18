@@ -11,36 +11,39 @@ import {
 import Link from "next/link";
 import { useTransition } from "react";
 import { twMerge } from "tailwind-merge";
-import { alternarLeitura } from "@/actions/notificacoes";
-import type { Notificacao, TipoNotificacao } from "@/services/notificacoes";
+import { toggleReadState } from "@/actions/notifications";
+import type {
+  NotificationType,
+  PlayerNotification,
+} from "@/services/notifications";
 
-const ICONES: Record<TipoNotificacao, Icon> = {
+const ICONS: Record<NotificationType, Icon> = {
   aula: PlayCircleIcon,
   aviso: MegaphoneIcon,
   conquista: TrophyIcon,
   suporte: ChatCircleIcon,
 };
 
-const CORES: Record<TipoNotificacao, string> = {
+const COLORS: Record<NotificationType, string> = {
   aula: "bg-prime-red/15 text-prime-red",
   aviso: "bg-blue-500/15 text-blue-400",
   conquista: "bg-amber-500/15 text-amber-400",
   suporte: "bg-emerald-500/15 text-emerald-400",
 };
 
-const formatador = new Intl.RelativeTimeFormat("pt-BR", { numeric: "auto" });
+const formatter = new Intl.RelativeTimeFormat("pt-BR", { numeric: "auto" });
 
 /** Distância até agora em linguagem corrente: "há 2 horas". */
-function quando(data: string) {
-  const diferenca = Date.now() - new Date(data).getTime();
-  const minutos = Math.round(diferenca / 60000);
+function when(data: string) {
+  const difference = Date.now() - new Date(data).getTime();
+  const minutes = Math.round(difference / 60000);
 
-  if (Math.abs(minutos) < 60) return formatador.format(-minutos, "minute");
+  if (Math.abs(minutes) < 60) return formatter.format(-minutes, "minute");
 
-  const horas = Math.round(minutos / 60);
-  if (Math.abs(horas) < 24) return formatador.format(-horas, "hour");
+  const hours = Math.round(minutes / 60);
+  if (Math.abs(hours) < 24) return formatter.format(-hours, "hour");
 
-  return formatador.format(-Math.round(horas / 24), "day");
+  return formatter.format(-Math.round(hours / 24), "day");
 }
 
 /**
@@ -51,56 +54,56 @@ function quando(data: string) {
  * quem quer limpar o selo sem sair da página.
  */
 export function NotificationItem({
-  notificacao,
+  notification,
   onNavigate,
 }: {
-  notificacao: Notificacao;
+  notification: PlayerNotification;
   /** Fecha o popover quando o item é aberto de dentro do sino. */
   onNavigate?: () => void;
 }) {
-  const [pendente, startTransition] = useTransition();
-  const Icone = ICONES[notificacao.tipo];
+  const [pending, startTransition] = useTransition();
+  const ItemIcon = ICONS[notification.type];
 
-  function alternar() {
-    startTransition(() => alternarLeitura(notificacao.id, !notificacao.lida));
+  function toggleRead() {
+    startTransition(() => toggleReadState(notification.id, !notification.read));
   }
 
   return (
     <div
-      data-pending={pendente || undefined}
+      data-pending={pending || undefined}
       className="group flex items-start gap-3 rounded-lg p-3 transition-colors duration-300 hover:bg-white/5 data-pending:opacity-60"
     >
       <span
         className={twMerge(
           "flex size-9 shrink-0 items-center justify-center rounded-full",
-          CORES[notificacao.tipo],
+          COLORS[notification.type],
         )}
       >
-        <Icone className="size-5" weight="fill" aria-hidden="true" />
+        <ItemIcon className="size-5" weight="fill" aria-hidden="true" />
       </span>
 
       {/* Só vira link quando há para onde ir: comunicados do time se esgotam
           no próprio texto. */}
-      <Corpo
-        href={notificacao.href}
+      <Body
+        href={notification.href}
         onOpen={() => {
           onNavigate?.();
-          if (!notificacao.lida) alternar();
+          if (!notification.read) toggleRead();
         }}
       >
         <span className="flex items-center gap-2">
           <span
             className={twMerge(
               "text-sm leading-snug",
-              notificacao.lida
+              notification.read
                 ? "text-prime-light/70"
                 : "font-semibold text-prime-light",
             )}
           >
-            {notificacao.titulo}
+            {notification.title}
           </span>
 
-          {!notificacao.lida && (
+          {!notification.read && (
             <>
               {/* O ponto é decorativo; quem usa leitor de tela recebe o
                   estado pelo texto, não pela cor. */}
@@ -114,27 +117,27 @@ export function NotificationItem({
         </span>
 
         <span className="mt-0.5 block text-prime-light/60 text-xs leading-relaxed">
-          {notificacao.descricao}
+          {notification.description}
         </span>
 
         <time
-          dateTime={notificacao.data}
+          dateTime={notification.data}
           className="mt-1 block text-[11px] text-prime-light/40"
         >
-          {quando(notificacao.data)}
+          {when(notification.data)}
         </time>
-      </Corpo>
+      </Body>
 
       <button
         type="button"
-        onClick={alternar}
-        disabled={pendente}
+        onClick={toggleRead}
+        disabled={pending}
         aria-label={
-          notificacao.lida ? "Marcar como não lida" : "Marcar como lida"
+          notification.read ? "Marcar como não lida" : "Marcar como lida"
         }
         className={twMerge(
           "shrink-0 rounded p-1 transition-colors duration-300",
-          notificacao.lida
+          notification.read
             ? "text-prime-light/30 hover:text-prime-light/70"
             : "text-prime-light/50 hover:text-prime-red",
         )}
@@ -145,7 +148,7 @@ export function NotificationItem({
   );
 }
 
-function Corpo({
+function Body({
   href,
   onOpen,
   children,

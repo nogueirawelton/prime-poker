@@ -109,11 +109,10 @@ já expõe, pelo mesmo motivo da seção acima.
 - **Cadastro novo entra como Player Free.** Feito no `user_register`, não pela
   option `default_role`: o `registerUser` do WPGraphQL ignora a role enviada na
   mutation e força o padrão do site. A role padrão (`subscriber`) é removida.
-- **Nenhum e-mail automático é enviado** nos cadastros pelo front — nem ao
-  jogador (o padrão do WP pede para "definir a senha" que ele acabou de
-  escolher) nem ao administrador. Os dois envios eram síncronos e respondiam
+- **Os e-mails padrão do WordPress não são enviados** nos cadastros pelo front
+  — nem ao jogador (o padrão do WP pede para "definir a senha" que ele acabou
+  de escolher) nem ao administrador. O jogador recebe o de boas-vindas próprio. Os dois envios eram síncronos e respondiam
   por quase todo o tempo da mutation: o cadastro caiu de ~10s para ~1s.
-  Para um e-mail de boas-vindas próprio, use o hook `prime_player_registered`.
 - **O authToken JWT vale 1 hora** em vez dos 300s padrão do
   wp-graphql-jwt-authentication. O front renova sozinho, mas cada renovação é
   uma ida ao WordPress: a 300s isso acontecia a cada 5 minutos de navegação.
@@ -129,13 +128,87 @@ já expõe, pelo mesmo motivo da seção acima.
 - **Jogadores não entram no `wp-admin`.** Quem também é da equipe (tem
   `edit_posts`) continua com acesso normal.
 
+### E-mails do site
+
+Layout único em `includes/Mail/Layout.php` (HTML com tabelas e estilos inline,
+sem imagem). O endereço do site para os links sai de `includes/Front.php`: o
+front informa o próprio endereço no cabeçalho `X-Prime-Front-Url`, aceito só
+se estiver em *Configurações → Cache do site*; senão vale o **primeiro** da
+lista.
+
+#### Boas-vindas
+
+`includes/Players/Welcome.php`. Sai para quem se cadastra **pelo front**
+(quem é criado pelo painel recebe a notificação normal do WordPress).
+
+- Enviado no `shutdown`, depois de `fastcgi_finish_request()` quando existir:
+  a resposta do cadastro chega ao front antes do envio, e o nome gravado pelo
+  WPGraphQL (depois do `prime_player_registered`) já está disponível.
+- Saudação pelo primeiro nome, tier inicial e botão para `{site}/login/`.
+- Filtro `prime_players_send_welcome_email` para desligar.
+
+### Redefinição de senha
+
+`includes/Players/PasswordReset.php`. Vale para o `sendPasswordResetEmail` do
+WPGraphQL, o "Perdeu a senha?" do `wp-login.php` e o "Enviar redefinição de
+senha" da lista de usuários — os três passam pelos mesmos filtros do núcleo.
+
+- **E-mail em HTML** (layout comum), botão e link de reserva, apontando para
+  `{site}/redefinir-senha/?key=…&login=…`. Sem nenhum endereço configurado,
+  o e-mail padrão do WordPress é mantido.
+- A lista de endereços permitidos impede que alguém peça a redefinição de uma
+  conta alheia informando o próprio domínio e receba a chave pelo e-mail
+  legítimo.
+- **Sessões encerradas ao trocar a senha** (redefinição ou painel): o segredo
+  JWT do usuário é regenerado. O plugin JWT grava esse segredo no refresh
+  token, mas só confere se ele foi *revogado*, nunca se ainda é o atual — por
+  isso o filtro `graphql_jwt_auth_validate_token` passa a recusar refresh
+  token com segredo antigo. O access token em uso vale até expirar (1 hora).
+
+### Revalidação do cache do front
+
+O Next guarda as respostas do GraphQL em cache por horas. O módulo
+`includes/Cache/Revalidation.php` avisa o front a cada mudança, chamando
+`GET {site}/api/revalidate/?tag=…&tag=…` em cada endereço configurado.
+
+**Configuração:** *Configurações → Cache do site* → um endereço por linha
+(produção e staging), sem caminho. Só administradores.
+
+**Limpeza manual:** botão **Limpar cache** na barra superior do WordPress (e
+**Limpar cache agora** na tela de configurações). Limpa tudo em todos os
+endereços e volta para a tela onde a pessoa estava, com um aviso do retorno de
+cada endereço. Disponível para editores e administradores
+(`edit_others_posts`).
+
+| Mudança no WP | Tags enviadas |
+|---|---|
+| Post publicado, editado, despublicado, na lixeira ou excluído | `posts`, `categories` |
+| Página `home` | `home`, `seo` |
+| Outras páginas | `seo` |
+| Instrutor (`instructor`) ou Depoimento (`testimonial`) | `home` |
+| Categoria criada, editada ou excluída | `categories`, `posts` |
+| Tag criada, editada ou excluída | `home` |
+| Comentário aprovado, editado, reprovado ou excluído | `comments:<ID do post>` |
+| Qualquer outro tipo com "Show in GraphQL" | `cms` (limpa tudo) |
+
+- Só dispara para o que o site exibe: salvar um rascunho não chama o front.
+- As tags de uma requisição são acumuladas e enviadas **uma vez**, no
+  `shutdown`, sem bloquear quem clicou em "Publicar". Uma falha na chamada
+  nunca impede a publicação — no pior caso o conteúdo aparece quando o cache
+  vencer sozinho.
+- As tags são contrato com `src/lib/cache-tags.ts`: renomear lá exige renomear
+  aqui. Um CPT novo cai em `cms` até ganhar o próprio mapeamento em
+  `tags_for_post()`.
+- Filtro `prime_poker_revalidate_tags` para acrescentar ou remover tags.
+
 ### Desativação e desinstalação
 
 Desativar remove só o agendamento do cron — roles e dados dos jogadores ficam.
 
 Desinstalar remapeia todos os jogadores para `subscriber` **antes** de remover
 as roles (remover sem remapear deixaria contas sem role nenhuma, capazes de
-logar e de nada mais), e então apaga os metadados e a option de versão.
+logar e de nada mais), e então apaga os metadados, a option de versão e os
+endereços da revalidação de cache.
 
 ## Pendências no WordPress
 
@@ -148,9 +221,8 @@ Independentes deste plugin, mas necessárias para a área do jogador funcionar:
    liberar só o cadastro via GraphQL. Ligar a option publica também o
    formulário nativo do `wp-login.php`, que este plugin passa a redirecionar
    para o front.
-2. **Não há autenticação.** O schema não tem mutation de `login` — falta um
-   plugin de JWT. Enquanto isso, o front não consegue abrir sessão e portanto
-   não consegue ler o tier de ninguém.
+2. ~~**Não há autenticação.**~~ Resolvido: o WPGraphQL JWT Authentication
+   está instalado e o `login` responde (verificado em 16/09/2026).
 
 ## Como o cadastro via WPGraphQL funciona
 

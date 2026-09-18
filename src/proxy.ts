@@ -1,6 +1,7 @@
 import { decodeJwt, jwtVerify } from "jose";
 import { type NextRequest, NextResponse } from "next/server";
 import { ACCESS_OPTS, REMEMBER_COOKIE, refreshOptsFor } from "@/lib/cookies";
+import { JWT_VERIFY_OPTIONS } from "@/lib/jwt";
 
 /**
  * A mutation vive inline aqui, e não em `graphql/mutations`, de propósito:
@@ -38,7 +39,7 @@ function isExpired(token: string) {
 }
 
 /** Manda para o login guardando o destino, para voltar depois de autenticar. */
-function paraLogin(req: NextRequest) {
+function redirectToLogin(req: NextRequest) {
   const url = new URL("/login", req.url);
   url.searchParams.set("redirect", req.nextUrl.pathname);
 
@@ -85,11 +86,11 @@ async function refreshAuthToken(refreshToken: string) {
 }
 
 /** Rotas que exigem sessão. */
-const PROTEGIDAS = ["/player"];
+const PROTECTED_ROUTES = ["/player"];
 
-function ehProtegida(pathname: string) {
-  return PROTEGIDAS.some(
-    (rota) => pathname === rota || pathname.startsWith(`${rota}/`),
+function isProtected(pathname: string) {
+  return PROTECTED_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
   );
 }
 
@@ -101,19 +102,21 @@ function ehProtegida(pathname: string) {
  * shell é transmitido não há mais como responder 3xx, e o `redirect()` do
  * layout vira uma instrução no corpo, com o HTML da página já entregue junto.
  */
-async function tokenValido(token: string | undefined) {
+async function isTokenValid(token: string | undefined) {
   if (!token) return false;
 
-  const segredo = process.env.WP_JWT_SECRET;
-  if (!segredo) {
+  const secret = process.env.WP_JWT_SECRET;
+  if (!secret) {
     console.error("proxy: WP_JWT_SECRET não definido — acesso negado");
     return false;
   }
 
   try {
-    await jwtVerify(token, new TextEncoder().encode(segredo), {
-      algorithms: ["HS256"],
-    });
+    await jwtVerify(
+      token,
+      new TextEncoder().encode(secret),
+      JWT_VERIFY_OPTIONS,
+    );
     return true;
   } catch {
     return false;
@@ -121,24 +124,28 @@ async function tokenValido(token: string | undefined) {
 }
 
 export async function proxy(req: NextRequest) {
-  const protegida = ehProtegida(req.nextUrl.pathname);
+  const protectedRoute = isProtected(req.nextUrl.pathname);
 
   const access = req.cookies.get("access_token")?.value;
 
   if (access && !isExpired(access)) {
-    if (protegida && !(await tokenValido(access))) return paraLogin(req);
+    if (protectedRoute && !(await isTokenValid(access)))
+      return redirectToLogin(req);
 
     return NextResponse.next();
   }
 
   const refresh = req.cookies.get("refresh_token")?.value;
-  if (!refresh) return protegida ? paraLogin(req) : NextResponse.next();
+  if (!refresh)
+    return protectedRoute ? redirectToLogin(req) : NextResponse.next();
 
   const authToken = await refreshAuthToken(refresh);
 
-  if (!authToken) return protegida ? paraLogin(req) : NextResponse.next();
+  if (!authToken)
+    return protectedRoute ? redirectToLogin(req) : NextResponse.next();
 
-  if (protegida && !(await tokenValido(authToken))) return paraLogin(req);
+  if (protectedRoute && !(await isTokenValid(authToken)))
+    return redirectToLogin(req);
 
   const headers = new Headers(req.headers);
   headers.set("cookie", cookieHeaderWith(req, authToken));

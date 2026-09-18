@@ -1,13 +1,5 @@
 import type { PostDetail } from "@/services/blog";
-
-function iniciais(nome: string) {
-  return nome
-    .split(" ")
-    .slice(0, 2)
-    .map((parte) => parte[0])
-    .join("")
-    .toUpperCase();
-}
+import { initials } from "@/utils/initials";
 
 /**
  * Quem escreveu o artigo, ao fim da leitura.
@@ -20,7 +12,7 @@ export function AuthorCard({ post }: { post: PostDetail }) {
   return (
     <aside className="mt-12 flex max-w-3xl items-start gap-4 rounded-xl border border-white/10 bg-white/3 p-6">
       <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-prime-red/15 font-bold text-prime-red">
-        {iniciais(post.author)}
+        {initials(post.author)}
       </span>
 
       <div className="min-w-0">

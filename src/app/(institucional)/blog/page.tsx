@@ -68,24 +68,24 @@ export default async function BlogPage({ searchParams }: Props) {
         {/* Os resultados dependem da URL, que só existe em tempo de
             requisição. Atrás do boundary, o cabeçalho, os destaques e a
             navegação continuam prerenderizados no shell estático. */}
-        <Suspense fallback={<Esqueleto />}>
-          <Resultados searchParams={searchParams} />
+        <Suspense fallback={<Skeleton />}>
+          <Results searchParams={searchParams} />
         </Suspense>
       </section>
     </main>
   );
 }
 
-async function Resultados({ searchParams }: Props) {
+async function Results({ searchParams }: Props) {
   const { q, p } = await searchParams;
 
   const search = q?.trim() ?? "";
-  const pagina = Math.max(1, Number(p) || 1);
-  const filtro = search ? { search } : {};
+  const page = Math.max(1, Number(p) || 1);
+  const filter = search ? { search } : {};
 
   const [posts, totalPages] = await Promise.all([
-    getPage(pagina, filtro),
-    getTotalPages(filtro),
+    getPage(page, filter),
+    getTotalPages(filter),
   ]);
 
   if (posts.length === 0) {
@@ -123,12 +123,12 @@ async function Resultados({ searchParams }: Props) {
         ))}
       </div>
 
-      <Pagination current={pagina} total={totalPages} hrefFor={hrefFor} />
+      <Pagination current={page} total={totalPages} hrefFor={hrefFor} />
     </>
   );
 }
 
-function Esqueleto() {
+function Skeleton() {
   return (
     <div className={GRID} aria-hidden="true">
       {Array.from({ length: 6 }, (_, index) => index).map((index) => (

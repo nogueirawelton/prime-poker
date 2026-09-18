@@ -1,20 +1,21 @@
 "use server";
 
 import { ClientError } from "graphql-request";
-import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { mutate } from "@/graphql/client";
 import { LOGIN } from "@/graphql/mutations/auth/LOGIN";
 import { REGISTER_USER } from "@/graphql/mutations/auth/REGISTER_USER";
+import { RESET_USER_PASSWORD } from "@/graphql/mutations/auth/RESET_USER_PASSWORD";
+import { SEND_PASSWORD_RESET_EMAIL } from "@/graphql/mutations/auth/SEND_PASSWORD_RESET_EMAIL";
 import {
   ACCESS_OPTS,
   REMEMBER_COOKIE,
   REMEMBER_OPTS,
   refreshOptsFor,
 } from "@/lib/cookies";
-import { traduzirErroWp } from "@/lib/wp-errors";
+import { translateWpError } from "@/lib/wp-errors";
 
 /* -------------------------------------------------------------------------- */
 /*                                   Login                                    */
@@ -26,12 +27,12 @@ import { traduzirErroWp } from "@/lib/wp-errors";
  */
 const loginSchema = z.object({
   email: z.email("Informe um e-mail válido."),
-  senha: z.string().min(1, "Informe sua senha."),
+  password: z.string().min(1, "Informe sua senha."),
 });
 
 export type LoginState = {
   error?: string;
-  fieldErrors?: { email?: string[]; senha?: string[] };
+  fieldErrors?: { email?: string[]; password?: string[] };
   /**
    * Devolvido para o formulário poder reexibi-lo: o React reinicia formulários
    * não controlados quando a action termina, e uma senha errada levaria o
@@ -54,12 +55,12 @@ type LoginResponse = {
  * base — o mesmo motivo pelo qual a recuperação de senha responde de forma
  * neutra.
  */
-const CREDENCIAIS_INVALIDAS = "E-mail ou senha incorretos.";
+const INVALID_CREDENTIALS = "E-mail ou senha incorretos.";
 
-const ERROS_LOGIN: Array<[RegExp, string]> = [
+const LOGIN_ERRORS: Array<[RegExp, string]> = [
   [
     /senha .* incorreta|incorrect_password|desconhecid|unknown (email|username)|invalid_username|não foi encontrada/i,
-    CREDENCIAIS_INVALIDAS,
+    INVALID_CREDENTIALS,
   ],
   [
     /internal server error|não foi possível|could not/i,
@@ -68,36 +69,36 @@ const ERROS_LOGIN: Array<[RegExp, string]> = [
 ];
 
 export async function login(
-  _anterior: LoginState,
+  _previous: LoginState,
   formData: FormData,
 ): Promise<LoginState> {
   // Antes da validação: um e-mail malformado também precisa voltar à tela.
-  const enviado = formData.get("email");
-  const email = typeof enviado === "string" ? enviado : undefined;
+  const submitted = formData.get("email");
+  const email = typeof submitted === "string" ? submitted : undefined;
 
-  const validado = loginSchema.safeParse({
-    email: enviado,
-    senha: formData.get("senha"),
+  const validated = loginSchema.safeParse({
+    email: submitted,
+    password: formData.get("password"),
   });
 
-  if (!validado.success) {
-    return { fieldErrors: z.flattenError(validado.error).fieldErrors, email };
+  if (!validated.success) {
+    return { fieldErrors: z.flattenError(validated.error).fieldErrors, email };
   }
 
   const remember = formData.get("remember") === "on";
 
   try {
-    const resposta = await mutate<LoginResponse>(LOGIN, {
+    const response = await mutate<LoginResponse>(LOGIN, {
       // O cadastro grava o e-mail como `user_login`, então ele serve de usuário.
-      username: validado.data.email.trim().toLowerCase(),
-      password: validado.data.senha,
+      username: validated.data.email.trim().toLowerCase(),
+      password: validated.data.password,
     });
 
-    const authToken = resposta.login?.authToken;
-    const refreshToken = resposta.login?.refreshToken;
+    const authToken = response.login?.authToken;
+    const refreshToken = response.login?.refreshToken;
 
     if (!authToken || !refreshToken) {
-      console.error("login: resposta sem token", resposta);
+      console.error("login: resposta sem token", response);
       return { error: "Não foi possível entrar. Tente novamente.", email };
     }
 
@@ -112,15 +113,15 @@ export async function login(
       jar.delete(REMEMBER_COOKIE);
     }
   } catch (error) {
-    const bruta =
+    const rawMessage =
       error instanceof ClientError
         ? (error.response.errors?.[0]?.message ?? "")
         : "";
 
-    console.error("login:", bruta || error);
+    console.error("login:", rawMessage || error);
 
     return {
-      error: traduzirErroWp(bruta, ERROS_LOGIN, CREDENCIAIS_INVALIDAS),
+      error: translateWpError(rawMessage, LOGIN_ERRORS, INVALID_CREDENTIALS),
       email,
     };
   }
@@ -143,10 +144,11 @@ export async function logout() {
   // Sem isto, o próximo login sem "continuar conectado" herdaria estes 30 dias.
   jar.delete(REMEMBER_COOKIE);
 
-  // Global de propósito: o objetivo é descartar tudo que foi renderizado com a
-  // sessão anterior, senão o botão "voltar" reexibe a tela autenticada vinda
-  // do cache.
-  revalidatePath("/", "layout");
+  // Apagar cookies numa Server Action já descarta o cache do NAVEGADOR — é o
+  // que impede o "voltar" de reexibir a área logada. Um `revalidatePath("/",
+  // "layout")` aqui invalidava também o cache do SERVIDOR para todo mundo: a
+  // home era remontada buscando tudo de novo no WordPress a cada logout, e
+  // era isso que deixava a saída lenta.
 
   redirect("/");
 }
@@ -164,34 +166,34 @@ export async function logout() {
  */
 const registerSchema = z
   .object({
-    nome: z.string().trim().min(2, "Informe seu nome."),
-    sobrenome: z.string().trim().min(2, "Informe seu sobrenome."),
+    name: z.string().trim().min(2, "Informe seu nome."),
+    lastName: z.string().trim().min(2, "Informe seu sobrenome."),
     email: z.email("Informe um e-mail válido."),
-    senha: z.string().min(8, "A senha precisa de ao menos 8 caracteres."),
-    confirmarSenha: z.string(),
-    aceite: z
+    password: z.string().min(8, "A senha precisa de ao menos 8 caracteres."),
+    confirmPassword: z.string(),
+    acceptTerms: z
       .boolean()
-      .refine((valor) => valor, "É preciso aceitar os termos para continuar."),
+      .refine((value) => value, "É preciso aceitar os termos para continuar."),
   })
-  .refine((dados) => dados.senha === dados.confirmarSenha, {
+  .refine((input) => input.password === input.confirmPassword, {
     message: "As senhas não conferem.",
-    path: ["confirmarSenha"],
+    path: ["confirmPassword"],
   });
 
-type CampoRegistro = keyof z.infer<typeof registerSchema>;
+type RegisterField = keyof z.infer<typeof registerSchema>;
 
 /** Valores devolvidos ao formulário para ele não perder o que foi digitado. */
-type ValoresPreservados = {
-  nome: string;
-  sobrenome: string;
+type PreservedValues = {
+  name: string;
+  lastName: string;
   email: string;
-  aceite: boolean;
+  acceptTerms: boolean;
 };
 
 export type RegisterState = {
   status: "idle" | "invalid" | "error" | "success";
-  errors?: Partial<Record<CampoRegistro, string>>;
-  values?: ValoresPreservados;
+  errors?: Partial<Record<RegisterField, string>>;
+  values?: PreservedValues;
   message?: string;
   tier?: string | null;
 };
@@ -205,7 +207,7 @@ type RegisterResponse = {
   } | null;
 };
 
-const ERROS_CADASTRO: Array<[RegExp, string]> = [
+const REGISTER_ERRORS: Array<[RegExp, string]> = [
   [
     /já está (cadastrado|registrado)|already (exists|used|registered)/i,
     "Já existe um usuário com este e-mail.",
@@ -228,58 +230,63 @@ const ERROS_CADASTRO: Array<[RegExp, string]> = [
  * lançar aqui apagaria justamente o motivo que o usuário precisa ler.
  */
 export async function registerUser(
-  _anterior: RegisterState,
+  _previous: RegisterState,
   formData: FormData,
 ): Promise<RegisterState> {
-  const bruto = {
-    nome: String(formData.get("nome") ?? ""),
-    sobrenome: String(formData.get("sobrenome") ?? ""),
+  const rawInput = {
+    name: String(formData.get("name") ?? ""),
+    lastName: String(formData.get("lastName") ?? ""),
     email: String(formData.get("email") ?? ""),
-    senha: String(formData.get("senha") ?? ""),
-    confirmarSenha: String(formData.get("confirmarSenha") ?? ""),
-    aceite: formData.get("aceite") === "on",
+    password: String(formData.get("password") ?? ""),
+    confirmPassword: String(formData.get("confirmPassword") ?? ""),
+    acceptTerms: formData.get("acceptTerms") === "on",
   };
 
   // As senhas ficam de fora de propósito: devolvê-las as reimprimiria no HTML.
-  const values: ValoresPreservados = {
-    nome: bruto.nome,
-    sobrenome: bruto.sobrenome,
-    email: bruto.email,
-    aceite: bruto.aceite,
+  const values: PreservedValues = {
+    name: rawInput.name,
+    lastName: rawInput.lastName,
+    email: rawInput.email,
+    acceptTerms: rawInput.acceptTerms,
   };
 
-  const validado = registerSchema.safeParse(bruto);
+  const validated = registerSchema.safeParse(rawInput);
 
-  if (!validado.success) {
-    const { fieldErrors } = z.flattenError(validado.error);
+  if (!validated.success) {
+    const { fieldErrors } = z.flattenError(validated.error);
 
     return {
       status: "invalid",
       values,
       errors: Object.fromEntries(
-        Object.entries(fieldErrors).flatMap(([campo, mensagens]) =>
-          mensagens?.[0] ? [[campo, mensagens[0]]] : [],
+        Object.entries(fieldErrors).flatMap(([field, messages]) =>
+          messages?.[0] ? [[field, messages[0]]] : [],
         ),
       ),
     };
   }
 
-  const dados = validado.data;
-  const email = dados.email.trim().toLowerCase();
+  const input = validated.data;
+  const email = input.email.trim().toLowerCase();
 
   try {
-    const resposta = await mutate<RegisterResponse>(REGISTER_USER, {
-      // O WP aceita `@` e `.` em `user_login`, então o e-mail serve de usuário
-      // e o jogador não precisa memorizar um segundo identificador.
-      username: email,
-      email,
-      password: dados.senha,
-      firstName: dados.nome,
-      lastName: dados.sobrenome,
-      displayName: `${dados.nome} ${dados.sobrenome}`,
-    });
+    const response = await mutate<RegisterResponse>(
+      REGISTER_USER,
+      {
+        // O WP aceita `@` e `.` em `user_login`, então o e-mail serve de usuário
+        // e o jogador não precisa memorizar um segundo identificador.
+        username: email,
+        email,
+        password: input.password,
+        firstName: input.name,
+        lastName: input.lastName,
+        displayName: `${input.name} ${input.lastName}`,
+      },
+      // O botão do e-mail de boas-vindas volta ao ambiente do cadastro.
+      { "X-Prime-Front-Url": await requestOrigin() },
+    );
 
-    const tier = resposta.registerUser?.user?.playerTier ?? null;
+    const tier = response.registerUser?.user?.playerTier ?? null;
 
     // O tier vem do plugin `prime-poker`, que atribui Player Free no
     // hook `user_register`. Nulo aqui significa que o plugin não está ativo: a
@@ -293,22 +300,182 @@ export async function registerUser(
 
     return { status: "success", tier };
   } catch (error) {
-    const bruta =
+    const rawMessage =
       error instanceof ClientError
         ? (error.response.errors?.[0]?.message ?? "")
         : "";
 
     // O log fica no servidor: só a mensagem tratada chega ao cliente.
-    console.error("registerUser:", bruta || error);
+    console.error("registerUser:", rawMessage || error);
 
     return {
       status: "error",
       values,
-      message: traduzirErroWp(
-        bruta,
-        ERROS_CADASTRO,
+      message: translateWpError(
+        rawMessage,
+        REGISTER_ERRORS,
         "Não foi possível cadastrar o usuário. Tente novamente.",
       ),
     };
   }
+}
+
+/* -------------------------------------------------------------------------- */
+/*                            Redefinição de senha                            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Endereço de onde o pedido saiu (produção, staging, preview).
+ *
+ * Vai ao WordPress para o link do e-mail voltar ao mesmo ambiente. O plugin só
+ * aceita endereços da lista em Configurações → Cache do site; qualquer outro
+ * cai no endereço de produção.
+ */
+async function requestOrigin() {
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  const protocol = h.get("x-forwarded-proto") ?? "https";
+
+  return host ? `${protocol}://${host}` : "";
+}
+
+export type RequestPasswordResetState = { ok: boolean; error?: string };
+
+/**
+ * Dispara o e-mail de redefinição.
+ *
+ * Responde `ok` exista a conta ou não — a mesma neutralidade do WPGraphQL.
+ * Só uma falha de comunicação com o WordPress vira erro, porque aí nenhum
+ * e-mail sai para ninguém e a pessoa precisa saber que deve tentar de novo.
+ */
+export async function requestPasswordReset(
+  email: string,
+): Promise<RequestPasswordResetState> {
+  const validated = z.email().safeParse(email.trim().toLowerCase());
+
+  if (!validated.success) {
+    return { ok: false, error: "Informe um e-mail válido." };
+  }
+
+  try {
+    await mutate(
+      SEND_PASSWORD_RESET_EMAIL,
+      { username: validated.data },
+      { "X-Prime-Front-Url": await requestOrigin() },
+    );
+  } catch (error) {
+    // Erro de GraphQL aqui é recusa do WP (ex.: e-mail vazio), não falha de
+    // rede — e responder diferente revelaria algo sobre a conta.
+    if (!(error instanceof ClientError)) {
+      console.error("requestPasswordReset:", error);
+      return { ok: false, error: "Não foi possível enviar. Tente novamente." };
+    }
+
+    console.error("requestPasswordReset:", error.response.errors?.[0]?.message);
+  }
+
+  return { ok: true };
+}
+
+const resetPasswordSchema = z
+  .object({
+    key: z.string().min(1),
+    login: z.string().min(1),
+    password: z.string().min(8, "A senha precisa de ao menos 8 caracteres."),
+    confirmPassword: z.string(),
+  })
+  .refine((input) => input.password === input.confirmPassword, {
+    message: "As senhas não conferem.",
+    path: ["confirmPassword"],
+  });
+
+export type ResetPasswordState = {
+  status: "idle" | "invalid" | "error" | "success";
+  errors?: { password?: string; confirmPassword?: string };
+  message?: string;
+  /** Link vencido ou já usado: a tela troca o formulário pelo pedido de um novo. */
+  invalidLink?: boolean;
+};
+
+const PASSWORD_RESET_ERRORS: Array<[RegExp, string]> = [
+  [
+    /expired|expirad/i,
+    "Este link expirou. Peça um novo para redefinir a senha.",
+  ],
+  [
+    /invalid|inválid|key is required|login is required/i,
+    "Este link é inválido ou já foi usado. Peça um novo para redefinir a senha.",
+  ],
+];
+
+/** Grava a nova senha com a chave recebida por e-mail. */
+export async function resetPassword(
+  _previous: ResetPasswordState,
+  formData: FormData,
+): Promise<ResetPasswordState> {
+  const validated = resetPasswordSchema.safeParse({
+    key: String(formData.get("key") ?? ""),
+    login: String(formData.get("login") ?? ""),
+    password: String(formData.get("password") ?? ""),
+    confirmPassword: String(formData.get("confirmPassword") ?? ""),
+  });
+
+  if (!validated.success) {
+    const { fieldErrors } = z.flattenError(validated.error);
+
+    if (fieldErrors.key || fieldErrors.login) {
+      return {
+        status: "error",
+        invalidLink: true,
+        message:
+          "Este link está incompleto. Peça um novo para redefinir a senha.",
+      };
+    }
+
+    return {
+      status: "invalid",
+      errors: {
+        password: fieldErrors.password?.[0],
+        confirmPassword: fieldErrors.confirmPassword?.[0],
+      },
+    };
+  }
+
+  try {
+    await mutate(RESET_USER_PASSWORD, {
+      key: validated.data.key,
+      login: validated.data.login,
+      password: validated.data.password,
+    });
+  } catch (error) {
+    const rawMessage =
+      error instanceof ClientError
+        ? (error.response.errors?.[0]?.message ?? "")
+        : "";
+
+    console.error("resetPassword:", rawMessage || error);
+
+    const message = translateWpError(
+      rawMessage,
+      PASSWORD_RESET_ERRORS,
+      "Não foi possível redefinir a senha. Tente novamente.",
+    );
+
+    return {
+      status: "error",
+      message,
+      invalidLink: PASSWORD_RESET_ERRORS.some(([pattern]) =>
+        pattern.test(rawMessage),
+      ),
+    };
+  }
+
+  // Sessões antigas caíram no WordPress (segredo JWT trocado). Os cookies
+  // deste navegador também saem, para o próximo acesso ser com a senha nova.
+  const jar = await cookies();
+  jar.delete("access_token");
+  jar.delete("refresh_token");
+  jar.delete(REMEMBER_COOKIE);
+
+  return { status: "success" };
 }

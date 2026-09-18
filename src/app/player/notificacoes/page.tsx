@@ -1,15 +1,15 @@
 import { ChecksIcon } from "@phosphor-icons/react/dist/ssr";
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { lerTodas } from "@/actions/notificacoes";
-import { FiltroNav } from "@/components/pages/player/notificacoes/filtro-nav";
+import { markAllRead } from "@/actions/notifications";
+import { FilterNav } from "@/components/pages/player/notifications/filter-nav";
 import { NotificationItem } from "@/components/shared/player/notification-item";
 import {
-  contarNaoLidas,
-  FILTROS,
-  type FiltroNotificacao,
-  listarNotificacoes,
-} from "@/services/notificacoes";
+  countUnread,
+  FILTERS,
+  listNotifications,
+  type NotificationFilter,
+} from "@/services/notifications";
 
 export const metadata: Metadata = {
   title: "Notificações | Prime Poker Team",
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 
 type Props = { searchParams: Promise<{ filtro?: string | Array<string> }> };
 
-export default function NotificacoesPage({ searchParams }: Props) {
+export default function NotificationsPage({ searchParams }: Props) {
   return (
     <div className="mx-auto flex w-full max-w-screen-2xl flex-col gap-6 px-4 py-8 lg:px-8">
       <header>
@@ -31,34 +31,36 @@ export default function NotificacoesPage({ searchParams }: Props) {
 
       {/* Filtro e lista dependem da URL, que só existe em tempo de
           requisição. Atrás do boundary, o cabeçalho segue no shell estático. */}
-      <Suspense fallback={<Esqueleto />}>
-        <Conteudo searchParams={searchParams} />
+      <Suspense fallback={<Skeleton />}>
+        <Content searchParams={searchParams} />
       </Suspense>
     </div>
   );
 }
 
-async function Conteudo({ searchParams }: Props) {
-  const { filtro: bruto } = await searchParams;
-  const valor = Array.isArray(bruto) ? bruto[0] : bruto;
+async function Content({ searchParams }: Props) {
+  const { filtro: rawInput } = await searchParams;
+  const value = Array.isArray(rawInput) ? rawInput[0] : rawInput;
 
   // Valor fora da lista não é erro: cai em "todas".
-  const filtro: FiltroNotificacao = FILTROS.includes(valor as FiltroNotificacao)
-    ? (valor as FiltroNotificacao)
+  const filter: NotificationFilter = FILTERS.includes(
+    value as NotificationFilter,
+  )
+    ? (value as NotificationFilter)
     : "todas";
 
-  const [notificacoes, naoLidas] = await Promise.all([
-    listarNotificacoes(filtro),
-    contarNaoLidas(),
+  const [notifications, unreadCount] = await Promise.all([
+    listNotifications(filter),
+    countUnread(),
   ]);
 
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <FiltroNav atual={filtro} />
+        <FilterNav current={filter} />
 
-        {naoLidas > 0 && (
-          <form action={lerTodas}>
+        {unreadCount > 0 && (
+          <form action={markAllRead}>
             <button
               type="submit"
               className="flex h-10 items-center gap-2 rounded-md border border-white/20 px-4 font-semibold text-prime-light text-sm transition-all duration-500 hover:bg-prime-light hover:text-prime-dark"
@@ -70,19 +72,19 @@ async function Conteudo({ searchParams }: Props) {
         )}
       </div>
 
-      {notificacoes.length === 0 ? (
+      {notifications.length === 0 ? (
         <div className="rounded-xl border border-white/10 border-dashed p-16 text-center">
           <p className="text-prime-light">
-            {filtro === "nao-lidas"
+            {filter === "nao-lidas"
               ? "Você está em dia: nenhuma não lida."
               : "Nenhuma notificação por aqui."}
           </p>
         </div>
       ) : (
         <ul className="flex flex-col gap-1 rounded-xl border border-white/10 bg-white/3 p-2">
-          {notificacoes.map((notificacao) => (
-            <li key={notificacao.id}>
-              <NotificationItem notificacao={notificacao} />
+          {notifications.map((notification) => (
+            <li key={notification.id}>
+              <NotificationItem notification={notification} />
             </li>
           ))}
         </ul>
@@ -91,7 +93,7 @@ async function Conteudo({ searchParams }: Props) {
   );
 }
 
-function Esqueleto() {
+function Skeleton() {
   return (
     <div
       aria-hidden="true"

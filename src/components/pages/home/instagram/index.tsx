@@ -6,7 +6,7 @@ import { List } from "./list";
 
 export async function Instagram() {
   return (
-    <section id="intagram" className="overflow-hidden bg-zinc-950">
+    <section id="instagram" className="overflow-hidden bg-zinc-950">
       <AnimationContainer
         animation="home/instagram"
         className="flex flex-col pt-12 pb-4 lg:pt-24"

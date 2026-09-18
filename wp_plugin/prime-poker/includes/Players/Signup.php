@@ -44,7 +44,7 @@ final class Signup {
 	 * supressão do e-mail atinja exclusivamente este fluxo — um usuário criado
 	 * pelo painel continua recebendo a notificação normal do WordPress.
 	 */
-	private static ?int $registrando = null;
+	private static ?int $registering = null;
 
 	/**
 	 * Registra os hooks.
@@ -75,7 +75,7 @@ final class Signup {
 			return;
 		}
 
-		self::$registrando = $user_id;
+		self::$registering = $user_id;
 
 		/**
 		 * Disparado quando um jogador se cadastra pelo front.
@@ -96,8 +96,8 @@ final class Signup {
 	 *
 	 * Vale para os dois destinatários que o WordPress notificaria: o jogador
 	 * (com um link para "definir sua senha" que ele acabou de escolher) e o
-	 * administrador. Enquanto não houver um e-mail de boas-vindas próprio, o
-	 * silêncio é melhor do que a mensagem errada.
+	 * administrador. No lugar do e-mail do jogador sai o de boas-vindas próprio
+	 * (ver Welcome), enviado depois da resposta.
 	 *
 	 * Efeito colateral bem-vindo: os dois envios eram SÍNCRONOS e respondiam
 	 * por quase todo o tempo da mutation — o cadastro passa de ~10s para ~1s.
@@ -109,14 +109,14 @@ final class Signup {
 	 * @param \WP_User $user Usuário destinatário.
 	 */
 	public static function suppress_signup_emails( $send, $user ) {
-		if ( ! $user instanceof \WP_User || self::$registrando !== (int) $user->ID ) {
+		if ( ! $user instanceof \WP_User || self::$registering !== (int) $user->ID ) {
 			return $send;
 		}
 
 		/**
 		 * Suprimir os e-mails padrão do WordPress no cadastro via front?
 		 *
-		 * @param bool $suprimir Padrão: true.
+		 * @param bool $suppress Padrão: true.
 		 * @param int  $user_id  ID do usuário.
 		 */
 		return apply_filters( 'prime_players_suppress_signup_emails', true, (int) $user->ID )
@@ -154,9 +154,9 @@ final class Signup {
 		 *
 		 * @param string $url URL de destino.
 		 */
-		$destino = (string) apply_filters( 'prime_players_signup_redirect_url', wp_login_url() );
+		$destination = (string) apply_filters( 'prime_players_signup_redirect_url', wp_login_url() );
 
-		wp_safe_redirect( $destino );
+		wp_safe_redirect( $destination );
 		exit;
 	}
 }

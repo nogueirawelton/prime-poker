@@ -5,17 +5,17 @@ import { updateTag } from "next/cache";
 import { z } from "zod";
 import { mutate } from "@/graphql/client";
 import { CREATE_COMMENT } from "@/graphql/mutations/blog/CREATE_COMMENT";
-import { traduzirErroWp } from "@/lib/wp-errors";
+import { translateWpError } from "@/lib/wp-errors";
 import { commentsTag } from "@/services/blog";
 
 /** Mensagem genérica: o texto cru do WordPress não ajuda quem comenta. */
-const FALHA = "Não foi possível enviar seu comentário. Tente de novo.";
+const GENERIC_ERROR = "Não foi possível enviar seu comentário. Tente de novo.";
 
 /**
  * Os padrões cobrem português E inglês: o núcleo do WordPress responde no
  * idioma do site, os plugins GraphQL não são traduzidos.
  */
-const ERROS_COMENTARIO: Array<[RegExp, string]> = [
+const COMMENT_ERRORS: Array<[RegExp, string]> = [
   [
     /duplicate comment|comentário duplicado|already said that/i,
     "Você já enviou esse comentário.",
@@ -35,26 +35,26 @@ const ERROS_COMENTARIO: Array<[RegExp, string]> = [
 ];
 
 const schema = z.object({
-  nome: z.string().trim().min(2, "Informe seu nome.").max(80),
+  name: z.string().trim().min(2, "Informe seu nome.").max(80),
   email: z.email("Informe um e-mail válido."),
-  texto: z
+  text: z
     .string()
     .trim()
     .min(3, "Escreva seu comentário.")
     .max(2000, "Comentário muito longo: use no máximo 2000 caracteres."),
 });
 
-export type ComentarioState = {
+export type CommentState = {
   error?: string;
   fieldErrors?: {
-    nome?: Array<string>;
+    name?: Array<string>;
     email?: Array<string>;
-    texto?: Array<string>;
+    text?: Array<string>;
   };
   /** Publicado na hora. */
   ok?: boolean;
   /** Aceito, mas retido pela moderação do WordPress. */
-  moderacao?: boolean;
+  moderation?: boolean;
 };
 
 type CreateCommentResponse = {
@@ -71,20 +71,20 @@ type CreateCommentResponse = {
  * pelas mesmas regras de moderação e antispam já configuradas lá — nada de
  * armazenamento paralelo no front.
  */
-export async function comentar(
+export async function postComment(
   postId: number,
   parentId: string | null,
-  _estado: ComentarioState,
+  _state: CommentState,
   formData: FormData,
-): Promise<ComentarioState> {
+): Promise<CommentState> {
   // Campo isca: humano não preenche o que não vê. Responder "ok" sem gravar
   // evita que o bot fique tentando de novo.
   if (formData.get("website")) return { ok: true };
 
   const parsed = schema.safeParse({
-    nome: formData.get("nome"),
+    name: formData.get("name"),
     email: formData.get("email"),
-    texto: formData.get("texto"),
+    text: formData.get("text"),
   });
 
   if (!parsed.success) {
@@ -94,31 +94,33 @@ export async function comentar(
   try {
     const data = await mutate<CreateCommentResponse>(CREATE_COMMENT, {
       commentOn: postId,
-      content: parsed.data.texto,
-      author: parsed.data.nome,
+      content: parsed.data.text,
+      author: parsed.data.name,
       authorEmail: parsed.data.email,
       parent: parentId,
     });
 
-    if (!data?.createComment?.success) return { error: FALHA };
+    if (!data?.createComment?.success) return { error: GENERIC_ERROR };
 
     // `comment` nulo com `success` verdadeiro é comentário retido para
     // aprovação: ele existe, mas ainda não aparece na listagem.
-    if (!data.createComment.comment) return { moderacao: true };
+    if (!data.createComment.comment) return { moderation: true };
 
     // `updateTag`, e não `revalidateTag`: quem acabou de comentar precisa ver
     // o próprio comentário na volta, não a lista em cache de antes.
     updateTag(commentsTag(postId));
 
     return { ok: true };
-  } catch (erro) {
-    const bruta =
-      erro instanceof ClientError
-        ? (erro.response.errors?.[0]?.message ?? "")
+  } catch (error) {
+    const rawMessage =
+      error instanceof ClientError
+        ? (error.response.errors?.[0]?.message ?? "")
         : "";
 
-    console.error("comentar:", bruta || erro);
+    console.error("postComment:", rawMessage || error);
 
-    return { error: traduzirErroWp(bruta, ERROS_COMENTARIO, FALHA) };
+    return {
+      error: translateWpError(rawMessage, COMMENT_ERRORS, GENERIC_ERROR),
+    };
   }
 }

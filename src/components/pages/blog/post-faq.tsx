@@ -1,6 +1,6 @@
 import { CaretDownIcon } from "@phosphor-icons/react/dist/ssr";
 import { Accordion } from "radix-ui";
-import type { Pergunta } from "@/utils/rich-content";
+import type { FaqItem } from "@/utils/rich-content";
 
 /**
  * Perguntas frequentes do artigo.
@@ -10,18 +10,18 @@ import type { Pergunta } from "@/utils/rich-content";
  * novo. Além do acordeão, a seção emite `FAQPage` em JSON-LD — é o formato que
  * o Google usa para exibir as perguntas direto no resultado de busca.
  */
-export function PostFaq({ perguntas }: { perguntas: Array<Pergunta> }) {
-  if (perguntas.length === 0) return null;
+export function PostFaq({ faqItems }: { faqItems: Array<FaqItem> }) {
+  if (faqItems.length === 0) return null;
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: perguntas.map((item) => ({
+    mainEntity: faqItems.map((item) => ({
       "@type": "Question",
-      name: item.pergunta,
+      name: item.question,
       acceptedAnswer: {
         "@type": "Answer",
-        text: item.resposta
+        text: item.answer
           .replace(/<[^>]*>/g, " ")
           .replace(/\s+/g, " ")
           .trim(),
@@ -40,7 +40,7 @@ export function PostFaq({ perguntas }: { perguntas: Array<Pergunta> }) {
         collapsible
         className="mt-6 flex flex-col gap-3"
       >
-        {perguntas.map((item) => (
+        {faqItems.map((item) => (
           <Accordion.Item
             key={item.id}
             value={item.id}
@@ -48,7 +48,7 @@ export function PostFaq({ perguntas }: { perguntas: Array<Pergunta> }) {
           >
             <Accordion.Header>
               <Accordion.Trigger className="group flex w-full items-center justify-between gap-4 p-5 text-left font-semibold text-prime-light text-sm transition-colors duration-300 hover:text-prime-red lg:text-base">
-                {item.pergunta}
+                {item.question}
 
                 <CaretDownIcon
                   className="size-5 shrink-0 text-prime-light/50 transition-transform duration-300 group-data-[state=open]:rotate-180"
@@ -62,7 +62,7 @@ export function PostFaq({ perguntas }: { perguntas: Array<Pergunta> }) {
             <Accordion.Content className="overflow-hidden data-[state=closed]:animate-slide-up data-[state=open]:animate-slide-down">
               <div
                 className="rich-text px-5 pb-5 text-sm"
-                dangerouslySetInnerHTML={{ __html: item.resposta }}
+                dangerouslySetInnerHTML={{ __html: item.answer }}
               />
             </Accordion.Content>
           </Accordion.Item>
@@ -71,7 +71,10 @@ export function PostFaq({ perguntas }: { perguntas: Array<Pergunta> }) {
 
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        // `<` escapado: um `</script>` vindo do editor não fecha a tag.
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
       />
     </section>
   );

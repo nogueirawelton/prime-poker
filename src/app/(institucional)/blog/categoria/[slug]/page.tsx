@@ -92,8 +92,8 @@ export default async function CategoryPage({ params, searchParams }: Props) {
 
       {/* A página pedida vem da URL, que só existe em tempo de requisição:
           atrás do boundary, o cabeçalho e a navegação seguem no shell. */}
-      <Suspense fallback={<Esqueleto />}>
-        <Lista slug={slug} searchParams={searchParams} />
+      <Suspense fallback={<Skeleton />}>
+        <PostList slug={slug} searchParams={searchParams} />
       </Suspense>
     </main>
   );
@@ -101,7 +101,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
 
 const GRID = "mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3";
 
-async function Lista({
+async function PostList({
   slug,
   searchParams,
 }: {
@@ -109,12 +109,12 @@ async function Lista({
   searchParams: Props["searchParams"];
 }) {
   const { p } = await searchParams;
-  const pagina = Math.max(1, Number(p) || 1);
-  const filtro = { category: slug };
+  const page = Math.max(1, Number(p) || 1);
+  const filter = { category: slug };
 
   const [posts, totalPages] = await Promise.all([
-    getPage(pagina, filtro),
-    getTotalPages(filtro),
+    getPage(page, filter),
+    getTotalPages(filter),
   ]);
 
   if (posts.length === 0) {
@@ -134,7 +134,7 @@ async function Lista({
       </div>
 
       <Pagination
-        current={pagina}
+        current={page}
         total={totalPages}
         hrefFor={(page) =>
           page <= 1
@@ -146,7 +146,7 @@ async function Lista({
   );
 }
 
-function Esqueleto() {
+function Skeleton() {
   return (
     <div className={GRID} aria-hidden="true">
       {Array.from({ length: 6 }, (_, index) => index).map((index) => (

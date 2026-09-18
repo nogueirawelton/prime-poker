@@ -2,8 +2,8 @@
 /**
  * Plugin Name:       Prime Poker
  * Plugin URI:        https://primepokerteam.com.br
- * Description:       Customizações do WordPress para o Prime Poker Team: tipos de jogador (tiers), cadastro headless e autenticação.
- * Version:           1.6.0
+ * Description:       Customizações do WordPress para o Prime Poker Team: tipos de jogador (tiers), cadastro headless, autenticação, e-mails de boas-vindas e redefinição de senha e revalidação do cache do front.
+ * Version:           1.9.0
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Author:            Prime Poker Team
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-const VERSION = '1.6.0';
+const VERSION = '1.9.0';
 
 /**
  * Versão das DEFINIÇÕES de roles — independente da versão do plugin.
@@ -53,17 +53,17 @@ const ROLES_VERSION = '1.0.0';
  */
 spl_autoload_register(
 	static function ( string $class ): void {
-		$prefixo = __NAMESPACE__ . '\\';
+		$prefix = __NAMESPACE__ . '\\';
 
-		if ( ! str_starts_with( $class, $prefixo ) ) {
+		if ( ! str_starts_with( $class, $prefix ) ) {
 			return;
 		}
 
-		$relativo = substr( $class, strlen( $prefixo ) );
-		$arquivo  = __DIR__ . '/includes/' . str_replace( '\\', '/', $relativo ) . '.php';
+		$relative = substr( $class, strlen( $prefix ) );
+		$file  = __DIR__ . '/includes/' . str_replace( '\\', '/', $relative ) . '.php';
 
-		if ( is_readable( $arquivo ) ) {
-			require_once $arquivo;
+		if ( is_readable( $file ) ) {
+			require_once $file;
 		}
 	}
 );
@@ -84,7 +84,11 @@ add_action(
 		Players\Admin::boot();
 		Players\Headless::boot();
 		Players\GraphQL::boot();
+		Players\PasswordReset::boot();
+		Players\Welcome::boot();
 
 		Blog\GraphQL::boot();
+
+		Cache\Revalidation::boot();
 	}
 );

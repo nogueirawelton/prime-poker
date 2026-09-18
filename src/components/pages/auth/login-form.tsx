@@ -13,20 +13,20 @@ import { type LoginState, login } from "@/actions/auth";
 import { IconInput } from "@/components/ui/form/icon-input";
 import { PasswordRecoveryDialog } from "./password-recovery-dialog";
 
-const ESTADO_INICIAL: LoginState = {};
+const INITIAL_STATE: LoginState = {};
 
 export function LoginForm() {
   const emailId = useId();
-  const senhaId = useId();
+  const passwordId = useId();
   const rememberId = useId();
 
-  const [visivel, setVisivel] = useState(false);
+  const [visible, setVisible] = useState(false);
 
-  const [estado, formAction, pending] = useActionState(login, ESTADO_INICIAL);
+  const [state, formAction, pending] = useActionState(login, INITIAL_STATE);
 
   useEffect(() => {
-    if (estado.error) toast.error(estado.error);
-  }, [estado]);
+    if (state.error) toast.error(state.error);
+  }, [state]);
 
   return (
     // `noValidate`: sem isso a validação nativa do HTML5 dispara antes da
@@ -48,37 +48,37 @@ export function LoginForm() {
           type="email"
           autoComplete="email"
           placeholder="seu@email.com"
-          defaultValue={estado.email}
-          error={estado.fieldErrors?.email?.[0]}
+          defaultValue={state.email}
+          error={state.fieldErrors?.email?.[0]}
         />
       </div>
 
       <div className="flex flex-col gap-1.5">
         <label
-          htmlFor={senhaId}
+          htmlFor={passwordId}
           className="font-semibold text-prime-light text-sm"
         >
           Senha
         </label>
 
         <IconInput
-          id={senhaId}
-          name="senha"
+          id={passwordId}
+          name="password"
           icon={LockIcon}
-          type={visivel ? "text" : "password"}
+          type={visible ? "text" : "password"}
           autoComplete="current-password"
           placeholder="Sua senha"
-          error={estado.fieldErrors?.senha?.[0]}
+          error={state.fieldErrors?.password?.[0]}
           action={
             <button
               type="button"
-              onClick={() => setVisivel((atual) => !atual)}
-              aria-label={visivel ? "Ocultar senha" : "Mostrar senha"}
+              onClick={() => setVisible((current) => !current)}
+              aria-label={visible ? "Ocultar senha" : "Mostrar senha"}
               // `aria-pressed` comunica o estado do botão a leitores de tela.
-              aria-pressed={visivel}
+              aria-pressed={visible}
               className="grid size-10 place-items-center rounded-md text-prime-light/50 transition-colors duration-500 hover:text-prime-light"
             >
-              {visivel ? (
+              {visible ? (
                 <EyeSlashIcon className="size-5" />
               ) : (
                 <EyeIcon className="size-5" />

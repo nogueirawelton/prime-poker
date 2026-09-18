@@ -4,6 +4,7 @@ import { jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
+import { JWT_VERIFY_OPTIONS } from "./jwt";
 
 /**
  * Leitura da sessão a partir do cookie de access token.
@@ -15,11 +16,11 @@ import { cache } from "react";
  * motivo do `server-only` no topo.
  */
 const getKey = cache(async () => {
-  const segredo = process.env.WP_JWT_SECRET;
+  const secret = process.env.WP_JWT_SECRET;
 
-  if (!segredo) throw new Error("WP_JWT_SECRET não está definido");
+  if (!secret) throw new Error("WP_JWT_SECRET não está definido");
 
-  return new TextEncoder().encode(segredo);
+  return new TextEncoder().encode(secret);
 });
 
 /** Formato do payload emitido pelo plugin. */
@@ -38,9 +39,11 @@ export const getSession = cache(async (): Promise<Session | null> => {
   if (!token) return null;
 
   try {
-    const { payload } = await jwtVerify<JwtPayloadWp>(token, await getKey(), {
-      algorithms: ["HS256"],
-    });
+    const { payload } = await jwtVerify<JwtPayloadWp>(
+      token,
+      await getKey(),
+      JWT_VERIFY_OPTIONS,
+    );
 
     const id = Number(payload.data?.user?.id);
 

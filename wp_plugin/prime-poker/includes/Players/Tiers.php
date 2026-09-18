@@ -103,21 +103,21 @@ final class Tiers {
 	 */
 	public static function all(): array {
 		$tiers      = array();
-		$acumuladas = self::BASE_CAPS;
-		$nivel      = 0;
+		$accumulated = self::BASE_CAPS;
+		$level      = 0;
 
-		foreach ( self::definitions() as $slug => $definicao ) {
-			foreach ( $definicao['caps'] as $cap ) {
-				$acumuladas[ $cap ] = true;
+		foreach ( self::definitions() as $slug => $definition ) {
+			foreach ( $definition['caps'] as $cap ) {
+				$accumulated[ $cap ] = true;
 			}
 
 			$tiers[ $slug ] = array(
-				'label' => $definicao['label'],
-				'caps'  => $acumuladas,
-				'level' => $nivel,
+				'label' => $definition['label'],
+				'caps'  => $accumulated,
+				'level' => $level,
 			);
 
-			++$nivel;
+			++$level;
 		}
 
 		return $tiers;
@@ -184,8 +184,8 @@ final class Tiers {
 	public static function managed_capabilities(): array {
 		$caps = array_keys( self::BASE_CAPS );
 
-		foreach ( self::definitions() as $definicao ) {
-			foreach ( $definicao['caps'] as $cap ) {
+		foreach ( self::definitions() as $definition ) {
+			foreach ( $definition['caps'] as $cap ) {
 				$caps[] = $cap;
 			}
 		}

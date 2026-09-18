@@ -1,27 +1,19 @@
 import { ChatCircleIcon } from "@phosphor-icons/react/dist/ssr";
 import type { Comment } from "@/services/blog";
+import { initials } from "@/utils/initials";
 import { CommentForm } from "./comment-form";
 import { CommentReply } from "./comment-reply";
 
-const formatador = new Intl.DateTimeFormat("pt-BR", {
+const formatter = new Intl.DateTimeFormat("pt-BR", {
   day: "2-digit",
   month: "long",
   year: "numeric",
 });
 
-function iniciais(nome: string) {
-  return nome
-    .split(" ")
-    .slice(0, 2)
-    .map((parte) => parte[0])
-    .join("")
-    .toUpperCase();
-}
-
 /** Quantos comentários existem, contando as respostas. */
-function contar(comentarios: Array<Comment>): number {
-  return comentarios.reduce(
-    (total, comentario) => total + 1 + contar(comentario.replies),
+function countComments(comments: Array<Comment>): number {
+  return comments.reduce(
+    (total, comment) => total + 1 + countComments(comment.replies),
     0,
   );
 }
@@ -34,12 +26,12 @@ function contar(comentarios: Array<Comment>): number {
  */
 export function PostComments({
   postId,
-  comentarios,
+  comments,
 }: {
   postId: number;
-  comentarios: Array<Comment>;
+  comments: Array<Comment>;
 }) {
-  const total = contar(comentarios);
+  const total = countComments(comments);
 
   return (
     <section id="comentarios" className="mt-16 max-w-3xl scroll-mt-32">
@@ -53,19 +45,19 @@ export function PostComments({
         )}
       </h2>
 
-      {comentarios.length > 0 && (
+      {comments.length > 0 && (
         <ol className="mt-8 flex flex-col gap-8">
-          {comentarios.map((comentario) => (
-            <li key={comentario.id}>
-              <Comentario comentario={comentario} postId={postId} />
+          {comments.map((comment) => (
+            <li key={comment.id}>
+              <CommentItem comment={comment} postId={postId} />
 
-              {comentario.replies.length > 0 && (
+              {comment.replies.length > 0 && (
                 <ol className="mt-6 flex flex-col gap-6 border-white/10 border-l pl-6">
-                  {comentario.replies.map((resposta) => (
-                    <li key={resposta.id}>
+                  {comment.replies.map((response) => (
+                    <li key={response.id}>
                       {/* Um nível só de recuo: a partir daqui as respostas
                           entram lado a lado, senão a conversa vira escada. */}
-                      <Comentario comentario={resposta} postId={postId} />
+                      <CommentItem comment={response} postId={postId} />
                     </li>
                   ))}
                 </ol>
@@ -76,7 +68,7 @@ export function PostComments({
       )}
 
       <div className="mt-10">
-        {comentarios.length === 0 && (
+        {comments.length === 0 && (
           <p className="mb-4 text-prime-light/60 text-sm">
             Nenhum comentário ainda. Comece a conversa.
           </p>
@@ -88,29 +80,26 @@ export function PostComments({
   );
 }
 
-function Comentario({
-  comentario,
+function CommentItem({
+  comment,
   postId,
 }: {
-  comentario: Comment;
+  comment: Comment;
   postId: number;
 }) {
   return (
     <article className="flex items-start gap-3">
       <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/10 font-bold text-prime-light text-xs">
-        {iniciais(comentario.author)}
+        {initials(comment.author)}
       </span>
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-3">
           <strong className="font-bold text-prime-light text-sm">
-            {comentario.author}
+            {comment.author}
           </strong>
-          <time
-            dateTime={comentario.date}
-            className="text-prime-light/40 text-xs"
-          >
-            {formatador.format(new Date(comentario.date))}
+          <time dateTime={comment.date} className="text-prime-light/40 text-xs">
+            {formatter.format(new Date(comment.date))}
           </time>
         </div>
 
@@ -118,10 +107,10 @@ function Comentario({
             publicação; `rich-text` só cuida da tipografia. */}
         <div
           className="rich-text mt-1 text-sm"
-          dangerouslySetInnerHTML={{ __html: comentario.content }}
+          dangerouslySetInnerHTML={{ __html: comment.content }}
         />
 
-        <CommentReply postId={postId} parentId={comentario.id} />
+        <CommentReply postId={postId} parentId={comment.id} />
       </div>
     </article>
   );

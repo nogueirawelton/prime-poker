@@ -9,6 +9,7 @@ import {
   CarouselTrack,
   CarouselViewport,
 } from "@/components/ui/carousel";
+import { formatUsd } from "@/utils/currency";
 
 export type TestimonialsProps = {
   content: Evolution["successStories"];
@@ -40,10 +41,7 @@ export function Testimonials({ content }: TestimonialsProps) {
                   <div className="text-prime-light">
                     <h4 className="font-bold text-lg">{item.title}</h4>
                     <strong className="font-medium text-prime-red/85 text-sm">
-                      $
-                      {Number(item.testimonialFields.earnings).toLocaleString(
-                        "en-US",
-                      )}
+                      {formatUsd(item.testimonialFields.earnings)}
                     </strong>
                   </div>
                 </div>

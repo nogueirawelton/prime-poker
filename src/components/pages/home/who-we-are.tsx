@@ -1,6 +1,5 @@
 import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr";
 import Image from "next/image";
-import { Fragment } from "react";
 import type { WhoWeAre as WhoWeAreType } from "@/@types/pages/Home";
 import { FormDialog } from "@/components/shared/form-dialog";
 import { AnimationContainer } from "@/hooks/use-animation";
@@ -11,6 +10,12 @@ type WhoWeAreProps = {
 };
 
 export function WhoWeAre({ content }: WhoWeAreProps) {
+  // `1500000` → `"1"` e `"5"`: cada parte é um contador separado, porque a
+  // animação só conta inteiros. Resultado: `US$ 1,5M+`.
+  const [earningsInteger, earningsDecimal] = (Number(content.earnings) / 1e6)
+    .toLocaleString("pt-BR", { maximumFractionDigits: 1 })
+    .split(",");
+
   return (
     <section id="quem-somos" className="-mt-px bg-zinc-950">
       <AnimationContainer animation="home/whoWeAre">
@@ -73,22 +78,20 @@ export function WhoWeAre({ content }: WhoWeAreProps) {
 
                 <div className="flex flex-col items-center rounded-md border border-white/3 bg-white/3 px-8 py-4">
                   <h3 className="font-bold text-4xl text-prime-red/75 lg:text-5xl">
-                    ${" "}
-                    {Number(content.earnings)
-                      .toLocaleString("en-US")
-                      .slice(0, 4)
-                      .split(",")
-                      .map((item, key) => (
-                        <Fragment key={key}>
-                          <span data-el="count">{item}</span>
-                          <span className="last:hidden">,</span>
-                        </Fragment>
-                      ))}
+                    US$ <span data-el="count">{earningsInteger}</span>
+                    {earningsDecimal && (
+                      <>
+                        ,<span data-el="count">{earningsDecimal}</span>
+                      </>
+                    )}
                     M+
                   </h3>
 
                   <p className="text-gray-400 text-sm uppercase tracking-wider">
                     Em ganhos acumulados
+                  </p>
+                  <p className="mt-1 text-gray-500 text-xs">
+                    Somatório de todos os jogadores do time
                   </p>
                 </div>
               </div>

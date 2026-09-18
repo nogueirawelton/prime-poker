@@ -12,7 +12,7 @@ import { MenuMobileTrigger } from "./mobile-menu";
 const ANCHORS = [
   { hash: "#quem-somos", label: "Quem Somos" },
   { hash: "#o-que-fazemos", label: "O que Fazemos" },
-  { hash: "#head-coachs", label: "Head Coachs" },
+  { hash: "#head-coaches", label: "Head Coaches" },
   { hash: "#instrutores", label: "Instrutores" },
   { hash: "#evolucao", label: "Evolução" },
   { hash: "#faca-parte", label: "Faça parte" },

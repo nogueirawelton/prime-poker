@@ -11,6 +11,7 @@ import { type ReactNode, useId, useState } from "react";
 import { type SubmitHandler, useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { z } from "zod";
+import { requestPasswordReset } from "@/actions/auth";
 import { IconInput } from "@/components/ui/form/icon-input";
 
 const recoverySchema = z.object({
@@ -33,10 +34,14 @@ export function PasswordRecoveryDialog({ children }: { children: ReactNode }) {
     defaultValues: { email: "" },
   });
 
-  const onSubmit: SubmitHandler<RecoveryData> = async (_data) => {
+  const onSubmit: SubmitHandler<RecoveryData> = async ({ email }) => {
     try {
-      // TODO: disparar o e-mail de redefinição pela autenticação real.
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      const result = await requestPasswordReset(email);
+
+      if (!result.ok) {
+        toast.error(result.error ?? "Não foi possível enviar.");
+        return;
+      }
 
       // Mensagem propositalmente neutra: confirmar se um e-mail existe na base
       // permite enumerar contas cadastradas.

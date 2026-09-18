@@ -63,17 +63,17 @@ final class Admin {
 			return '—';
 		}
 
-		$linhas = array( esc_html( Tiers::label( $tier ) ) );
-		$expira = Membership::expires_at( $user_id );
+		$lines = array( esc_html( Tiers::label( $tier ) ) );
+		$expires = Membership::expires_at( $user_id );
 
-		if ( null !== $expira ) {
-			$data = wp_date( (string) get_option( 'date_format' ), $expira );
+		if ( null !== $expires ) {
+			$data = wp_date( (string) get_option( 'date_format' ), $expires );
 
-			$linhas[] = sprintf(
+			$lines[] = sprintf(
 				'<small style="color:%s">%s</small>',
-				$expira <= time() ? '#b32d2e' : '#646970',
+				$expires <= time() ? '#b32d2e' : '#646970',
 				esc_html(
-					$expira <= time()
+					$expires <= time()
 						/* translators: %s: data de expiração. */
 						? sprintf( __( 'expirado em %s', 'prime-poker' ), $data )
 						/* translators: %s: data de expiração. */
@@ -82,6 +82,6 @@ final class Admin {
 			);
 		}
 
-		return implode( '<br>', $linhas );
+		return implode( '<br>', $lines );
 	}
 }

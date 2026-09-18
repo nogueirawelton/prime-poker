@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function CadastroPage() {
+export default function SignupPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>

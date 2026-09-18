@@ -60,7 +60,7 @@ final class Installer {
 	 * Aplica as definições de Tiers às roles do banco.
 	 */
 	public static function sync(): void {
-		$administradas = Tiers::managed_capabilities();
+		$managed = Tiers::managed_capabilities();
 
 		foreach ( Tiers::all() as $slug => $tier ) {
 			$role = get_role( $slug );
@@ -79,7 +79,7 @@ final class Installer {
 			// Remove só o que é nosso e não pertence mais a este tier: uma
 			// capability concedida por outro plugin não está na lista
 			// administrada e por isso sobrevive.
-			foreach ( $administradas as $cap ) {
+			foreach ( $managed as $cap ) {
 				if ( isset( $role->capabilities[ $cap ] ) && ! isset( $tier['caps'][ $cap ] ) ) {
 					$role->remove_cap( $cap );
 				}

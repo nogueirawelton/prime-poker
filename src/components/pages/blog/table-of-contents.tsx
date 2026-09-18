@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { twMerge } from "tailwind-merge";
-import type { Secao } from "@/utils/rich-content";
+import type { Section } from "@/utils/rich-content";
 
 /**
  * Índice do artigo.
@@ -12,40 +12,40 @@ import type { Secao } from "@/utils/rich-content";
  * destaque da seção atual, por `IntersectionObserver` — sem listener de
  * scroll, que dispararia dezenas de vezes por segundo.
  */
-export function TableOfContents({ secoes }: { secoes: Array<Secao> }) {
-  const [ativa, setAtiva] = useState(secoes[0]?.id);
+export function TableOfContents({ sections }: { sections: Array<Section> }) {
+  const [active, setActive] = useState(sections[0]?.id);
 
   useEffect(() => {
-    const alvos = secoes
-      .map((secao) => document.getElementById(secao.id))
-      .filter((elemento): elemento is HTMLElement => Boolean(elemento));
+    const targets = sections
+      .map((section) => document.getElementById(section.id))
+      .filter((element): element is HTMLElement => Boolean(element));
 
-    if (alvos.length === 0) return;
+    if (targets.length === 0) return;
 
     const observer = new IntersectionObserver(
-      (entradas) => {
+      (entries) => {
         // A janela inteira pode conter várias seções: vale a que está mais
         // acima entre as visíveis.
-        const visivel = entradas
-          .filter((entrada) => entrada.isIntersecting)
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
           .sort(
             (a, b) => a.boundingClientRect.top - b.boundingClientRect.top,
           )[0];
 
-        if (visivel) setAtiva(visivel.target.id);
+        if (visible) setActive(visible.target.id);
       },
       // A faixa estreita no topo transforma "entrou na tela" em "chegou ao
       // topo da leitura", que é o que o índice deve refletir.
       { rootMargin: "-120px 0px -70% 0px" },
     );
 
-    for (const alvo of alvos) observer.observe(alvo);
+    for (const target of targets) observer.observe(target);
 
     return () => observer.disconnect();
-  }, [secoes]);
+  }, [sections]);
 
   // Um item só não é navegação: sem dois destinos, o índice não entra.
-  if (secoes.length < 2) return null;
+  if (sections.length < 2) return null;
 
   return (
     <nav
@@ -57,21 +57,21 @@ export function TableOfContents({ secoes }: { secoes: Array<Secao> }) {
       </strong>
 
       <ul className="mt-4 flex flex-col gap-3">
-        {secoes.map((secao) => (
-          <li key={secao.id}>
+        {sections.map((section) => (
+          <li key={section.id}>
             <a
-              href={`#${secao.id}`}
-              aria-current={ativa === secao.id ? "location" : undefined}
+              href={`#${section.id}`}
+              aria-current={active === section.id ? "location" : undefined}
               className={twMerge(
                 "block leading-snug transition-colors duration-300",
                 // O recuo do segundo nível mostra a hierarquia do artigo.
-                secao.nivel === 3 ? "pl-3 text-xs" : "text-sm",
-                ativa === secao.id
+                section.level === 3 ? "pl-3 text-xs" : "text-sm",
+                active === section.id
                   ? "font-semibold text-prime-red"
                   : "text-prime-light/60 hover:text-prime-light",
               )}
             >
-              {secao.titulo}
+              {section.title}
             </a>
           </li>
         ))}

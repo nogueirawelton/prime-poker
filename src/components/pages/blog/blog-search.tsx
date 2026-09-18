@@ -24,19 +24,19 @@ export function BlogSearch({ placeholder }: { placeholder?: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const inicial = searchParams.get("q") ?? "";
-  const [term, setTerm] = useState(inicial);
+  const initial = searchParams.get("q") ?? "";
+  const [term, setTerm] = useState(initial);
   const [pending, startTransition] = useTransition();
 
   // Guarda o que já está na URL para não navegar de novo ao montar nem quando
   // a própria navegação devolve o valor que acabamos de escrever.
-  const ultimoEnviado = useRef(inicial);
+  const lastSubmitted = useRef(initial);
 
   useEffect(() => {
-    if (term === ultimoEnviado.current) return;
+    if (term === lastSubmitted.current) return;
 
     const timeout = setTimeout(() => {
-      ultimoEnviado.current = term;
+      lastSubmitted.current = term;
 
       const params = new URLSearchParams(searchParams);
       if (term.trim()) {

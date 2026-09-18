@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { query } from "@/graphql/client";
 import { SEO } from "@/graphql/queries/SEO";
+import { SEO_CACHE_TAG } from "@/lib/cache-tags";
 
 type Params = {
   params: Promise<Record<string, string>>;
@@ -51,7 +52,9 @@ function formatSEO(seo: any): Metadata | null {
 export function getSEO(postType: string, uri?: string) {
   return async ({ params }: Params): Promise<Metadata | null> => {
     if (uri) {
-      const data: any = await query(SEO(postType, "URI", uri));
+      const data: any = await query(SEO(postType, "URI", uri), {
+        tags: [SEO_CACHE_TAG],
+      });
 
       // Um nó ausente no WP não pode derrubar o build.
       if (!data?.[postType]) {
@@ -69,7 +72,9 @@ export function getSEO(postType: string, uri?: string) {
       return null;
     }
 
-    const data: any = await query(SEO(postType, "SLUG", slug));
+    const data: any = await query(SEO(postType, "SLUG", slug), {
+      tags: [SEO_CACHE_TAG],
+    });
 
     return formatSEO(data?.[postType]?.seo);
   };

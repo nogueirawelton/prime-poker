@@ -14,25 +14,25 @@
  * para o servidor sairia caro para o que se ganha.
  */
 
-export type Secao = {
+export type Section = {
   id: string;
-  titulo: string;
+  title: string;
   /** 2 para `h2`, 3 para `h3`: o índice recua o segundo nível. */
-  nivel: 2 | 3;
+  level: 2 | 3;
 };
-export type Pergunta = { id: string; pergunta: string; resposta: string };
+export type FaqItem = { id: string; question: string; answer: string };
 
-export type Conteudo = {
+export type Content = {
   /** Corpo já com âncoras e sem o bloco de FAQ. */
   html: string;
-  secoes: Array<Secao>;
-  faq: Array<Pergunta>;
+  sections: Array<Section>;
+  faq: Array<FaqItem>;
 };
 
 const H2 = /<h2\b([^>]*)>([\s\S]*?)<\/h2>/gi;
 const H3 = /<h3\b[^>]*>([\s\S]*?)<\/h3>/gi;
 
-function texto(html: string) {
+function text(html: string) {
   return html
     .replace(/<[^>]*>/g, "")
     .replace(/&nbsp;/g, " ")
@@ -40,53 +40,52 @@ function texto(html: string) {
     .trim();
 }
 
-function normalizar(valor: string) {
-  return valor
+function normalize(value: string) {
+  return value
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
 }
 
 /** Slug estável a partir do título da seção, com sufixo em caso de repetição. */
-function slug(valor: string, usados: Set<string>) {
+function slug(value: string, used: Set<string>) {
   const base =
-    normalizar(valor)
+    normalize(value)
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-|-$/g, "") || "secao";
 
-  let candidato = base;
-  let contador = 2;
-  while (usados.has(candidato)) candidato = `${base}-${contador++}`;
+  let candidate = base;
+  let counter = 2;
+  while (used.has(candidate)) candidate = `${base}-${counter++}`;
 
-  usados.add(candidato);
-  return candidato;
+  used.add(candidate);
+  return candidate;
 }
 
 /** Só reconhece este título como abertura do FAQ. */
-const TITULO_FAQ = "perguntas frequentes";
+const FAQ_TITLE = "perguntas frequentes";
 
-export function prepararConteudo(bruto: string): Conteudo {
-  if (!bruto) return { html: "", secoes: [], faq: [] };
+export function prepareContent(rawInput: string): Content {
+  if (!rawInput) return { html: "", sections: [], faq: [] };
 
   // 1. Separa o bloco de FAQ: do `h2` que o abre até o próximo `h2` (ou o fim).
-  let corpo = bruto;
-  let faq: Array<Pergunta> = [];
+  let body = rawInput;
+  let faq: Array<FaqItem> = [];
 
-  for (const match of bruto.matchAll(H2)) {
-    if (normalizar(texto(match[2])) !== TITULO_FAQ) continue;
+  for (const match of rawInput.matchAll(H2)) {
+    if (normalize(text(match[2])) !== FAQ_TITLE) continue;
 
-    const inicio = match.index;
-    const depois = bruto.slice(inicio + match[0].length);
-    const proximo = depois.search(/<h2\b/i);
-    const bloco = proximo === -1 ? depois : depois.slice(0, proximo);
+    const start = match.index;
+    const after = rawInput.slice(start + match[0].length);
+    const next = after.search(/<h2\b/i);
+    const block = next === -1 ? after : after.slice(0, next);
 
-    faq = extrairPerguntas(bloco);
+    faq = extractFaq(block);
 
     // Só remove o bloco se ele realmente virou FAQ; um título sozinho continua
     // sendo conteúdo comum.
     if (faq.length > 0) {
-      corpo =
-        bruto.slice(0, inicio) + (proximo === -1 ? "" : depois.slice(proximo));
+      body = rawInput.slice(0, start) + (next === -1 ? "" : after.slice(next));
     }
 
     break;
@@ -96,45 +95,48 @@ export function prepararConteudo(bruto: string): Conteudo {
   //
   // `h3` entra junto com `h2`: os posts costumam ter um `h2` só, com os
   // assuntos em `h3` — um índice de um item não navega nada.
-  const usados = new Set<string>();
-  const secoes: Array<Secao> = [];
+  const used = new Set<string>();
+  const sections: Array<Section> = [];
 
-  const html = corpo.replace(
+  const html = body.replace(
     /<(h2|h3)\b([^>]*)>([\s\S]*?)<\/\1>/gi,
-    (_todo, tag: string, atributos: string, interno: string) => {
-      const titulo = texto(interno);
-      const id = slug(titulo, usados);
+    (_match, tag: string, attributes: string, inner: string) => {
+      const title = text(inner);
+      const id = slug(title, used);
 
-      secoes.push({ id, titulo, nivel: tag.toLowerCase() === "h2" ? 2 : 3 });
+      sections.push({ id, title, level: tag.toLowerCase() === "h2" ? 2 : 3 });
 
       // Um `id` já escrito no editor é descartado: dois atributos iguais na
       // mesma tag deixariam o índice apontando para a âncora errada. O
       // `scroll-margin` que compensa o header fixo vem do CSS de `.rich-text`.
-      const limpos = atributos.replace(/\s+id=("[^"]*"|'[^']*'|[^\s>]+)/gi, "");
+      const cleanedAttributes = attributes.replace(
+        /\s+id=("[^"]*"|'[^']*'|[^\s>]+)/gi,
+        "",
+      );
 
-      return `<${tag}${limpos} id="${id}">${interno}</${tag}>`;
+      return `<${tag}${cleanedAttributes} id="${id}">${inner}</${tag}>`;
     },
   );
 
-  return { html, secoes, faq };
+  return { html, sections, faq };
 }
 
 /** Cada `h3` é uma pergunta; o que vem depois dele, até o próximo, é a resposta. */
-function extrairPerguntas(bloco: string): Array<Pergunta> {
-  const marcas = [...bloco.matchAll(H3)];
-  const usados = new Set<string>();
+function extractFaq(block: string): Array<FaqItem> {
+  const markers = [...block.matchAll(H3)];
+  const used = new Set<string>();
 
-  return marcas
-    .map((marca, indice) => {
-      const inicio = (marca.index ?? 0) + marca[0].length;
-      const fim = marcas[indice + 1]?.index ?? bloco.length;
-      const pergunta = texto(marca[1]);
+  return markers
+    .map((marker, index) => {
+      const start = (marker.index ?? 0) + marker[0].length;
+      const end = markers[index + 1]?.index ?? block.length;
+      const question = text(marker[1]);
 
       return {
-        id: slug(pergunta, usados),
-        pergunta,
-        resposta: bloco.slice(inicio, fim).trim(),
+        id: slug(question, used),
+        question,
+        answer: block.slice(start, end).trim(),
       };
     })
-    .filter((item) => item.pergunta && item.resposta);
+    .filter((item) => item.question && item.answer);
 }

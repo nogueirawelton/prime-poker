@@ -40,7 +40,7 @@ export function Carrousel({ content }: CarrouselProps) {
                   src={instructor.featuredImage?.node?.mediaItemUrl}
                   width={200}
                   height={200}
-                  alt=""
+                  alt={instructor.title}
                   className="absolute top-0 left-0 h-full w-full object-cover object-top"
                 />
               </div>

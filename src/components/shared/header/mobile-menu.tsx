@@ -13,7 +13,7 @@ import { useSmoother } from "@/hooks/use-smoother";
 const ANCHORS = [
   { href: "#quem-somos", label: "Quem Somos" },
   { href: "#o-que-fazemos", label: "O que Fazemos" },
-  { href: "#head-coachs", label: "Head Coachs" },
+  { href: "#head-coaches", label: "Head Coaches" },
   { href: "#instrutores", label: "Instrutores" },
   { href: "#evolucao", label: "Evolução" },
   { href: "#faca-parte", label: "Faça parte" },

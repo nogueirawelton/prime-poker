@@ -3,7 +3,7 @@
 import { PaperPlaneRightIcon, SpinnerGapIcon } from "@phosphor-icons/react";
 import { useActionState, useEffect, useId, useRef } from "react";
 import { twMerge } from "tailwind-merge";
-import { type ComentarioState, comentar } from "@/actions/comments";
+import { type CommentState, postComment } from "@/actions/comments";
 
 /**
  * Formulário de comentário.
@@ -14,41 +14,41 @@ import { type ComentarioState, comentar } from "@/actions/comments";
 export function CommentForm({
   postId,
   parentId = null,
-  compacto = false,
-  onEnviado,
+  compact = false,
+  onSubmitted,
 }: {
   postId: number;
   /** Id do comentário respondido; nulo para um comentário novo. */
   parentId?: string | null;
-  compacto?: boolean;
-  onEnviado?: () => void;
+  compact?: boolean;
+  onSubmitted?: () => void;
 }) {
   const id = useId();
   const form = useRef<HTMLFormElement>(null);
 
   // `bind` leva post e pai ao servidor sem campos escondidos no formulário —
   // um input hidden seria editável pelo cliente.
-  const [estado, action, pendente] = useActionState<ComentarioState, FormData>(
-    comentar.bind(null, postId, parentId),
+  const [state, action, pending] = useActionState<CommentState, FormData>(
+    postComment.bind(null, postId, parentId),
     {},
   );
 
-  const enviado = Boolean(estado.ok || estado.moderacao);
+  const submitted = Boolean(state.ok || state.moderation);
 
   useEffect(() => {
-    if (!enviado) return;
+    if (!submitted) return;
 
     form.current?.reset();
-    onEnviado?.();
-  }, [enviado, onEnviado]);
+    onSubmitted?.();
+  }, [submitted, onSubmitted]);
 
-  if (enviado) {
+  if (submitted) {
     return (
       <p
         role="status"
         className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4 text-prime-light text-sm"
       >
-        {estado.moderacao
+        {state.moderation
           ? "Comentário enviado. Ele aparece aqui assim que for aprovado."
           : "Comentário publicado. Obrigado por participar!"}
       </p>
@@ -61,54 +61,54 @@ export function CommentForm({
       action={action}
       className={twMerge(
         "flex flex-col gap-3",
-        compacto ? "mt-4" : "rounded-xl border border-white/10 bg-white/3 p-5",
+        compact ? "mt-4" : "rounded-xl border border-white/10 bg-white/3 p-5",
       )}
     >
-      {!compacto && (
+      {!compact && (
         <strong className="font-bold text-prime-light">
           Deixe seu comentário
         </strong>
       )}
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <Campo
-          id={`${id}-nome`}
-          name="nome"
+        <Field
+          id={`${id}-name`}
+          name="name"
           placeholder="Seu nome"
-          erro={estado.fieldErrors?.nome?.[0]}
-          rotulo="Nome"
+          error={state.fieldErrors?.name?.[0]}
+          label="Nome"
         />
 
-        <Campo
+        <Field
           id={`${id}-email`}
           name="email"
           type="email"
           placeholder="Seu e-mail (não publicado)"
-          erro={estado.fieldErrors?.email?.[0]}
-          rotulo="E-mail"
+          error={state.fieldErrors?.email?.[0]}
+          label="E-mail"
         />
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label htmlFor={`${id}-texto`} className="sr-only">
+        <label htmlFor={`${id}-text`} className="sr-only">
           Comentário
         </label>
 
         <textarea
-          id={`${id}-texto`}
-          name="texto"
-          rows={compacto ? 3 : 4}
+          id={`${id}-text`}
+          name="text"
+          rows={compact ? 3 : 4}
           maxLength={2000}
           placeholder={
             parentId ? "Escreva sua resposta..." : "Escreva seu comentário..."
           }
-          aria-invalid={Boolean(estado.fieldErrors?.texto)}
+          aria-invalid={Boolean(state.fieldErrors?.text)}
           className="resize-y rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-prime-light text-sm outline-none transition-colors duration-500 placeholder:text-prime-light/40 focus:border-prime-red/60"
         />
 
-        {estado.fieldErrors?.texto?.[0] && (
+        {state.fieldErrors?.text?.[0] && (
           <small role="alert" className="text-prime-red text-xs">
-            {estado.fieldErrors.texto[0]}
+            {state.fieldErrors.text[0]}
           </small>
         )}
       </div>
@@ -131,10 +131,10 @@ export function CommentForm({
 
         <button
           type="submit"
-          disabled={pendente}
+          disabled={pending}
           className="flex h-11 items-center gap-2 rounded-md bg-prime-red px-5 font-semibold text-prime-light text-sm transition-all duration-500 hover:bg-prime-light hover:text-prime-red disabled:opacity-60"
         >
-          {pendente ? (
+          {pending ? (
             <SpinnerGapIcon className="size-4 animate-spin" />
           ) : (
             <PaperPlaneRightIcon className="size-4" weight="fill" />
@@ -143,37 +143,37 @@ export function CommentForm({
         </button>
       </div>
 
-      {estado.error && (
+      {state.error && (
         <small role="alert" className="text-prime-red text-xs">
-          {estado.error}
+          {state.error}
         </small>
       )}
     </form>
   );
 }
 
-function Campo({
+function Field({
   id,
-  rotulo,
-  erro,
+  label,
+  error,
   ...props
-}: React.ComponentProps<"input"> & { rotulo: string; erro?: string }) {
+}: React.ComponentProps<"input"> & { label: string; error?: string }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label htmlFor={id} className="sr-only">
-        {rotulo}
+        {label}
       </label>
 
       <input
         {...props}
         id={id}
-        aria-invalid={Boolean(erro)}
+        aria-invalid={Boolean(error)}
         className="h-12 rounded-xl border border-white/10 bg-white/5 px-4 text-prime-light text-sm outline-none transition-colors duration-500 placeholder:text-prime-light/40 focus:border-prime-red/60"
       />
 
-      {erro && (
+      {error && (
         <small role="alert" className="text-prime-red text-xs">
-          {erro}
+          {error}
         </small>
       )}
     </div>
