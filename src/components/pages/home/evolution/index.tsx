@@ -1,6 +1,7 @@
 import type { Evolution as EvolutionType } from "@/@types/pages/Home";
 import { AnimationContainer } from "@/hooks/use-animation";
 import { Cards } from "@/icons/cards";
+import { formatUsd } from "@/utils/currency";
 import { ChartLazy } from "./chart-lazy";
 import { Testimonials } from "./testimonials";
 
@@ -50,10 +51,7 @@ export function Evolution({ content }: EvolutionProps) {
               </p>
             </div>
             <span className="font-bold text-prime-red/75 text-xl">
-              $
-              {Number(
-                content.accumulatedEarnings.at(-1)?.amount,
-              ).toLocaleString("en-US")}
+              {formatUsd(content.accumulatedEarnings.at(-1)?.amount ?? 0)}
             </span>
           </div>
 

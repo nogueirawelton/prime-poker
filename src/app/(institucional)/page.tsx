@@ -17,11 +17,33 @@ import { getSEO } from "@/utils/get-seo";
 
 export const generateMetadata = getSEO("page", "home");
 
+const SITE = process.env.NEXT_PUBLIC_SITE_URL;
+
+/** Dados estruturados da organização, lidos pelo Google e por IAs. */
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SportsOrganization",
+  name: "Prime Poker Team",
+  url: `${SITE}/`,
+  logo: `${SITE}/img/logo.svg`,
+  email: "prime@primepokerteam.com.br",
+  foundingDate: "2018",
+  sport: "Poker",
+  sameAs: ["https://instagram.com/primepokerteam"],
+};
+
 export default async function HomePage() {
   const { page } = await query<Home>(HOME, { tags: [HOME_CACHE_TAG] });
 
   return (
     <main>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(organizationJsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
+
       <Loading />
 
       <Banner content={page.homeFields.banner} />

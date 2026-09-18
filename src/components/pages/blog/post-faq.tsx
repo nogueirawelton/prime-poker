@@ -71,7 +71,10 @@ export function PostFaq({ faqItems }: { faqItems: Array<FaqItem> }) {
 
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        // `<` escapado: um `</script>` vindo do editor não fecha a tag.
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
       />
     </section>
   );

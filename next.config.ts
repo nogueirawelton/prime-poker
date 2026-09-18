@@ -6,6 +6,32 @@ const nextConfig: NextConfig = {
   trailingSlash: true,
   poweredByHeader: false,
 
+  // Headers de segurança em todas as respostas. A CSP completa (scripts,
+  // estilos, mídias) ficou de fora: GTM, YouTube e o WordPress exigiriam uma
+  // lista extensa de origens, e qualquer esquecimento quebra o site em
+  // produção. `frame-ancestors` cobre o clickjacking sem esse risco.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
+          },
+        ],
+      },
+    ];
+  },
+
   images: {
     deviceSizes: [640, 768, 1080, 1280, 1920],
     qualities: [75, 90],

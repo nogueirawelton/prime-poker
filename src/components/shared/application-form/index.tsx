@@ -15,6 +15,8 @@ import { type FormData, primeApplicationSchema } from "./schema";
 /** Formulário de inscrição no Contact Form 7. */
 const FORM_ID = "169";
 
+const STEP_COUNT = 4;
+
 export function Form() {
   const [value, setValue] = useState("0");
 
@@ -102,7 +104,7 @@ export function Form() {
   return (
     <Tabs.Root value={value} onValueChange={setValue}>
       <div className="flex items-center justify-between gap-4 px-8">
-        {Array(4)
+        {Array(STEP_COUNT)
           .fill("")
           .map((_, key) => (
             <Fragment key={key}>
@@ -120,7 +122,18 @@ export function Form() {
           ))}
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="mt-12">
+      <p
+        className="mt-6 text-center text-prime-light/60 text-sm"
+        aria-live="polite"
+      >
+        Etapa {+value + 1} de {STEP_COUNT}
+      </p>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="mt-6">
+        <p className="mb-6 text-prime-light/60 text-xs">
+          Campos marcados com * são obrigatórios.
+        </p>
+
         <Tabs.Content value="0" className="flex flex-col gap-4">
           <strong className="text-center text-2xl text-white">
             Dados Pessoais

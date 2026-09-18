@@ -1,4 +1,5 @@
 import { GoogleTagManager } from "@next/third-parties/google";
+import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
 import { Suspense } from "react";
 import { ToastContainer } from "react-toastify";
@@ -14,6 +15,18 @@ const montserrat = Montserrat({
   display: "swap",
   preload: true,
 });
+
+/**
+ * Padrões herdados por todas as rotas. `metadataBase` resolve URLs relativas
+ * de Open Graph; o card do X usa título, descrição e imagem do Open Graph
+ * quando não há tags `twitter:*` próprias — só o tipo do card precisa vir aqui.
+ */
+export const metadata: Metadata = {
+  metadataBase: process.env.NEXT_PUBLIC_SITE_URL
+    ? new URL(process.env.NEXT_PUBLIC_SITE_URL)
+    : undefined,
+  twitter: { card: "summary_large_image" },
+};
 
 /**
  * Layout raiz: só o que é genuinamente global (fonte, consentimento, GTM,

@@ -7,7 +7,14 @@ export const primeApplicationSchema = z.object({
   personalData: z.object({
     nome_completo: z.string().min(2, "Campo obrigatório!"),
     email: z.email("Informe um e-mail válido."),
-    numero_whatsapp: z.string().min(2, "Campo obrigatório!"),
+    // O campo já nasce com o DDI "55": `min(2)` aceitava o número vazio.
+    // Brasil: DDI + DDD + 8 ou 9 dígitos; outros países, ao menos 8 dígitos.
+    numero_whatsapp: z
+      .string()
+      .regex(
+        /^(55\d{10,11}|(?!55)\d{8,15})$/,
+        "Informe um número de WhatsApp válido, com DDD.",
+      ),
     onde_mora: z.string().min(2, "Campo obrigatório!"),
   }),
 

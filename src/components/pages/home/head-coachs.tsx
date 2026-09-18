@@ -2,6 +2,7 @@ import Image from "next/image";
 import type { HeadCoachs as HeadCoachsType } from "@/@types/pages/Home";
 import { AnimationContainer } from "@/hooks/use-animation";
 import { Cards } from "@/icons/cards";
+import { formatUsd } from "@/utils/currency";
 
 type HeadCoachsProps = {
   content: HeadCoachsType;
@@ -9,7 +10,7 @@ type HeadCoachsProps = {
 
 export function HeadCoachs({ content }: HeadCoachsProps) {
   return (
-    <section id="head-coachs" className="bg-zinc-900">
+    <section id="head-coaches" className="bg-zinc-900">
       <AnimationContainer
         animation="home/headCoachs"
         className="mx-auto max-w-screen-2xl px-4 py-12 lg:px-8 lg:py-24"
@@ -20,7 +21,7 @@ export function HeadCoachs({ content }: HeadCoachsProps) {
             className="flex items-center gap-2 font-normal text-prime-red uppercase"
           >
             <Cards className="size-6 stroke-prime-red" />
-            Head Coachs
+            Head Coaches
           </strong>
 
           <h2
@@ -47,7 +48,7 @@ export function HeadCoachs({ content }: HeadCoachsProps) {
                   src={coach.featuredImage?.node?.mediaItemUrl}
                   width={375}
                   height={480}
-                  alt=""
+                  alt={coach.title}
                   className="absolute top-0 left-0 h-full w-full object-cover object-top"
                 />
               </div>
@@ -69,11 +70,7 @@ export function HeadCoachs({ content }: HeadCoachsProps) {
                 </h3>
 
                 <strong className="mt-1 block font-medium text-prime-red/85">
-                  $
-                  {Number(coach.instructorFields.earnings).toLocaleString(
-                    "en-US",
-                  )}{" "}
-                  em ganhos
+                  {formatUsd(coach.instructorFields.earnings)} em ganhos
                 </strong>
 
                 <div

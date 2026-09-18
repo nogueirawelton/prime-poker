@@ -47,10 +47,14 @@ export function PhoneInput({
         value={value ?? ""}
         inputProps={{
           inputMode: "numeric",
+          "aria-invalid": !!error,
           ...props,
           ref,
         }}
         country="br"
+        // A máscara padrão da lib para o Brasil não separa o número:
+        // `+55 (21) 981788877`. Com esta, fica `+55 (21) 98178-8877`.
+        masks={{ br: "(..) .....-...." }}
       />
       {error && (
         <small className={twMerge("text-red-500", errorClass)}>

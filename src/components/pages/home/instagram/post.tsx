@@ -3,7 +3,12 @@ import Image from "next/image";
 
 export function Post({ content }: { content: any }) {
   return (
-    <a href={content.url} target="_blank" rel="noopener">
+    <a
+      href={content.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Ver publicação no Instagram"
+    >
       <div className="group relative size-full">
         <Image
           src={`${process.env.NEXT_PUBLIC_INSTAGRAM_URL}${content.imagePath}`}

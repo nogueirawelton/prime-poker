@@ -110,14 +110,14 @@ export function Footer() {
 
             <div className="mt-4 flex flex-col gap-3 text-prime-light/70 text-sm">
               <a
-                href="mailto:primepokerteam@gmail.com"
+                href="mailto:prime@primepokerteam.com.br"
                 className={`flex items-start gap-2 ${LINK}`}
               >
                 <EnvelopeIcon
                   weight="fill"
                   className="size-5 shrink-0 text-prime-red/75"
                 />
-                primepokerteam@gmail.com
+                prime@primepokerteam.com.br
               </a>
 
               <a

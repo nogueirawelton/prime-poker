@@ -22,12 +22,21 @@ export function TextInput({
         {...props}
         type="text"
         value={value ?? ""}
-        className={twMerge("w-full bg-transparent", props.className)}
+        aria-invalid={!!error}
+        aria-describedby={error && props.id ? `${props.id}-error` : undefined}
+        className={twMerge(
+          "w-full bg-transparent",
+          props.className,
+          error && "border-red-500",
+        )}
         ref={ref}
         onChange={(e) => onValueChange(e.target.value)}
       />
       {error && (
-        <small className={twMerge("text-red-500", errorClass)}>
+        <small
+          id={props.id ? `${props.id}-error` : undefined}
+          className={twMerge("text-red-500", errorClass)}
+        >
           {error.message}
         </small>
       )}
