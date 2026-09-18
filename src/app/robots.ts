@@ -17,7 +17,9 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
       // Área logada, autenticação e endpoints não têm o que indexar.
+      // Blog oculto na master — reativar quando for ao ar.
       disallow: [
+        "/blog/",
         "/player/",
         "/login/",
         "/cadastro/",
