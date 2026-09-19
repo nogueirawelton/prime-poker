@@ -9,7 +9,7 @@ Esta pasta **não** faz parte do build do Next.js.
 ## `prime-poker`
 
 Customizações do WordPress para o Prime Poker Team. Hoje cobre a área do
-jogador; áreas novas entram como subpastas de `includes/`, cada uma no seu
+jogador e as aulas; áreas novas entram como subpastas de `includes/`, cada uma no seu
 sub-namespace.
 
 ### Tipos de Jogador
@@ -165,6 +165,71 @@ senha" da lista de usuários — os três passam pelos mesmos filtros do núcleo
   isso o filtro `graphql_jwt_auth_validate_token` passa a recusar refresh
   token com segredo antigo. O access token em uso vale até expirar (1 hora).
 
+### Aulas
+
+`includes/Lessons/`. CPT `aula` (GraphQL `aula`/`aulas`) e taxonomia `trilha`
+(GraphQL `trilha`/`trilhas`). Os slugs são dados gravados no banco: não
+renomear.
+
+**Campos (ACF).** Registrados pelo plugin (`Lessons/Fields.php`), não pelo
+painel — aparecem no ACF como grupos locais, sem edição. Não há JSON para
+importar. Sem o ACF ativo, a aula continua editável, só sem os campos.
+
+| Grupo (GraphQL) | Campo (meta) | No GraphQL do ACF | Observação |
+|---|---|---|---|
+| `lessonFields` | `instructor` | sim | Post Object → Instrutor |
+| | `level` | sim | `iniciante`, `intermediario`, `avancado` |
+| | `duration` | não | Digitada `25:30` ou `1:05:00`, gravada em segundos. Sai em `Aula.duration` |
+| | `minimum_tier` | não | Sai em `Aula.minimumTier`; vazio ou inválido vale Player Free |
+| | `video_provider` | não | Hoje só `google_drive` |
+| | `video_id` | não | Link de compartilhamento do Drive (ou o ID); validado ao salvar |
+| | `materials` (`name`, `file`) | não | Repeater; sai em `Aula.materials` |
+| `trackFields` | `badge` | sim | Selo curto; vazio usa o nome da trilha |
+| | `color` | sim | `vermelho`, `esmeralda`, `violeta`, `laranja`, `azul`, `indigo`, `ambar` — o front converte em classes |
+| | `order` | sim | Posição no filtro |
+
+Vídeo, materiais e tier mínimo ficam **fora** do GraphQL do ACF de propósito:
+por lá qualquer jogador leria o vídeo de qualquer aula.
+
+**Acesso** (`Lessons/Access.php`):
+
+- **Ver a aula** (título, trilha, duração, capa): qualquer jogador
+  (`access_player_area`) ou equipe (`edit_posts`). Visitante não vê nada no
+  GraphQL (filtro `graphql_data_is_private`) nem no REST (`/wp/v2/aula` só para
+  a equipe; o REST continua ligado por causa do editor de blocos).
+- **Assistir** (`video`, `materials`): só com a capability do tier mínimo
+  (`view_content_gold` para uma aula gold — cumulativa, então platinum também
+  passa). Para os outros os campos voltam `null`: o dado não sai do WordPress.
+- O CPT é `public` porque o WPGraphQL trata como privado, para quem não tem
+  `edit_posts`, todo post de tipo não público. Não há página no WordPress
+  (`publicly_queryable` falso, sem rewrite) e a aula fica fora dos sitemaps do
+  WordPress e do Yoast.
+- Os arquivos de material ficam em `wp-content/uploads`, com URL pública: o
+  gate esconde o link, mas quem já tem o link baixa sem login.
+
+**GraphQL:**
+
+```graphql
+aulas(first: 12, where: {
+  offset: 12, search: "icm", track: "torneios", instructor: 42,
+  from: "2026-09-01", to: "2026-09-19", sort: MOST_VIEWED
+}) { nodes { databaseId slug title canWatch minimumTier minimumTierLabel
+             duration viewCount video { provider id } materials { name url fileSize mimeType }
+             lessonFields { level instructor { nodes { databaseId ... on Instrutor { title } } } }
+             trilhas { nodes { slug name trackFields { badge color order } } } } }
+
+lessonsTotal(search: "icm", track: "torneios", instructor: 42, from: "…", to: "…")
+
+mutation { registerLessonView(input: { lessonId: 123 }) { viewCount } }
+```
+
+- `sort`: `NEWEST` (padrão), `OLDEST`, `MOST_VIEWED`, `SHORTEST`, `LONGEST`.
+  Filtro vazio ou malformado (data inexistente, offset negativo) é ignorado.
+- `lessonsTotal` devolve 0 para quem não é jogador.
+- Visualizações em `_prime_poker_views` (toda aula nasce com 0, para não sumir
+  da ordem `MOST_VIEWED`). O mesmo jogador conta uma vez a cada 12 horas por
+  aula.
+
 ### Revalidação do cache do front
 
 O Next guarda as respostas do GraphQL em cache por horas. O módulo
@@ -185,7 +250,10 @@ cada endereço. Disponível para editores e administradores
 | Post publicado, editado, despublicado, na lixeira ou excluído | `posts`, `categories` |
 | Página `home` | `home`, `seo` |
 | Outras páginas | `seo` |
-| Instrutor (`instructor`) ou Depoimento (`testimonial`) | `home` |
+| Instrutor (`instructor`) | `home`, `lessons` |
+| Depoimento (`testimonial`) | `home` |
+| Aula (`aula`) | `lessons` |
+| Trilha criada, editada ou excluída | `lessons` |
 | Categoria criada, editada ou excluída | `categories`, `posts` |
 | Tag criada, editada ou excluída | `home` |
 | Comentário aprovado, editado, reprovado ou excluído | `comments:<ID do post>` |

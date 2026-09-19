@@ -282,36 +282,73 @@ valores de URL/dados e contratos externos (CF7, ACF, WP) continuam em português
 
 ---
 
-## Etapa 6 — Aulas: estrutura no WP
+## Etapa 6 — Aulas: estrutura no WP 🟡 código pronto (19/09/2026) — falta a sua parte
 
 Substitui o mock de `services/lessons.ts` e `services/lesson-detail.ts`.
 
 **👤 Você**
-- [ ] ❓ **Hospedagem dos vídeos:** YouTube não listado, Vimeo, Panda Video, Bunny ou arquivo no WP?
-      (Afeta a proteção: link do YouTube não listado vaza fácil; Panda/Bunny/Vimeo permitem restringir domínio.)
-- [ ] ❓ **Regras de acesso:** cada aula tem um tier mínimo? O que o jogador sem acesso vê
-      (card com cadeado + CTA de upgrade, ou a aula nem aparece)?
-- [ ] ❓ Confirmar as trilhas (hoje: Estratégia, Mental Game, Torneios, Análise de Mãos,
-      Fundamentos, Ferramentas, Profissional) e os níveis (Iniciante, Intermediário, Avançado).
-- [ ] Depois que eu subir o plugin: importar o JSON do ACF que eu vou gerar
-      (ACF → Ferramentas → Importar).
-- [ ] Cadastrar as trilhas e **pelo menos 3 aulas de teste** completas (vídeo, duração,
-      instrutor, nível, materiais, imagem destacada).
+- [x] ❓ **Hospedagem dos vídeos** → **Google Drive + player próprio**. O Drive vira
+      armazenamento; o site toca o arquivo no player dele (com progresso, etapa 8), e o
+      acesso é conferido no servidor. Aceito: sem qualidade adaptativa e sujeito à cota
+      diária de downloads do Drive. O campo `video_provider` permite migrar (Panda/Bunny)
+      depois sem mudar o schema.
+- [x] ❓ **Regras de acesso** → **tier mínimo por aula + card com cadeado** e convite ao
+      upgrade para quem está abaixo. Vídeo e materiais nunca saem do WP para ele.
+- [x] ❓ **Trilhas** → **o cliente cadastra** no painel (nome, selo, cor, ordem). Nenhuma
+      vem pronta. Níveis fixos: Iniciante, Intermediário, Avançado.
+- [x] ~~Importar o JSON do ACF~~ → **dispensado**: os campos são registrados pelo próprio
+      plugin (aparecem no ACF como grupos "locais", sem edição).
+- [ ] Commit + push na `staging`.
+- [ ] Subir o plugin **1.10.0** no WP. Conferir que aparecem os menus **Aulas** e
+      **Aulas → Trilhas**, e na tela da aula o bloco **Dados da aula**.
+- [ ] Cadastrar as trilhas (em *Aulas → Trilhas*): nome, selo (opcional), cor e ordem.
+- [ ] Juntar os vídeos numa **pasta do Drive** só para as aulas (a etapa 7 vai
+      compartilhá-la com uma conta de serviço do Google — ainda não precisa mexer em
+      permissão).
+- [ ] Cadastrar **pelo menos 3 aulas de teste** completas (título, descrição, trilha,
+      imagem destacada, instrutor, nível, duração, tier mínimo, link do Drive, materiais),
+      com **tiers mínimos diferentes** (uma free, uma gold, uma platinum).
+- [ ] Me avisar: eu rodo a verificação real com os 4 usuários de teste.
 
 **🤖 Claude**
-- [ ] Plugin `includes/Aulas/`: registrar o CPT `aula` (GraphQL `aula`/`aulas`, com editor,
-      imagem destacada e comentários) e a taxonomia `trilha`.
-- [ ] Gerar o JSON do ACF (`wp_plugin/acf/`):
-      - termo `trilha`: `selo`, `cor` (select com chaves fixas), `ordem`;
-      - `aulaFields`: `instrutor` (Post Object → Instrutor), `nivel`, `video`, `duracao` (s),
-        `tierMinimo`, `materiais` (repeater `nome` + `arquivo`).
-- [ ] Plugin GraphQL: `offset`, `instrutor`, `de`/`ate` e `orderby` (recentes, antigas,
-      populares, curtas, longas) nas `where` de aulas; `aulasTotal(...)`; contador de
-      visualizações em meta.
-- [ ] Plugin GraphQL: **proteção no servidor** — `video` e `materiais` devolvem `null`
-      sem `view_content_<tierMinimo>`; expor `podeAcessar` na aula.
-- [ ] Revalidação ao publicar/editar aula (etapa 3).
-- [ ] Documentar tudo no `wp_plugin/README.md` e subir a versão do plugin.
+- [x] Plugin `includes/Lessons/` (em inglês, pela regra do projeto; os slugs `aula` e
+      `trilha` são dados e ficam em português):
+      - `Content.php`: CPT `aula` (editor, imagem, resumo, comentários, revisões) e
+        taxonomia `trilha` (hierárquica, seletor em caixas). Sem página no WP e fora dos
+        sitemaps do WordPress e do Yoast.
+      - `Fields.php`: grupos ACF `lessonFields` e `trackFields` registrados em código.
+        Duração digitada `25:30`/`1:05:00` e gravada em segundos (ordenação numérica);
+        link do Drive validado ao salvar (aceita link de compartilhamento ou ID).
+      - `Access.php`: visitante não vê aulas no GraphQL nem no REST; jogador de qualquer
+        tier vê a listagem; assistir exige a capability do tier mínimo (equipe vê tudo).
+      - `GraphQL.php`: `where` com `offset`, `track`, `instructor`, `from`/`to`, `sort`
+        (`NEWEST`, `OLDEST`, `MOST_VIEWED`, `SHORTEST`, `LONGEST`); `lessonsTotal`; na
+        `Aula`: `canWatch`, `minimumTier(Label)`, `duration`, `viewCount` e os protegidos
+        `video { provider id }` e `materials { name url fileSize mimeType }`
+        (`null` sem acesso); mutation `registerLessonView`.
+      - `Views.php`: visualizações em meta, 1 por jogador a cada 12h por aula.
+- [x] **Conferido no código do WPGraphQL:** CPT não público vira privado para quem não
+      tem `edit_posts` — por isso a aula é `public` e o gate fica no `graphql_data_is_private`.
+      E o filtro de query roda depois do WPGraphQL, então a ordenação própria não é sobrescrita.
+- [x] Revalidação: aula e trilha → tag nova `lessons` (antes cairiam em `cms`, que limpa
+      tudo); instrutor → `home` + `lessons`. Tag aceita pelo front (`lib/cache-tags.ts`).
+- [x] `Tiers::content_capability()` para achar a capability de um tier sem repetir a lista.
+- [x] Testes com WP simulado (119 cenários de aulas + revalidação): acesso por tier nas
+      7 combinações de usuário × 4 aulas, visitante/assinante escondidos no GraphQL e no
+      REST, filtros e ordens, datas inválidas ignoradas, vídeo e materiais só com acesso,
+      anexo apagado some da lista, formatos de link do Drive, dedupe de visualização,
+      conversão e validação da duração. `php -l`, typecheck e lint OK.
+- [x] README do plugin: seção **Aulas** e tabela de revalidação.
+- [ ] Após você cadastrar: verificação real no WP com os 4 usuários (free não recebe o
+      vídeo da aula gold; filtros, ordens e `lessonsTotal` batem).
+
+**⚠️ Para a etapa 7 (vídeo no Drive):** o Drive só entrega o arquivo com um token do
+Google no **cabeçalho** da requisição, e o `<video>` do navegador não manda cabeçalho. O
+jeito seguro é a rota do Next buscar o vídeo no Drive e repassar ao navegador — só que aí
+**o tráfego do vídeo passa pela Vercel** (cobrado por GB acima da franquia). Antes de
+implementar, faço um teste com um vídeo real para medir e te trago o custo estimado.
+O redirect direto para o Drive, que eu tinha citado, exigiria o arquivo público "qualquer
+pessoa com o link" — aí o link vaza. Você decide com os números na mão.
 
 **✅ Pronto quando:** a query `aulas` devolve as aulas de teste com filtros e ordenação,
 e um usuário free não recebe o vídeo de uma aula gold.
@@ -329,14 +366,21 @@ e um usuário free não recebe o vídeo de uma aula gold.
 - [ ] Trilhas e instrutores do filtro vindos do WP (hoje `TRACKS` e `INSTRUCTORS` são fixos).
 - [ ] Converter a chave de `cor` da trilha nas classes do selo e do gradiente da capa.
 - [ ] `lesson-card.tsx`: usar a imagem destacada no lugar do gradiente provisório.
-- [ ] `aulas/[slug]/page.tsx`: passar a `url` do vídeo para o `LessonPlayer` (hoje nunca passa)
-      e usar a descrição do editor.
+- [ ] Vídeo do Drive: conta de serviço do Google (`GOOGLE_SERVICE_ACCOUNT_*` na Vercel),
+      rota `/api/aulas/[slug]/video` que confere o acesso no WP (`canWatch`) e entrega o
+      arquivo com suporte a *range* (arrastar a barra). Medir o custo de banda antes (ver
+      aviso da etapa 6).
+- [ ] `aulas/[slug]/page.tsx`: passar a rota do vídeo para o `LessonPlayer` (hoje nunca
+      passa) e usar a descrição do editor.
 - [ ] Materiais com link de download real (tamanho vindo da media library).
-- [ ] Estado de "sem acesso" conforme a regra definida na etapa 6.
+- [ ] Estado de "sem acesso": card com cadeado e selo do tier mínimo (`minimumTierLabel`);
+      na página da aula, o player vira o convite ao upgrade (destino decidido na etapa 11).
 - [ ] `lesson-card.tsx`: implementar o menu de ações ⋮ (salvar, marcar como assistida,
       compartilhar) — TODO no código.
 - [ ] Post do blog → "aula sugerida" usando as aulas reais.
-- [ ] Contabilizar a visualização ao abrir a aula.
+- [ ] Contabilizar a visualização ao abrir a aula (`registerLessonView`).
+- [ ] Trilhas e instrutores do filtro cacheados sob `lessons`; a lista de aulas é por
+      jogador (`canWatch`) e usa `authQuery`, sem cache.
 
 **✅ Pronto quando:** listagem, busca, filtros, rolagem infinita e página da aula
 funcionam só com dados do WP.
@@ -453,9 +497,9 @@ do mesmo ponto; salvas e concluídas persistem.
 | 2 | 1 | Nomes finais dos campos do formulário de inscrição |
 | 3 | 1 | Newsletter só por e-mail ou integrada a uma ferramenta |
 | 4 | 2 | Serviço/URL do feed do Instagram |
-| 6 | 6 | Onde hospedar os vídeos |
-| 7 | 6 | Regra de acesso por tier e o que o bloqueado vê |
-| 8 | 6 | Trilhas e níveis definitivos |
+| ~~6~~ | 6 | ~~Onde hospedar os vídeos~~ → Google Drive + player próprio |
+| ~~7~~ | 6 | ~~Regra de acesso por tier e o que o bloqueado vê~~ → tier mínimo + cadeado |
+| ~~8~~ | 6 | ~~Trilhas e níveis definitivos~~ → cliente cadastra as trilhas |
 | 9 | 8 | Regra da sequência de estudo |
 | 10 | 9 | Quem responde as dúvidas, visibilidade e moderação |
 | 11 | 10 | Tipos de notificação e direcionamento |

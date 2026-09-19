@@ -28,6 +28,14 @@ export const POSTS_CACHE_TAG = "posts";
 export const CATEGORIES_CACHE_TAG = "categories";
 
 /**
+ * Aulas da área do jogador: trilhas, instrutores e o acervo.
+ *
+ * O que é por jogador (acesso, progresso) nunca é cacheado; esta tag cobre só
+ * o que é igual para todos.
+ */
+export const LESSONS_CACHE_TAG = "lessons";
+
+/**
  * O que `/api/revalidate` limpa quando nenhuma tag é informada.
  *
  * `cms` já cobre tudo que passa por `query()` (home, blog, SEO), mas a home
@@ -45,6 +53,7 @@ const STATIC_TAGS: ReadonlyArray<string> = [
   SEO_CACHE_TAG,
   POSTS_CACHE_TAG,
   CATEGORIES_CACHE_TAG,
+  LESSONS_CACHE_TAG,
 ];
 
 /**
