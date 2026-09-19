@@ -181,8 +181,8 @@ importar. Sem o ACF ativo, a aula continua editável, só sem os campos.
 | | `level` | sim | `iniciante`, `intermediario`, `avancado` |
 | | `duration` | não | Digitada `25:30` ou `1:05:00`, gravada em segundos. Sai em `Aula.duration` |
 | | `minimum_tier` | não | Sai em `Aula.minimumTier`; vazio ou inválido vale Player Free |
-| | `video_provider` | não | Hoje só `google_drive` |
-| | `video_id` | não | Link de compartilhamento do Drive (ou o ID); validado ao salvar |
+| | `video_provider` | não | Hoje só `bunny` (Bunny Stream) |
+| | `video_id` | não | Video ID do Bunny (GUID) ou link do player; validado ao salvar |
 | | `materials` (`name`, `file`) | não | Repeater; sai em `Aula.materials` |
 | `trackFields` | `badge` | sim | Selo curto; vazio usa o nome da trilha |
 | | `color` | sim | `vermelho`, `esmeralda`, `violeta`, `laranja`, `azul`, `indigo`, `ambar` — o front converte em classes |
@@ -207,6 +207,22 @@ por lá qualquer jogador leria o vídeo de qualquer aula.
 - Os arquivos de material ficam em `wp-content/uploads`, com URL pública: o
   gate esconde o link, mas quem já tem o link baixa sem login.
 
+**Vídeo (Bunny Stream)** (`Lessons/Bunny.php`). No `wp-config.php`:
+
+```php
+define( 'PRIME_POKER_BUNNY_LIBRARY_ID', '123456' );   // Stream → biblioteca → API → Library ID
+define( 'PRIME_POKER_BUNNY_TOKEN_KEY', '…' );         // Stream → biblioteca → Security → Token authentication key
+```
+
+- `Aula.video.url` é o link do player (`iframe.mediadelivery.net/embed/…`)
+  assinado com `token = SHA256(chave + id do vídeo + expires)`, válido por 6
+  horas. Só é gerado para quem pode assistir; a chave nunca sai do servidor.
+- Na biblioteca do Bunny, ligar **Embed view token authentication** — sem
+  isso o link funciona mesmo sem token — e restringir os **domínios
+  permitidos** ao site (produção e staging).
+- Sem `LIBRARY_ID`, `url` volta `null`; sem `TOKEN_KEY`, o link sai sem
+  assinatura. Nos dois casos o painel mostra um aviso nas telas de aulas.
+
 **GraphQL:**
 
 ```graphql
@@ -214,7 +230,7 @@ aulas(first: 12, where: {
   offset: 12, search: "icm", track: "torneios", instructor: 42,
   from: "2026-09-01", to: "2026-09-19", sort: MOST_VIEWED
 }) { nodes { databaseId slug title canWatch minimumTier minimumTierLabel
-             duration viewCount video { provider id } materials { name url fileSize mimeType }
+             duration viewCount video { provider id url } materials { name url fileSize mimeType }
              lessonFields { level instructor { nodes { databaseId ... on Instrutor { title } } } }
              trilhas { nodes { slug name trackFields { badge color order } } } } }
 

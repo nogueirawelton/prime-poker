@@ -38,9 +38,6 @@ final class GraphQL {
 	private const META_VIDEO_ID       = 'video_id';
 	private const META_MATERIALS      = 'materials';
 
-	/** Provedor assumido quando o campo está vazio. */
-	private const DEFAULT_PROVIDER = 'google_drive';
-
 	/**
 	 * Ordens da listagem → `orderby` da WP_Query.
 	 *
@@ -164,11 +161,15 @@ final class GraphQL {
 				'fields'      => array(
 					'provider' => array(
 						'type'        => array( 'non_null' => 'String' ),
-						'description' => __( 'Onde o vídeo está hospedado (google_drive…).', 'prime-poker' ),
+						'description' => __( 'Onde o vídeo está hospedado (bunny).', 'prime-poker' ),
 					),
 					'id'       => array(
 						'type'        => array( 'non_null' => 'String' ),
-						'description' => __( 'Identificador do vídeo no provedor (no Drive, o ID do arquivo).', 'prime-poker' ),
+						'description' => __( 'Identificador do vídeo no provedor (no Bunny, o GUID).', 'prime-poker' ),
+					),
+					'url'      => array(
+						'type'        => 'String',
+						'description' => __( 'Link do player, assinado e com validade de 6 horas. null se o provedor não estiver configurado no WordPress.', 'prime-poker' ),
 					),
 				),
 			)
@@ -449,43 +450,27 @@ final class GraphQL {
 	/**
 	 * Vídeo da aula, ou null se não houver.
 	 *
+	 * Provedor vazio vale Bunny, o único hoje. Provedor desconhecido devolve
+	 * null em vez de um link que o front não saberia tocar.
+	 *
 	 * @param int $post_id ID da aula.
-	 * @return array{provider: string, id: string}|null
+	 * @return array{provider: string, id: string, url: string|null}|null
 	 */
 	private static function video( int $post_id ): ?array {
 		$provider = (string) get_post_meta( $post_id, self::META_VIDEO_PROVIDER, true );
-		$provider = '' === $provider ? self::DEFAULT_PROVIDER : $provider;
-		$raw      = trim( (string) get_post_meta( $post_id, self::META_VIDEO_ID, true ) );
-		$id       = 'google_drive' === $provider ? self::drive_file_id( $raw ) : $raw;
+		$provider = '' === $provider ? Bunny::PROVIDER : $provider;
 
-		return null === $id || '' === $id ? null : array(
-			'provider' => $provider,
-			'id'       => $id,
-		);
-	}
-
-	/**
-	 * ID do arquivo do Drive a partir do que foi colado no painel.
-	 *
-	 * Quem cadastra cola o link de compartilhamento, não o ID — aceitar os
-	 * dois evita um erro de cadastro que só apareceria no player.
-	 *
-	 * @param string $value Link ou ID.
-	 */
-	public static function drive_file_id( string $value ): ?string {
-		$patterns = array(
-			'#/file/d/([A-Za-z0-9_-]{20,})#', // drive.google.com/file/d/<id>/view
-			'#[?&]id=([A-Za-z0-9_-]{20,})#',  // drive.google.com/open?id=<id>, uc?id=<id>
-			'#^([A-Za-z0-9_-]{20,})$#',       // Só o ID (hoje com 28 a 44 caracteres).
-		);
-
-		foreach ( $patterns as $pattern ) {
-			if ( preg_match( $pattern, $value, $match ) ) {
-				return $match[1];
-			}
+		if ( Bunny::PROVIDER !== $provider ) {
+			return null;
 		}
 
-		return null;
+		$id = Bunny::video_id( (string) get_post_meta( $post_id, self::META_VIDEO_ID, true ) );
+
+		return null === $id ? null : array(
+			'provider' => $provider,
+			'id'       => $id,
+			'url'      => Bunny::embed_url( $id, time() ),
+		);
 	}
 
 	/**

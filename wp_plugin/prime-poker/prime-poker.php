@@ -91,6 +91,7 @@ add_action(
 
 		Lessons\Content::boot();
 		Lessons\Fields::boot();
+		Lessons\Bunny::boot();
 		Lessons\Access::boot();
 		Lessons\Views::boot();
 		Lessons\GraphQL::boot();

@@ -168,8 +168,8 @@ final class Fields {
 					'name'            => 'video_provider',
 					'label'           => __( 'Hospedagem do vídeo', 'prime-poker' ),
 					'type'            => 'select',
-					'choices'         => array( 'google_drive' => 'Google Drive' ),
-					'default_value'   => 'google_drive',
+					'choices'         => array( Bunny::PROVIDER => 'Bunny Stream' ),
+					'default_value'   => Bunny::PROVIDER,
 					'return_format'   => 'value',
 					'required'        => 1,
 					'wrapper'         => array( 'width' => '50' ),
@@ -180,9 +180,9 @@ final class Fields {
 					'key'             => self::KEY_VIDEO_ID,
 					'name'            => 'video_id',
 					'label'           => __( 'Vídeo', 'prime-poker' ),
-					'instructions'    => __( 'Cole o link de compartilhamento do Google Drive (Compartilhar → Copiar link).', 'prime-poker' ),
+					'instructions'    => __( 'No Bunny Stream, abra o vídeo e copie o Video ID (ou o link do player).', 'prime-poker' ),
 					'type'            => 'text',
-					'placeholder'     => 'https://drive.google.com/file/d/…/view',
+					'placeholder'     => '32d140e2-e4f4-4eec-9d53-20371e9be607',
 					'required'        => 0,
 					'show_in_graphql' => 0,
 				),
@@ -370,7 +370,7 @@ final class Fields {
 	}
 
 	/**
-	 * Recusa link que não é do Drive, em vez de salvar e só falhar no player.
+	 * Recusa o que não é um vídeo do Bunny, em vez de salvar e só falhar no player.
 	 *
 	 * @param bool|string $valid Resultado até aqui.
 	 * @param mixed       $value Valor digitado.
@@ -381,8 +381,8 @@ final class Fields {
 			return $valid;
 		}
 
-		return null !== GraphQL::drive_file_id( trim( (string) $value ) )
+		return null !== Bunny::video_id( (string) $value )
 			? true
-			: __( 'Não reconheci este link. Use o link de compartilhamento do arquivo no Google Drive.', 'prime-poker' );
+			: __( 'Não reconheci este vídeo. Cole o Video ID do Bunny Stream (ex.: 32d140e2-e4f4-4eec-9d53-20371e9be607) ou o link do player.', 'prime-poker' );
 	}
 }
