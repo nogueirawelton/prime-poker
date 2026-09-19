@@ -9,7 +9,7 @@ import {
   type LessonsSearchParams,
   parseFilter,
 } from "@/lib/lessons-params";
-import { listLessons } from "@/services/lessons";
+import { getInstructors, getTracks, listLessons } from "@/services/lessons";
 
 export const metadata: Metadata = {
   title: "Aulas | Prime Poker Team",
@@ -33,7 +33,7 @@ export default function LessonsPage({ searchParams }: Props) {
           requisição. Atrás dos boundaries, o cabeçalho continua
           prerenderizado no shell estático. */}
       <Suspense fallback={<div className="h-10 lg:hidden" />}>
-        <MobileTracks />
+        <Tracks />
       </Suspense>
 
       <Suspense fallback={<div className="h-14" />}>
@@ -47,10 +47,24 @@ export default function LessonsPage({ searchParams }: Props) {
   );
 }
 
-async function Controls({ searchParams }: Props) {
-  const filter = parseFilter(await searchParams);
+async function Tracks() {
+  return <MobileTracks tracks={await getTracks()} />;
+}
 
-  return <LessonsSearch activeFilters={countFilters(filter)} />;
+async function Controls({ searchParams }: Props) {
+  const [params, tracks, instructors] = await Promise.all([
+    searchParams,
+    getTracks(),
+    getInstructors(),
+  ]);
+
+  return (
+    <LessonsSearch
+      activeFilters={countFilters(parseFilter(params))}
+      tracks={tracks}
+      instructors={instructors}
+    />
+  );
 }
 
 async function Results({ searchParams }: Props) {

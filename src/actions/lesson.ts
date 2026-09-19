@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import {
   addQuestion,
+  registerView,
   toggleCompleted,
   toggleSaved,
 } from "@/services/lesson-detail";
@@ -34,6 +35,26 @@ export async function completeLesson(slug: string) {
   await toggleCompleted(slug);
 
   refresh();
+}
+
+/**
+ * Conta a visualização ao abrir a aula.
+ *
+ * Chamada pelo navegador depois de a página montar, e não durante a
+ * renderização: o prefetch de links renderiza páginas que ninguém abriu, e
+ * cada uma contaria como vista. Falha aqui não é problema de quem assiste —
+ * só se perde uma contagem.
+ */
+export async function registerLessonView(lessonId: number) {
+  await ensureSession();
+
+  if (!Number.isInteger(lessonId) || lessonId <= 0) return;
+
+  try {
+    await registerView(lessonId);
+  } catch (error) {
+    console.error("Falha ao contar visualização da aula", lessonId, error);
+  }
 }
 
 export type QuestionState = { error?: string };

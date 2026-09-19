@@ -171,9 +171,22 @@ senha" da lista de usuários — os três passam pelos mesmos filtros do núcleo
 (GraphQL `trilha`/`trilhas`). Os slugs são dados gravados no banco: não
 renomear.
 
-**Campos (ACF).** Registrados pelo plugin (`Lessons/Fields.php`), não pelo
-painel — aparecem no ACF como grupos locais, sem edição. Não há JSON para
-importar. Sem o ACF ativo, a aula continua editável, só sem os campos.
+**Registro pelo ACF**, como os outros CPTs do site: `wp_plugin/acf/aulas.json`
+traz o tipo, a taxonomia e os dois grupos de campos. Importar em
+*ACF → Ferramentas → Importar*. O plugin cuida só do comportamento (acesso,
+GraphQL, vídeo, validações).
+
+- Editor **clássico** (`show_in_rest` desligado no JSON). Ligar "Show in REST
+  API" no painel troca para o editor de blocos; o plugin continua fechando
+  `/wp/v2/aula` para quem não é da equipe.
+- Os campos ficam editáveis no painel, mas o código lê as metas pelo **nome**
+  e valida pela **chave**. Renomear um campo não dá erro — o valor só some do
+  site. Por isso `Fields::problems()` confere chaves e nomes e mostra um aviso
+  vermelho nas telas de aulas, trilhas e do ACF quando algo não bate (ou quando
+  o JSON não foi importado).
+- Mudou algo de propósito no painel? Exporte de novo (*ACF → Ferramentas →
+  Exportar*, os 4 itens) e substitua o `aulas.json`, para o repositório não
+  ficar para trás.
 
 | Grupo (GraphQL) | Campo (meta) | No GraphQL do ACF | Observação |
 |---|---|---|---|
@@ -206,6 +219,10 @@ por lá qualquer jogador leria o vídeo de qualquer aula.
   WordPress e do Yoast.
 - Os arquivos de material ficam em `wp-content/uploads`, com URL pública: o
   gate esconde o link, mas quem já tem o link baixa sem login.
+- **Slug numérico é trocado pelo título ao salvar.** Aula publicada antes de
+  ter título recebe o ID como slug, e o painel não mostra o campo de slug (a
+  aula não tem página no WordPress). Além de feio na URL, o `aula(idType:
+  SLUG)` do WPGraphQL não encontra slug numérico — a aula dava 404 no site.
 
 **Vídeo (Bunny Stream)** (`Lessons/Bunny.php`). No `wp-config.php`:
 
@@ -239,6 +256,11 @@ lessonsTotal(search: "icm", track: "torneios", instructor: 42, from: "…", to: 
 mutation { registerLessonView(input: { lessonId: 123 }) { viewCount } }
 ```
 
+- `lessonSuggestion(subject, track)`: a **única leitura pública** de aulas, para
+  o post do blog sugerir a aula do mesmo tema. Devolve só `slug`, `title`,
+  `instructor` (nome) e `duration`, da aula publicada com mais palavras do
+  título em comum com o assunto (siglas de 3 letras como ICM contam; palavras
+  vazias não). A trilha de mesmo slug desempata. Sem palavra em comum: `null`.
 - `sort`: `NEWEST` (padrão), `OLDEST`, `MOST_VIEWED`, `SHORTEST`, `LONGEST`.
   Filtro vazio ou malformado (data inexistente, offset negativo) é ignorado.
 - `lessonsTotal` devolve 0 para quem não é jogador.

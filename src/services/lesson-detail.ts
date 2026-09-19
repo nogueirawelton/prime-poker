@@ -1,28 +1,25 @@
 import "server-only";
 
-import {
-  getCatalog,
-  getLessonBySlug,
-  type Lesson,
-  listLessons,
-} from "./lessons";
+import { authMutate } from "@/graphql/auth-client";
+import { REGISTER_LESSON_VIEW } from "@/graphql/mutations/player/REGISTER_LESSON_VIEW";
+import type { Lesson } from "@/lib/lessons";
+import { getCatalog, getLessonNode, listLessons, toLesson } from "./lessons";
 
 /**
  * Conteúdo e estado da aula aberta.
  *
- * Separado de `aulas.ts` porque aqui há estado mutável (salvos, concluídos,
- * dúvidas) — e `aulas.ts` é importado por componentes cliente, que levariam
- * uma cópia divergente desse estado para cada aba.
+ * Separado de `lessons.ts` porque aqui há estado do jogador (salvas,
+ * concluídas, dúvidas).
  *
- * Continua mock: o WordPress ainda não expõe aulas. Ao ligar no CMS, só as
- * funções deste arquivo mudam.
+ * A aula, a descrição, o vídeo e os materiais vêm do WordPress. Salvas e
+ * concluídas continuam em memória até a etapa 8, e as dúvidas até a etapa 9:
+ * só as funções deste arquivo mudam quando forem para o CMS.
  */
 
 export type Material = {
   name: string;
-  /** Já formatado para exibição, como vem da media library. */
+  /** Já formatado para exibição (`2,4 MB`); vazio quando desconhecido. */
   size: string;
-  /** Ausente enquanto o arquivo não existe no CMS: o botão fica desabilitado. */
   url?: string;
 };
 
@@ -38,7 +35,13 @@ export type Question = {
 export type LessonDetail = Lesson & {
   /** HTML do editor — renderizado com a classe `rich-text` do projeto. */
   description: string;
-  materials: Array<Material>;
+  /**
+   * Link assinado do player (Bunny), válido por algumas horas. `null` sem
+   * acesso, sem vídeo cadastrado ou com o Bunny fora de configuração.
+   */
+  video: string | null;
+  /** `null` para quem não pode assistir: o WordPress nem os envia. */
+  materials: Array<Material> | null;
   questions: Array<Question>;
   saved: boolean;
   completed: boolean;
@@ -56,32 +59,17 @@ const QUESTIONS = new Map<string, Array<Question>>();
 /*                                  Conteúdo                                  */
 /* -------------------------------------------------------------------------- */
 
-function descriptionFor(lesson: Lesson) {
-  return `
-    <p>Nesta aula vamos explorar ${lesson.title.toLowerCase()} na prática, com
-    exemplos de mãos reais e os erros que mais custam fichas.</p>
-    <h3>Tópicos abordados</h3>
-    <ul>
-      <li>O conceito e por que ele importa</li>
-      <li>Como identificar a situação na mesa</li>
-      <li>Aplicando a linha na prática</li>
-      <li>Exemplos comentados</li>
-      <li>Erros comuns</li>
-    </ul>
-    <h3>Links úteis</h3>
-    <ul>
-      <li><a href="/blog">Artigo relacionado no blog</a></li>
-      <li><a href="/player/aulas?cat=${lesson.track.slug}">Outras aulas da trilha</a></li>
-    </ul>
-  `;
-}
+const sizeFormatter = new Intl.NumberFormat("pt-BR", {
+  maximumFractionDigits: 1,
+});
 
-const MATERIALS: Array<Material> = [
-  { name: "slides_da_aula.pdf", size: "2.4 MB" },
-  { name: "exemplos_praticos.xlsx", size: "1.1 MB" },
-  { name: "resumo_aula.txt", size: "0.5 MB" },
-  { name: "ranges.png", size: "0.8 MB" },
-];
+/** `2400000` → `2,3 MB`. */
+function formatSize(bytes: number | null) {
+  if (!bytes) return "";
+  if (bytes < 1024 * 1024) return `${sizeFormatter.format(bytes / 1024)} KB`;
+
+  return `${sizeFormatter.format(bytes / (1024 * 1024))} MB`;
+}
 
 /** Conversa de exemplo, para a aba não abrir vazia em toda aula. */
 function initialQuestions(lesson: Lesson): Array<Question> {
@@ -111,13 +99,21 @@ function initialQuestions(lesson: Lesson): Array<Question> {
 
 /** `null` quando o slug não existe — a página responde 404. */
 export async function getLesson(slug: string): Promise<LessonDetail | null> {
-  const lesson = await getLessonBySlug(slug);
-  if (!lesson) return null;
+  const node = await getLessonNode(slug);
+  if (!node) return null;
+
+  const lesson = toLesson(node);
 
   return {
     ...lesson,
-    description: descriptionFor(lesson),
-    materials: MATERIALS,
+    description: node.content ?? "",
+    video: node.video?.url ?? null,
+    materials:
+      node.materials?.map((material) => ({
+        name: material.name,
+        size: formatSize(material.fileSize),
+        url: material.url,
+      })) ?? null,
     questions: QUESTIONS.get(slug) ?? initialQuestions(lesson),
     saved: SAVED.has(slug),
     completed: COMPLETED.has(slug),
@@ -143,6 +139,8 @@ export async function getNextLessons(
   lesson: Lesson,
   limit = 4,
 ): Promise<Array<Lesson>> {
+  if (!lesson.track) return [];
+
   const { lessons } = await listLessons({ track: lesson.track.slug });
 
   return lessons.filter((item) => item.slug !== lesson.slug).slice(0, limit);
@@ -151,6 +149,14 @@ export async function getNextLessons(
 /* -------------------------------------------------------------------------- */
 /*                                  Escrita                                   */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * Conta a visualização da aula. O plugin ignora a repetição do mesmo jogador
+ * em 12 horas, então recarregar a página não infla o número.
+ */
+export async function registerView(lessonId: number) {
+  await authMutate(REGISTER_LESSON_VIEW, { lessonId });
+}
 
 export async function toggleSaved(slug: string) {
   if (SAVED.has(slug)) {

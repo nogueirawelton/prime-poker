@@ -1,14 +1,12 @@
 import { PlayIcon } from "@phosphor-icons/react/dist/ssr";
+import Image from "next/image";
 import Link from "next/link";
 import { twMerge } from "tailwind-merge";
-import type { Lesson } from "@/services/lessons";
+import { type Lesson, NEUTRAL_COVER, watchedPercentage } from "@/lib/lessons";
 
 /** Retomada da última aula em andamento, fixa no rodapé da sidebar. */
 export function ContinueWatching({ lesson }: { lesson: Lesson }) {
-  const progress = Math.min(
-    100,
-    Math.round((lesson.watched / lesson.duration) * 100),
-  );
+  const progress = watchedPercentage(lesson);
 
   return (
     <Link
@@ -20,9 +18,22 @@ export function ContinueWatching({ lesson }: { lesson: Lesson }) {
       </strong>
 
       <div className="relative mx-4 mt-3 aspect-16/9 overflow-hidden rounded-lg">
-        <div
-          className={twMerge("size-full bg-gradient-to-br", lesson.track.cover)}
-        />
+        {lesson.image ? (
+          <Image
+            src={lesson.image}
+            alt=""
+            fill
+            sizes="16rem"
+            className="object-cover"
+          />
+        ) : (
+          <div
+            className={twMerge(
+              "size-full bg-gradient-to-br",
+              lesson.track?.cover ?? NEUTRAL_COVER,
+            )}
+          />
+        )}
 
         <span
           aria-hidden="true"

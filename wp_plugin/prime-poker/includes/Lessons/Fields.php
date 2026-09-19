@@ -9,23 +9,22 @@ declare(strict_types=1);
 
 namespace PrimePoker\Lessons;
 
-use PrimePoker\Players\Tiers;
-
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 /**
- * Grupos de campos registrados pelo código, não pelo painel.
+ * Comportamento dos campos ACF das aulas.
  *
- * Os nomes dos campos são contrato com `GraphQL` (metas lidas direto) e com o
- * front (`lessonFields`, `trackFields`). Registrados aqui, eles andam no mesmo
- * commit que o código que os lê, e aparecem no ACF como grupos "locais", sem
- * edição pelo painel: não há como alguém renomear um campo ou ligar o
- * "Show in GraphQL" do vídeo e abrir o conteúdo de todas as aulas.
+ * Os grupos `lessonFields` e `trackFields` são do ACF, importados de
+ * `wp_plugin/acf/aulas.json`. O código depende deles de duas formas:
  *
- * Sem o ACF ativo nada disto roda, e as aulas continuam editáveis (título,
- * conteúdo, imagem, trilha) — só sem os campos.
+ * - lê as metas pelo NOME do campo (`GraphQL`, `Access`);
+ * - valida e converte valores pela CHAVE do campo (duração, vídeo).
+ *
+ * Como os campos ficam editáveis no painel, `health_notice` avisa quando
+ * falta um ou quando o nome mudou — renomear um campo não dá erro nenhum, só
+ * faz o dado sumir do site.
  */
 final class Fields {
 
@@ -34,247 +33,107 @@ final class Fields {
 	private const KEY_VIDEO_ID = 'field_prime_lesson_video_id';
 
 	/**
-	 * Cores da trilha: a chave é o que fica no banco, o front a converte nas
-	 * classes do selo e da capa. Nova cor exige par no front.
+	 * Campos de que o código depende: chave → nome esperado.
+	 *
+	 * Mudar um nome aqui exige mudar o JSON (e o dado já gravado).
 	 */
-	public const TRACK_COLORS = array(
-		'vermelho'  => 'Vermelho',
-		'esmeralda' => 'Esmeralda',
-		'violeta'   => 'Violeta',
-		'laranja'   => 'Laranja',
-		'azul'      => 'Azul',
-		'indigo'    => 'Índigo',
-		'ambar'     => 'Âmbar',
-	);
-
-	public const LEVELS = array(
-		'iniciante'     => 'Iniciante',
-		'intermediario' => 'Intermediário',
-		'avancado'      => 'Avançado',
+	private const REQUIRED = array(
+		'field_prime_lesson_instructor'     => 'instructor',
+		'field_prime_lesson_level'          => 'level',
+		self::KEY_DURATION                  => 'duration',
+		'field_prime_lesson_minimum_tier'   => Access::META_MINIMUM_TIER,
+		'field_prime_lesson_video_provider' => 'video_provider',
+		self::KEY_VIDEO_ID                  => 'video_id',
+		'field_prime_lesson_materials'      => 'materials',
+		'field_prime_lesson_material_name'  => 'name',
+		'field_prime_lesson_material_file'  => 'file',
+		'field_prime_track_badge'           => 'badge',
+		'field_prime_track_color'           => 'color',
+		'field_prime_track_order'           => 'order',
 	);
 
 	/**
 	 * Registra os hooks.
 	 */
 	public static function boot(): void {
-		add_action( 'acf/init', array( self::class, 'register' ) );
-
 		add_filter( 'acf/validate_value/key=' . self::KEY_DURATION, array( self::class, 'validate_duration' ), 10, 2 );
 		add_filter( 'acf/update_value/key=' . self::KEY_DURATION, array( self::class, 'save_duration' ) );
 		add_filter( 'acf/load_value/key=' . self::KEY_DURATION, array( self::class, 'show_duration' ) );
 
 		add_filter( 'acf/validate_value/key=' . self::KEY_VIDEO_ID, array( self::class, 'validate_video' ), 10, 2 );
+
+		add_action( 'admin_notices', array( self::class, 'health_notice' ) );
+	}
+
+	/* ---------------------------------------------------------------------- */
+	/*                              Conferência                               */
+	/* ---------------------------------------------------------------------- */
+
+	/**
+	 * O que está faltando ou fora do combinado, em frases para o painel.
+	 *
+	 * @return array<int, string>
+	 */
+	public static function problems(): array {
+		if ( ! function_exists( 'acf_get_field' ) ) {
+			return array( __( 'o ACF não está ativo.', 'prime-poker' ) );
+		}
+
+		$problems = array();
+
+		if ( ! post_type_exists( Content::POST_TYPE ) || ! taxonomy_exists( Content::TAXONOMY ) ) {
+			$problems[] = __( 'o tipo <code>aula</code> ou a taxonomia <code>trilha</code> não existe. Importe <code>wp_plugin/acf/aulas.json</code> em ACF → Ferramentas.', 'prime-poker' );
+		}
+
+		foreach ( self::REQUIRED as $key => $name ) {
+			$field = acf_get_field( $key );
+
+			if ( ! is_array( $field ) ) {
+				/* translators: %s: chave do campo. */
+				$problems[] = sprintf( __( 'falta o campo <code>%s</code>. Importe <code>wp_plugin/acf/aulas.json</code> em ACF → Ferramentas.', 'prime-poker' ), esc_html( $key ) );
+			} elseif ( ( $field['name'] ?? '' ) !== $name ) {
+				/* translators: 1: rótulo do campo, 2: nome esperado, 3: nome atual. */
+				$problems[] = sprintf( __( 'o campo "%1$s" precisa se chamar <code>%2$s</code> (hoje: <code>%3$s</code>). Com outro nome o site não lê o valor.', 'prime-poker' ), esc_html( (string) ( $field['label'] ?? $key ) ), esc_html( $name ), esc_html( (string) ( $field['name'] ?? '' ) ) );
+			}
+		}
+
+		return $problems;
 	}
 
 	/**
-	 * Declara os dois grupos.
+	 * Aviso nas telas de aulas, trilhas e do ACF, para administradores.
 	 */
-	public static function register(): void {
-		if ( ! function_exists( 'acf_add_local_field_group' ) ) {
+	public static function health_notice(): void {
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+
+		if ( ! $screen || ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
 
-		acf_add_local_field_group( self::lesson_group() );
-		acf_add_local_field_group( self::track_group() );
-	}
+		$relevant = Content::POST_TYPE === $screen->post_type
+			|| Content::TAXONOMY === $screen->taxonomy
+			|| str_starts_with( (string) $screen->post_type, 'acf-' );
 
-	/**
-	 * Grupo `lessonFields`, na tela da aula.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private static function lesson_group(): array {
-		$tiers = array();
-
-		foreach ( Tiers::slugs() as $slug ) {
-			$tiers[ $slug ] = Tiers::label( $slug );
+		if ( ! $relevant ) {
+			return;
 		}
 
-		return array(
-			'key'                => 'group_prime_lesson_fields',
-			'title'              => __( 'Dados da aula', 'prime-poker' ),
-			'position'           => 'acf_after_title',
-			'style'              => 'default',
-			'active'             => true,
-			'location'           => array(
-				array(
-					array(
-						'param'    => 'post_type',
-						'operator' => '==',
-						'value'    => Content::POST_TYPE,
-					),
-				),
-			),
-			'show_in_graphql'    => 1,
-			'graphql_field_name' => 'lessonFields',
-			'graphql_types'      => array( 'Aula' ),
-			'fields'             => array(
-				array(
-					'key'                => 'field_prime_lesson_instructor',
-					'name'               => 'instructor',
-					'label'              => __( 'Instrutor', 'prime-poker' ),
-					'type'               => 'post_object',
-					'post_type'          => array( 'instructor' ),
-					'return_format'      => 'id',
-					'required'           => 1,
-					'allow_null'         => 0,
-					'multiple'           => 0,
-					'ui'                 => 1,
-					'wrapper'            => array( 'width' => '50' ),
-					'show_in_graphql'    => 1,
-					'graphql_field_name' => 'instructor',
-				),
-				array(
-					'key'                => 'field_prime_lesson_level',
-					'name'               => 'level',
-					'label'              => __( 'Nível', 'prime-poker' ),
-					'type'               => 'select',
-					'choices'            => self::LEVELS,
-					'default_value'      => 'iniciante',
-					'return_format'      => 'value',
-					'required'           => 1,
-					'wrapper'            => array( 'width' => '25' ),
-					'show_in_graphql'    => 1,
-					'graphql_field_name' => 'level',
-				),
-				array(
-					'key'             => self::KEY_DURATION,
-					'name'            => 'duration',
-					'label'           => __( 'Duração', 'prime-poker' ),
-					'instructions'    => __( 'Minutos e segundos (25:30) ou horas, minutos e segundos (1:05:00).', 'prime-poker' ),
-					'type'            => 'text',
-					'placeholder'     => '25:30',
-					'required'        => 1,
-					'wrapper'         => array( 'width' => '25' ),
-					// Sai em segundos pelo `duration` da Aula; aqui seria o texto.
-					'show_in_graphql' => 0,
-				),
-				array(
-					'key'             => 'field_prime_lesson_minimum_tier',
-					'name'            => Access::META_MINIMUM_TIER,
-					'label'           => __( 'Tier mínimo', 'prime-poker' ),
-					'instructions'    => __( 'Quem estiver abaixo vê a aula com cadeado e o convite para fazer upgrade.', 'prime-poker' ),
-					'type'            => 'select',
-					'choices'         => $tiers,
-					'default_value'   => Tiers::FREE,
-					'return_format'   => 'value',
-					'required'        => 1,
-					'wrapper'         => array( 'width' => '50' ),
-					// Sai pelo `minimumTier` da Aula, que resolve tier inválido.
-					'show_in_graphql' => 0,
-				),
-				array(
-					'key'             => 'field_prime_lesson_video_provider',
-					'name'            => 'video_provider',
-					'label'           => __( 'Hospedagem do vídeo', 'prime-poker' ),
-					'type'            => 'select',
-					'choices'         => array( Bunny::PROVIDER => 'Bunny Stream' ),
-					'default_value'   => Bunny::PROVIDER,
-					'return_format'   => 'value',
-					'required'        => 1,
-					'wrapper'         => array( 'width' => '50' ),
-					// Protegido: sai só pelo `video` da Aula, que confere o tier.
-					'show_in_graphql' => 0,
-				),
-				array(
-					'key'             => self::KEY_VIDEO_ID,
-					'name'            => 'video_id',
-					'label'           => __( 'Vídeo', 'prime-poker' ),
-					'instructions'    => __( 'No Bunny Stream, abra o vídeo e copie o Video ID (ou o link do player).', 'prime-poker' ),
-					'type'            => 'text',
-					'placeholder'     => '32d140e2-e4f4-4eec-9d53-20371e9be607',
-					'required'        => 0,
-					'show_in_graphql' => 0,
-				),
-				array(
-					'key'             => 'field_prime_lesson_materials',
-					'name'            => 'materials',
-					'label'           => __( 'Material de apoio', 'prime-poker' ),
-					'type'            => 'repeater',
-					'layout'          => 'table',
-					'button_label'    => __( 'Adicionar arquivo', 'prime-poker' ),
-					'show_in_graphql' => 0,
-					'sub_fields'      => array(
-						array(
-							'key'             => 'field_prime_lesson_material_name',
-							'name'            => 'name',
-							'label'           => __( 'Nome', 'prime-poker' ),
-							'instructions'    => __( 'Opcional. Vazio usa o nome do arquivo.', 'prime-poker' ),
-							'type'            => 'text',
-							'parent_repeater' => 'field_prime_lesson_materials',
-						),
-						array(
-							'key'             => 'field_prime_lesson_material_file',
-							'name'            => 'file',
-							'label'           => __( 'Arquivo', 'prime-poker' ),
-							'type'            => 'file',
-							'return_format'   => 'id',
-							'required'        => 1,
-							'parent_repeater' => 'field_prime_lesson_materials',
-						),
-					),
-				),
-			),
-		);
-	}
+		$problems = self::problems();
 
-	/**
-	 * Grupo `trackFields`, na tela da trilha.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private static function track_group(): array {
-		return array(
-			'key'                => 'group_prime_track_fields',
-			'title'              => __( 'Aparência da trilha', 'prime-poker' ),
-			'active'             => true,
-			'location'           => array(
-				array(
-					array(
-						'param'    => 'taxonomy',
-						'operator' => '==',
-						'value'    => Content::TAXONOMY,
-					),
-				),
-			),
-			'show_in_graphql'    => 1,
-			'graphql_field_name' => 'trackFields',
-			'graphql_types'      => array( 'Trilha' ),
-			'fields'             => array(
-				array(
-					'key'                => 'field_prime_track_badge',
-					'name'               => 'badge',
-					'label'              => __( 'Selo', 'prime-poker' ),
-					'instructions'       => __( 'Nome curto no selo sobre a capa da aula. Vazio usa o nome da trilha.', 'prime-poker' ),
-					'type'               => 'text',
-					'maxlength'          => 16,
-					'show_in_graphql'    => 1,
-					'graphql_field_name' => 'badge',
-				),
-				array(
-					'key'                => 'field_prime_track_color',
-					'name'               => 'color',
-					'label'              => __( 'Cor', 'prime-poker' ),
-					'type'               => 'select',
-					'choices'            => self::TRACK_COLORS,
-					'default_value'      => 'vermelho',
-					'return_format'      => 'value',
-					'required'           => 1,
-					'show_in_graphql'    => 1,
-					'graphql_field_name' => 'color',
-				),
-				array(
-					'key'                => 'field_prime_track_order',
-					'name'               => 'order',
-					'label'              => __( 'Ordem', 'prime-poker' ),
-					'instructions'       => __( 'Posição no filtro de trilhas. Menor aparece primeiro.', 'prime-poker' ),
-					'type'               => 'number',
-					'default_value'      => 0,
-					'step'               => 1,
-					'show_in_graphql'    => 1,
-					'graphql_field_name' => 'order',
-				),
-			),
+		if ( array() === $problems ) {
+			return;
+		}
+
+		$items = '';
+
+		foreach ( $problems as $problem ) {
+			$items .= '<li>' . wp_kses( $problem, array( 'code' => array() ) ) . '</li>';
+		}
+
+		printf(
+			'<div class="notice notice-error"><p><strong>%s</strong></p><ul style="list-style:disc;padding-left:1.5em">%s</ul></div>',
+			esc_html__( 'Aulas: a configuração do ACF não bate com o plugin Prime Poker.', 'prime-poker' ),
+			$items // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escapado acima.
 		);
 	}
 
@@ -283,10 +142,12 @@ final class Fields {
 	/* ---------------------------------------------------------------------- */
 
 	/**
-	 * `"25:30"` → 1530; `"1:05:00"` → 3900; `"1530"` → 1530. Inválido → null.
+	 * `"25:30"` → 1530; `"1:05:00"` → 3900; `"25"` → 1500. Inválido → null.
 	 *
-	 * Número puro vale como segundos: é o que já está gravado, e o ACF passa
-	 * o valor salvo de volta por aqui quando a aula é salva sem mexer no campo.
+	 * Número puro vale como MINUTOS: é o que alguém quer dizer ao digitar
+	 * "25" numa duração de aula. O valor gravado (segundos) nunca volta por
+	 * aqui como número puro — `show_duration` o exibe como `25:30`, e é esse
+	 * texto que o formulário reenvia.
 	 *
 	 * @param mixed $value Texto digitado.
 	 */
@@ -294,7 +155,7 @@ final class Fields {
 		$value = trim( (string) $value );
 
 		if ( preg_match( '/^\d+$/', $value ) ) {
-			return (int) $value;
+			return (int) $value * 60;
 		}
 
 		if ( ! preg_match( '/^(?:(\d+):)?(\d{1,2}):(\d{2})$/', $value, $parts ) ) {
@@ -344,7 +205,7 @@ final class Fields {
 
 		return null !== $seconds && $seconds > 0
 			? true
-			: __( 'Use minutos e segundos (25:30) ou horas, minutos e segundos (1:05:00).', 'prime-poker' );
+			: __( 'Use minutos (25), minutos e segundos (25:30) ou horas, minutos e segundos (1:05:00).', 'prime-poker' );
 	}
 
 	/**

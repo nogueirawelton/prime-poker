@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { LessonsSidebar } from "@/components/shared/player/lessons-sidebar";
-import { getContinueWatching } from "@/services/lessons";
+import { getContinueWatching, getTracks } from "@/services/lessons";
 
 /**
  * Sidebar de trilhas + conteúdo.
@@ -29,7 +29,10 @@ export default function LessonsLayout({
 }
 
 async function Sidebar() {
-  const continueWatching = await getContinueWatching();
+  const [tracks, continueWatching] = await Promise.all([
+    getTracks(),
+    getContinueWatching(),
+  ]);
 
-  return <LessonsSidebar continueWatching={continueWatching} />;
+  return <LessonsSidebar tracks={tracks} continueWatching={continueWatching} />;
 }

@@ -1,8 +1,8 @@
 import { ArrowRightIcon, PlayCircleIcon } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
 import { FormDialog } from "@/components/shared/form-dialog";
+import { formatDuration, type LessonSuggestion } from "@/lib/lessons";
 import type { Post } from "@/services/blog";
-import { formatDuration, type Lesson } from "@/services/lessons";
 import type { Section } from "@/utils/rich-content";
 import { TableOfContents } from "./table-of-contents";
 
@@ -20,7 +20,7 @@ export function PostSidebar({
   sections: Array<Section>;
   related: Array<Post>;
   /** Aula do acervo sobre o mesmo assunto, quando existe uma. */
-  lesson: Lesson | null;
+  lesson: LessonSuggestion | null;
 }) {
   return (
     <aside className="hidden lg:block">
@@ -68,7 +68,7 @@ export function PostSidebar({
  * ficar com um buraco, e quem chegou até aqui é justamente quem vale
  * convidar.
  */
-function GoDeeper({ lesson }: { lesson: Lesson | null }) {
+function GoDeeper({ lesson }: { lesson: LessonSuggestion | null }) {
   if (!lesson) {
     return (
       <div className="rounded-xl border border-prime-red/40 bg-prime-red/5 p-5">
@@ -112,9 +112,16 @@ function GoDeeper({ lesson }: { lesson: Lesson | null }) {
           <span className="block font-semibold text-prime-light text-sm leading-snug">
             {lesson.title}
           </span>
-          <span className="mt-0.5 block text-prime-light/50 text-xs">
-            {lesson.instructor} · {formatDuration(lesson.duration)}
-          </span>
+          {(lesson.instructor || lesson.duration > 0) && (
+            <span className="mt-0.5 block text-prime-light/50 text-xs">
+              {[
+                lesson.instructor,
+                lesson.duration > 0 && formatDuration(lesson.duration),
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </span>
+          )}
         </span>
       </div>
 

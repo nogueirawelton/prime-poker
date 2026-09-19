@@ -14,17 +14,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Registra o CPT `aula` e a taxonomia `trilha`.
+ * O CPT `aula` e a taxonomia `trilha`, do ponto de vista do código.
+ *
+ * O REGISTRO é do ACF (`wp_plugin/acf/aulas.json`, importado em
+ * ACF → Ferramentas), como os outros CPTs do site. Aqui ficam só os slugs,
+ * que o resto do plugin usa, e o que o ACF não configura.
  *
  * Os slugs ficam em português porque são dados: vão para o banco
- * (`post_type`, `taxonomy`) e para o schema do GraphQL (`aula`, `trilhas`),
- * como os CPTs Instrutor e Depoimento. Renomear depois exige migração.
+ * (`post_type`, `taxonomy`) e para o schema do GraphQL (`aula`, `trilhas`).
+ * Renomear depois exige migração.
  *
- * A aula é `public` só porque o WPGraphQL trata como privado todo post de um
- * tipo não público para quem não tem `edit_posts` — ou seja, para todos os
- * jogadores. Quem restringe de verdade é `Access`. O WordPress não publica
- * página nem arquivo (`publicly_queryable` falso, sem rewrite): o site é o
- * Next.
+ * No JSON a aula é `public` só porque o WPGraphQL trata como privado todo
+ * post de um tipo não público para quem não tem `edit_posts` — ou seja, para
+ * todos os jogadores. Quem restringe de verdade é `Access`. O WordPress não
+ * publica página nem arquivo (`publicly_queryable` falso, sem permalink): o
+ * site é o Next.
  */
 final class Content {
 
@@ -36,80 +40,46 @@ final class Content {
 	 * Registra os hooks.
 	 */
 	public static function boot(): void {
-		add_action( 'init', array( self::class, 'register' ) );
-
 		// Aula não tem página no WordPress; no sitemap seria um link quebrado.
 		add_filter( 'wp_sitemaps_post_types', array( self::class, 'drop_from_core_sitemap' ) );
 		add_filter( 'wpseo_sitemap_exclude_post_type', array( self::class, 'drop_from_yoast_sitemap' ), 10, 2 );
 		add_filter( 'wpseo_sitemap_exclude_taxonomy', array( self::class, 'drop_from_yoast_sitemap' ), 10, 2 );
+
+		add_filter( 'wp_insert_post_data', array( self::class, 'slug_from_title' ), 10, 2 );
 	}
 
 	/**
-	 * Declara o tipo e a taxonomia.
+	 * Troca o slug numérico (o ID) por um tirado do título.
+	 *
+	 * Aula publicada antes de ter título ganha o ID como slug, e o painel não
+	 * mostra o campo de slug (a aula não tem página no WordPress) — ele ficaria
+	 * assim para sempre. Além de feio na URL do site, slug numérico não é
+	 * encontrado pelo `aula(idType: SLUG)` do WPGraphQL: a aula dá 404.
+	 *
+	 * Vale ao salvar; uma aula que já está assim se corrige ao ser atualizada.
+	 *
+	 * @param array<string, mixed> $data    Dados que vão para o banco.
+	 * @param array<string, mixed> $postarr Dados recebidos.
+	 * @return array<string, mixed>
 	 */
-	public static function register(): void {
-		register_post_type(
+	public static function slug_from_title( array $data, array $postarr ): array {
+		$id    = (int) ( $postarr['ID'] ?? 0 );
+		$title = trim( (string) ( $data['post_title'] ?? '' ) );
+		$slug  = (string) ( $data['post_name'] ?? '' );
+
+		if ( self::POST_TYPE !== ( $data['post_type'] ?? '' ) || '' === $title || $id <= 0 || (string) $id !== $slug ) {
+			return $data;
+		}
+
+		$data['post_name'] = wp_unique_post_slug(
+			sanitize_title( $title ),
+			$id,
+			(string) $data['post_status'],
 			self::POST_TYPE,
-			array(
-				'labels'              => array(
-					'name'               => __( 'Aulas', 'prime-poker' ),
-					'singular_name'      => __( 'Aula', 'prime-poker' ),
-					'add_new_item'       => __( 'Adicionar aula', 'prime-poker' ),
-					'edit_item'          => __( 'Editar aula', 'prime-poker' ),
-					'new_item'           => __( 'Nova aula', 'prime-poker' ),
-					'view_item'          => __( 'Ver aula', 'prime-poker' ),
-					'search_items'       => __( 'Buscar aulas', 'prime-poker' ),
-					'not_found'          => __( 'Nenhuma aula encontrada.', 'prime-poker' ),
-					'not_found_in_trash' => __( 'Nenhuma aula na lixeira.', 'prime-poker' ),
-					'all_items'          => __( 'Todas as aulas', 'prime-poker' ),
-					'menu_name'          => __( 'Aulas', 'prime-poker' ),
-				),
-				'public'              => true,
-				'publicly_queryable'  => false,
-				'exclude_from_search' => true,
-				'show_in_nav_menus'   => false,
-				'has_archive'         => false,
-				'rewrite'             => false,
-				'query_var'           => false,
-				'show_in_rest'        => true, // Editor de blocos.
-				'menu_icon'           => 'dashicons-video-alt3',
-				'menu_position'       => 6,
-				// Comentários são as dúvidas da aula (etapa 9).
-				'supports'            => array( 'title', 'editor', 'thumbnail', 'excerpt', 'comments', 'revisions' ),
-				'taxonomies'          => array( self::TAXONOMY ),
-				'show_in_graphql'     => true,
-				'graphql_single_name' => 'aula',
-				'graphql_plural_name' => 'aulas',
-			)
+			(int) ( $data['post_parent'] ?? 0 )
 		);
 
-		register_taxonomy(
-			self::TAXONOMY,
-			array( self::POST_TYPE ),
-			array(
-				'labels'              => array(
-					'name'          => __( 'Trilhas', 'prime-poker' ),
-					'singular_name' => __( 'Trilha', 'prime-poker' ),
-					'add_new_item'  => __( 'Adicionar trilha', 'prime-poker' ),
-					'edit_item'     => __( 'Editar trilha', 'prime-poker' ),
-					'search_items'  => __( 'Buscar trilhas', 'prime-poker' ),
-					'not_found'     => __( 'Nenhuma trilha encontrada.', 'prime-poker' ),
-					'menu_name'     => __( 'Trilhas', 'prime-poker' ),
-				),
-				// Uma aula pertence a uma trilha: hierárquica dá o seletor em
-				// caixas no editor, em vez do campo de tags livres.
-				'hierarchical'        => true,
-				'public'              => true,
-				'publicly_queryable'  => false,
-				'rewrite'             => false,
-				'query_var'           => false,
-				'show_admin_column'   => true,
-				'show_in_rest'        => true,
-				'show_in_graphql'     => true,
-				'graphql_single_name' => 'trilha',
-				'graphql_plural_name' => 'trilhas',
-			)
-		);
+		return $data;
 	}
 
 	/**

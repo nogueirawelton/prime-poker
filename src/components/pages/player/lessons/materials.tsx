@@ -5,7 +5,20 @@ import {
 import type { Material } from "@/services/lesson-detail";
 
 /** Material de apoio da aula. */
-export function Materials({ materials }: { materials: Array<Material> }) {
+export function Materials({
+  materials,
+}: {
+  /** `null` quando o jogador não tem acesso à aula. */
+  materials: Array<Material> | null;
+}) {
+  if (materials === null) {
+    return (
+      <p className="text-prime-light/50 text-sm">
+        O material de apoio fica disponível junto com a aula.
+      </p>
+    );
+  }
+
   if (materials.length === 0) {
     return (
       <p className="text-prime-light/50 text-sm">
@@ -18,7 +31,8 @@ export function Materials({ materials }: { materials: Array<Material> }) {
     <ul className="flex flex-col gap-3">
       {materials.map((material) => (
         <li
-          key={material.name}
+          // O mesmo arquivo pode entrar duas vezes com nomes diferentes.
+          key={`${material.name}|${material.url}`}
           className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/3 p-3"
         >
           <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-white/5 text-prime-light/60">
@@ -29,17 +43,23 @@ export function Materials({ materials }: { materials: Array<Material> }) {
             <span className="block truncate text-prime-light text-sm">
               {material.name}
             </span>
-            <span className="block text-prime-light/40 text-xs">
-              {material.size}
-            </span>
+            {material.size && (
+              <span className="block text-prime-light/40 text-xs">
+                {material.size}
+              </span>
+            )}
           </span>
 
           {/* Sem URL o arquivo ainda não existe no CMS: um link que baixa
               nada é pior do que um botão visivelmente indisponível. */}
           {material.url ? (
+            // Nova aba: o arquivo está no domínio do WordPress, e o
+            // navegador ignora `download` em link de outro domínio — sem isto
+            // um PDF abriria por cima da aula.
             <a
               href={material.url}
-              download
+              target="_blank"
+              rel="noopener noreferrer"
               className="flex h-9 shrink-0 items-center gap-2 rounded-md border border-white/20 px-3 font-semibold text-prime-light text-xs transition-all duration-500 hover:bg-prime-light hover:text-prime-dark"
             >
               <DownloadSimpleIcon className="size-4" weight="bold" />

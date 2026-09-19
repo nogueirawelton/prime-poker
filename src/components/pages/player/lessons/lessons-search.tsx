@@ -9,13 +9,13 @@ import {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Popover } from "radix-ui";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
-import { PARAMS } from "@/lib/lessons-params";
 import {
-  INSTRUCTORS,
+  type Instructor,
   ORDER_LABEL,
   SORT_ORDERS,
-  TRACKS,
-} from "@/services/lessons";
+  type Track,
+} from "@/lib/lessons";
+import { PARAMS } from "@/lib/lessons-params";
 
 /** Espera de digitação antes de ir ao servidor. */
 const DEBOUNCE_MS = 350;
@@ -41,7 +41,15 @@ const FILTERABLE = [
  * filtrado e o link continua compartilhável. A partição é o mesmo `?cat=` que
  * a sidebar controla, então escolher aqui acende a trilha lá.
  */
-export function LessonsSearch({ activeFilters }: { activeFilters: number }) {
+export function LessonsSearch({
+  activeFilters,
+  tracks,
+  instructors,
+}: {
+  activeFilters: number;
+  tracks: Array<Pick<Track, "slug" | "name">>;
+  instructors: Array<Instructor>;
+}) {
   const searchId = useId();
   const router = useRouter();
   const pathname = usePathname();
@@ -133,7 +141,7 @@ export function LessonsSearch({ activeFilters }: { activeFilters: number }) {
             type="search"
             value={term}
             onChange={(event) => setTerm(event.target.value)}
-            placeholder="Buscar por título, tema, palavra-chave, instrutor..."
+            placeholder="Buscar por título, tema ou palavra-chave..."
             data-pending={pending || undefined}
             className="h-14 w-full rounded-xl border border-white/10 bg-white/3 pr-12 pl-12 text-prime-light text-sm outline-none transition-colors duration-500 placeholder:text-prime-light/40 focus:border-prime-red/60 data-pending:opacity-70"
           />
@@ -177,7 +185,7 @@ export function LessonsSearch({ activeFilters }: { activeFilters: number }) {
                 onChange={(nextValue) => applyFilter(PARAMS.track, nextValue)}
               >
                 <option value="">Todas as partições</option>
-                {TRACKS.map((track) => (
+                {tracks.map((track) => (
                   <option key={track.slug} value={track.slug}>
                     {track.name}
                   </option>
@@ -214,9 +222,9 @@ export function LessonsSearch({ activeFilters }: { activeFilters: number }) {
                 }
               >
                 <option value="">Todos os instrutores</option>
-                {INSTRUCTORS.map((name) => (
-                  <option key={name} value={name}>
-                    {name}
+                {instructors.map((instructor) => (
+                  <option key={instructor.id} value={instructor.id}>
+                    {instructor.name}
                   </option>
                 ))}
               </Select>

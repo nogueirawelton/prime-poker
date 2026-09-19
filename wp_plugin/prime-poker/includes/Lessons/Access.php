@@ -110,8 +110,10 @@ final class Access {
 	/**
 	 * Fecha `/wp/v2/aula` para quem não é da equipe.
 	 *
-	 * O REST precisa ficar ligado para o editor de blocos, mas por padrão
-	 * serve qualquer aula publicada a qualquer visitante.
+	 * O JSON do ACF registra a aula sem REST (editor clássico), então a rota
+	 * nem existe. Isto cobre o dia em que alguém ligar "Show in REST API" no
+	 * painel — o que troca o editor para o de blocos e, por padrão, serviria
+	 * qualquer aula publicada a qualquer visitante.
 	 *
 	 * @param mixed            $result  Resposta antecipada.
 	 * @param \WP_REST_Server  $server  Servidor.

@@ -282,7 +282,7 @@ valores de URL/dados e contratos externos (CF7, ACF, WP) continuam em português
 
 ---
 
-## Etapa 6 — Aulas: estrutura no WP 🟡 código pronto (19/09/2026) — falta a sua parte
+## Etapa 6 — Aulas: estrutura no WP ✅ concluída (19/09/2026, plugin 1.11.1)
 
 Substitui o mock de `services/lessons.ts` e `services/lesson-detail.ts`.
 
@@ -296,13 +296,17 @@ Substitui o mock de `services/lessons.ts` e `services/lesson-detail.ts`.
       upgrade para quem está abaixo. Vídeo e materiais nunca saem do WP para ele.
 - [x] ❓ **Trilhas** → **o cliente cadastra** no painel (nome, selo, cor, ordem). Nenhuma
       vem pronta. Níveis fixos: Iniciante, Intermediário, Avançado.
-- [x] ~~Importar o JSON do ACF~~ → **dispensado**: os campos são registrados pelo próprio
-      plugin (aparecem no ACF como grupos "locais", sem edição).
-- [ ] Commit + push na `staging`.
-- [ ] Subir o plugin **1.10.0** no WP. Conferir que aparecem os menus **Aulas** e
-      **Aulas → Trilhas**, e na tela da aula o bloco **Dados da aula**.
-- [ ] Cadastrar as trilhas (em *Aulas → Trilhas*): nome, selo (opcional), cor e ordem.
-- [ ] **Bunny Stream** (cliente ou você, com o cartão do cliente):
+- [x] ❓ Registro em código ou pelo ACF → **pelo ACF**, como os outros CPTs do site
+      (19/09/2026). Editor clássico, sem Gutenberg.
+- [x] Commit + push na `staging`.
+- [x] Subir o plugin **1.11.0** no WP (substitui a 1.10.0, que registrava as aulas por
+      código — aulas já cadastradas não se perdem: slugs e chaves dos campos são os mesmos).
+- [x] **ACF → Ferramentas → Importar** o arquivo `wp_plugin/acf/aulas.json` (4 itens:
+      tipo Aulas, taxonomia Trilhas, grupos "Dados da aula" e "Aparência da trilha").
+      Conferir: menu **Aulas** com editor clássico e o bloco **Dados da aula**, e nenhum
+      aviso vermelho "a configuração do ACF não bate" nas telas de aulas.
+- [x] Cadastrar as trilhas (em *Aulas → Trilhas*): nome, selo (opcional), cor e ordem.
+- [x] **Bunny Stream** (cliente ou você, com o cartão do cliente):
       1. Criar a conta em bunny.net → *Stream* → **Add Video Library** (ex.: "Prime Poker Aulas").
       2. Na biblioteca → *Security*: ligar **Embed view token authentication** e, em
          **Allowed domains**, cadastrar `primepokerteam.com.br` e o domínio da staging.
@@ -313,18 +317,20 @@ Substitui o mock de `services/lessons.ts` e `services/lesson-detail.ts`.
          define( 'PRIME_POKER_BUNNY_TOKEN_KEY', '…' );  // biblioteca → Security → Token authentication key
          ```
          A chave **não** vai para a Vercel nem para o repositório: quem assina é o WP.
-- [ ] Cadastrar **pelo menos 3 aulas de teste** completas (título, descrição, trilha,
+- [x] Cadastrar **pelo menos 3 aulas de teste** completas (título, descrição, trilha,
       imagem destacada, instrutor, nível, duração, tier mínimo, Video ID do Bunny, materiais),
       com **tiers mínimos diferentes** (uma free, uma gold, uma platinum).
-- [ ] Me avisar: eu rodo a verificação real com os 4 usuários de teste.
+- [x] Me avisar: eu rodo a verificação real com os 4 usuários de teste.
 
 **🤖 Claude**
 - [x] Plugin `includes/Lessons/` (em inglês, pela regra do projeto; os slugs `aula` e
       `trilha` são dados e ficam em português):
-      - `Content.php`: CPT `aula` (editor, imagem, resumo, comentários, revisões) e
-        taxonomia `trilha` (hierárquica, seletor em caixas). Sem página no WP e fora dos
-        sitemaps do WordPress e do Yoast.
-      - `Fields.php`: grupos ACF `lessonFields` e `trackFields` registrados em código.
+      - `wp_plugin/acf/aulas.json`: CPT `aula` (editor clássico, imagem, resumo,
+        comentários, revisões), taxonomia `trilha` (hierárquica) e os grupos
+        `lessonFields` e `trackFields`, para importar no ACF.
+      - `Content.php`: slugs e remoção dos sitemaps do WordPress e do Yoast.
+      - `Fields.php`: aviso no painel se o JSON não foi importado ou se um campo que o
+        código lê foi renomeado/removido.
         Duração digitada `25:30`/`1:05:00` e gravada em segundos (ordenação numérica);
         vídeo validado ao salvar (aceita o Video ID do Bunny ou o link do player).
       - `Access.php`: visitante não vê aulas no GraphQL nem no REST; jogador de qualquer
@@ -341,46 +347,105 @@ Substitui o mock de `services/lessons.ts` e `services/lesson-detail.ts`.
 - [x] Revalidação: aula e trilha → tag nova `lessons` (antes cairiam em `cms`, que limpa
       tudo); instrutor → `home` + `lessons`. Tag aceita pelo front (`lib/cache-tags.ts`).
 - [x] `Tiers::content_capability()` para achar a capability de um tier sem repetir a lista.
-- [x] Testes com WP simulado (119 cenários de aulas + revalidação): acesso por tier nas
+- [x] Testes com WP simulado (128 cenários de aulas + revalidação + checagem do ACF
+      contra o próprio `aulas.json`): acesso por tier nas
       7 combinações de usuário × 4 aulas, visitante/assinante escondidos no GraphQL e no
       REST, filtros e ordens, datas inválidas ignoradas, vídeo e materiais só com acesso,
       anexo apagado some da lista, formatos de ID/link do Bunny, token assinado conferido
       com o exemplo da documentação do Bunny, dedupe de visualização,
       conversão e validação da duração. `php -l`, typecheck e lint OK.
 - [x] README do plugin: seção **Aulas** e tabela de revalidação.
-- [ ] Após você cadastrar: verificação real no WP com os 4 usuários (free não recebe o
-      vídeo da aula gold; filtros, ordens e `lessonsTotal` batem).
+- [x] Verificação real no WP (19/09/2026), 3 aulas (free, gold, platinum) × 4 usuários:
+      - acesso: cada tier recebe vídeo e materiais só das aulas do seu tier para baixo; os
+        outros recebem `null` — ✅ nos 12 casos. Visitante: lista vazia, total 0, REST 401;
+      - Bunny: link assinado abre o player; sem token e com token adulterado são recusados;
+        domínio fora da lista também é recusado ✅;
+      - filtros (trilha, instrutor, busca, datas, offset), as 5 ordens, `lessonsTotal` e
+        `registerLessonView` (conta 1x, repetição ignorada, visitante recusado) ✅.
+- [x] Ajuste após o teste: duração digitada só com número passa a valer **minutos**
+      (`25` = 25:00); antes valia segundos. As 3 aulas de teste estão certas (5, 10 e 20 s
+      são os vídeos de placeholder) — valores já gravados não mudam.
+
+**Observações do teste real (para a etapa 7):**
+- O Bunny responde HTTP 200 mesmo quando recusa (página de "403" dentro): não dá para
+  checar o link só pelo status.
+- O ACF devolve os `select` como lista: `level: ["avancado"]`, `color: ["vermelho"]`. O
+  front pega o primeiro item.
+
+**👤 Pendências que ficaram (não bloqueiam a etapa 7):**
+- [x] Subir o plugin **1.11.1** (só a regra da duração).
+- [x] Bunny → *Allowed domains*: `localhost` liberado (conferido: o player abre a partir de
+      `localhost` e de `prime-poker.vercel.app`).
+- [ ] Bunny → *Allowed domains*: acrescentar **`primepokerteam.com.br`** — hoje recusado;
+      sem isso nenhum vídeo toca no lançamento. Tirar `localhost` no lançamento (etapa 12).
+- [ ] Opcional: reimportar o `aulas.json` para o texto de ajuda da duração citar "minutos (25)".
 
 **✅ Pronto quando:** a query `aulas` devolve as aulas de teste com filtros e ordenação,
 e um usuário free não recebe o vídeo de uma aula gold.
 
 ---
 
-## Etapa 7 — Aulas: front ligado no WP
+## Etapa 7 — Aulas: front ligado no WP 🟡 código pronto (19/09/2026, plugin 1.12.0) — falta a sua parte
 
 **👤 Você**
-- [ ] Testar em staging com os usuários de cada tier e me dizer o que ficou estranho.
+- [ ] Commit + push na `staging`.
+- [ ] Subir o plugin **1.12.0** (sugestão de aula no blog + correção de slug numérico).
+- [ ] Abrir a **Aula 01** no painel e clicar em **Atualizar** (sem mudar nada): o slug
+      dela é `1108` (foi publicada antes de ter título) e dá 404 no site. Ao salvar, o
+      plugin troca por `aula-01`.
+- [ ] Testar no navegador (staging ou `localhost`) com os usuários de cada tier:
+      - listagem, filtros da sidebar e do painel ⚙, busca, ordens;
+      - cards com cadeado e o tier exigido; página da aula bloqueada;
+      - **o vídeo toca** no player do Bunny (não consegui abrir navegador aqui);
+      - **o contador de visualizações sobe** ao abrir uma aula (1× por jogador a cada 12h);
+      - material de apoio da Aula 01 abrindo em nova aba;
+      - menu ⋮ do card → "Copiar link".
+- [ ] Me dizer o que ficou estranho.
 
 **🤖 Claude**
-- [ ] `services/lessons.ts`: trocar o acervo gerado por queries (`listLessons`, `getLessonBySlug`,
-      `getCatalog`, `getSuggestedLesson`), mantendo as assinaturas — os componentes não mudam.
-- [ ] Trilhas e instrutores do filtro vindos do WP (hoje `TRACKS` e `INSTRUCTORS` são fixos).
-- [ ] Converter a chave de `cor` da trilha nas classes do selo e do gradiente da capa.
-- [ ] `lesson-card.tsx`: usar a imagem destacada no lugar do gradiente provisório.
-- [ ] `LessonPlayer`: trocar o `react-player` pelo iframe do Bunny com o `video.url`
-      assinado (vem do WP só para quem pode assistir), com o player.js do Bunny ligado
-      para os eventos da etapa 8.
-- [ ] `aulas/[slug]/page.tsx`: passar o vídeo para o `LessonPlayer` (hoje nunca passa) e
-      usar a descrição do editor.
-- [ ] Materiais com link de download real (tamanho vindo da media library).
-- [ ] Estado de "sem acesso": card com cadeado e selo do tier mínimo (`minimumTierLabel`);
-      na página da aula, o player vira o convite ao upgrade (destino decidido na etapa 11).
-- [ ] `lesson-card.tsx`: implementar o menu de ações ⋮ (salvar, marcar como assistida,
-      compartilhar) — TODO no código.
-- [ ] Post do blog → "aula sugerida" usando as aulas reais.
-- [ ] Contabilizar a visualização ao abrir a aula (`registerLessonView`).
-- [ ] Trilhas e instrutores do filtro cacheados sob `lessons`; a lista de aulas é por
-      jogador (`canWatch`) e usa `authQuery`, sem cache.
+- [x] `services/lessons.ts` ligado no WP: `listLessons` (filtros, ordem e paginação no
+      servidor, total na mesma ida), `getCatalog` (acervo de 100 em 100), aula por slug com
+      descrição, vídeo e materiais. Listagem e aula por jogador vão pelo `authQuery`, sem
+      cache; trilhas, instrutores e a sugestão do blog são públicos e cacheados sob `lessons`.
+- [x] Tipos e utilitários que o navegador usa separados em `lib/lessons.ts` (o serviço é
+      `server-only`).
+- [x] Trilhas e instrutores do filtro vindos do WP; trilha vazia não aparece; ordem pelo
+      campo `order`. Na sidebar, cada trilha ganha a bolinha da sua cor.
+- [x] Cor da trilha → classes do selo, da capa e da bolinha (`trackStyle`).
+- [x] Filtro de instrutor na URL por **ID** (`?instrutor=106`): os slugs dos instrutores no
+      WP estão desatualizados (o Caio Brick tem slug `carlos-gto`).
+- [x] Card: imagem destacada (gradiente da trilha quando não há), cadeado + tier exigido
+      para quem está abaixo, sem trilha/instrutor/duração quando não informados.
+- [x] Página da aula: player do Bunny (iframe com o link assinado), aviso "Aula exclusiva
+      para Player Gold ou superior" no lugar do vídeo para quem não tem acesso, "vídeo em
+      breve" para aula sem vídeo, descrição do editor, materiais reais.
+- [x] Materiais: tamanho formatado (`2,3 MB`), abrem em nova aba (o `download` não funciona
+      em link de outro domínio); sem acesso, aviso no lugar da lista.
+- [x] Visualização contada ao abrir a aula (action chamada pelo navegador, não na
+      renderização — o prefetch de links contaria aulas que ninguém abriu).
+- [x] Menu ⋮ do card: **copiar link** e **compartilhar** (onde o sistema oferece).
+      *Salvar* e *marcar como assistida* ficaram para a etapa 8: hoje esse estado é mock
+      em memória, e o card não teria como mostrar se a aula já está salva.
+- [x] Blog → aula sugerida real (campo público `lessonSuggestion` no plugin). Se falhar
+      (plugin antigo, WP fora), o post mostra a chamada institucional em vez de quebrar —
+      criado `optionalQuery` no cliente GraphQL: com `"use cache"`, o erro precisa ser
+      capturado dentro da função cacheada, senão derruba o prerender.
+- [x] Painel do jogador: progresso por trilha com as trilhas e o acervo reais.
+- [x] Plugin 1.12.0: `lessonSuggestion` e slug numérico trocado pelo título ao salvar.
+- [x] Verificado: typecheck, lint (sem erro novo), build de produção, testes do plugin
+      com WP simulado (sugestão, slug), e no build de produção com os usuários free e gold:
+      visitante → login; listagem, trilha, instrutor, busca, 2 ordens e data (7 cenários ×
+      2 tiers, total e cadeados certos); aula bloqueada para free com o tier certo; iframe
+      com link assinado para gold; painel sem NaN; post do blog de pé com o plugin antigo.
+- [ ] Não verificado aqui (sem navegador): o vídeo tocando e o contador disparado pela
+      página — ver a sua parte acima.
+
+**Observações:**
+- A busca do WordPress procura em título e conteúdo, não no nome do instrutor: o texto de
+  ajuda da busca foi ajustado. Para achar por instrutor, o filtro ⚙.
+- "Continue assistindo" some até a etapa 8 (não há progresso gravado ainda).
+- Enquanto o plugin 1.12.0 não subir, os posts do blog revalidam a cada minuto (a falha
+  da sugestão fica em cache só por minutos). Com o plugin no ar, volta a 1 hora.
 
 **✅ Pronto quando:** listagem, busca, filtros, rolagem infinita e página da aula
 funcionam só com dados do WP.
@@ -403,6 +468,9 @@ funcionam só com dados do WP.
       pelos eventos `timeupdate`/`pause` do player.js do Bunny) e retomar de onde parou
       (`setCurrentTime`).
 - [ ] "Continuar assistindo", painel de progresso por trilha e horas assistidas com dados reais.
+- [ ] Menu ⋮ do card: acrescentar **Salvar** e **Marcar como assistida**, com o estado da
+      aula para o jogador vindo na listagem (ficou fora da etapa 7 por isso).
+- [ ] `getContinueWatching` (hoje sempre `null`) e o `watched` das aulas com o progresso real.
 
 **✅ Pronto quando:** você assiste um trecho, sai, volta em outro navegador e continua
 do mesmo ponto; salvas e concluídas persistem.
@@ -486,6 +554,7 @@ do mesmo ponto; salvas e concluídas persistem.
       lançamento, comentar o trecho do blog no sitemap na master junto com os links.
 - [ ] Remover qualquer mock restante e rodar `typecheck`, `lint` e `build`.
 - [ ] Fazer o merge staging → master sem desfazer nada da master.
+- [ ] Conferir no Bunny: `primepokerteam.com.br` nos *Allowed domains* e `localhost` removido.
 
 **✅ Pronto quando:** tudo publicado em produção, com login, aulas e blog funcionando.
 

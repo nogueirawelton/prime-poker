@@ -4,14 +4,16 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import { authQuery } from "@/graphql/auth-client";
 import { VIEWER } from "@/graphql/queries/player/VIEWER";
+import type { Track } from "@/lib/lessons";
 import { getCompletedSlugs } from "./lesson-detail";
-import { getCatalog, TRACKS, type Track } from "./lessons";
+import { getCatalog, getTracks } from "./lessons";
 
 /**
  * Perfil e progresso do jogador.
  *
  * O perfil vem do WordPress (`viewer`, com os campos de tier do plugin). O
- * progresso continua mock até as aulas existirem no CMS.
+ * acervo e as trilhas também; o progresso por jogador (assistido, concluídas,
+ * sequência) continua mock até a etapa 8.
  */
 
 export type TierSlug =
@@ -128,17 +130,18 @@ export type Progress = {
  * passou de 95% dela — assistir aos créditos não deveria ser requisito.
  */
 export async function getProgress(): Promise<Progress> {
-  const [catalog, markedCompleted] = await Promise.all([
+  const [catalog, trackList, markedCompleted] = await Promise.all([
     getCatalog(),
+    getTracks(),
     getCompletedSlugs(),
   ]);
 
   const completed = (slug: string, watched: number, duration: number) =>
-    markedCompleted.has(slug) || watched / duration >= 0.95;
+    markedCompleted.has(slug) || (duration > 0 && watched / duration >= 0.95);
 
-  const tracks = TRACKS.map((track) => {
+  const tracks = trackList.map((track) => {
     const trackLessons = catalog.filter(
-      (lesson) => lesson.track.slug === track.slug,
+      (lesson) => lesson.track?.slug === track.slug,
     );
 
     return {

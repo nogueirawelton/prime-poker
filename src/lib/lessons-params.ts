@@ -1,11 +1,4 @@
-import {
-  INSTRUCTORS,
-  type LessonFilter,
-  SORT_ORDERS,
-  type SortOrder,
-  TRACKS,
-  type TrackSlug,
-} from "@/services/lessons";
+import { type LessonFilter, SORT_ORDERS, type SortOrder } from "@/lib/lessons";
 
 /** Nomes dos parâmetros na URL — a mesma tabela serve leitura e escrita. */
 export const PARAMS = {
@@ -42,7 +35,20 @@ function data(value: string | Array<string> | undefined) {
   return text && /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : undefined;
 }
 
-const SLUGS = TRACKS.map((track) => track.slug);
+/**
+ * Slug de trilha: só o formato. Uma trilha inexistente não é erro — o
+ * WordPress devolve a lista vazia e a página diz que não achou nada.
+ */
+function slug(value: string | Array<string> | undefined) {
+  const text = first(value);
+  return text && /^[a-z0-9-]{1,200}$/.test(text) ? text : undefined;
+}
+
+/** ID do instrutor no WordPress. */
+function id(value: string | Array<string> | undefined) {
+  const text = first(value);
+  return text && /^\d{1,10}$/.test(text) ? Number(text) : undefined;
+}
 
 /**
  * Converte a URL no filtro do serviço.
@@ -56,8 +62,8 @@ export function parseFilter(params: LessonsSearchParams): LessonFilter {
 
   return {
     search: first(params[PARAMS.search]),
-    track: oneOf<TrackSlug>(params[PARAMS.track], SLUGS),
-    instructor: oneOf(params[PARAMS.instructor], INSTRUCTORS),
+    track: slug(params[PARAMS.track]),
+    instructor: id(params[PARAMS.instructor]),
     // Intervalo invertido é entrada em construção, não filtro: ignorado até
     // o segundo campo fazer sentido.
     from: !from || !to || from <= to ? from : undefined,

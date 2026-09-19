@@ -1,32 +1,15 @@
 "use client";
 
-import {
-  BookOpenIcon,
-  BrainIcon,
-  BriefcaseIcon,
-  ChartLineUpIcon,
-  type Icon,
-  PlayCircleIcon,
-  StrategyIcon,
-  ToolboxIcon,
-  TrophyIcon,
-} from "@phosphor-icons/react";
+import { type Icon, PlayCircleIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { twMerge } from "tailwind-merge";
+import type { Lesson, Track } from "@/lib/lessons";
 import { PARAMS } from "@/lib/lessons-params";
-import { type Lesson, TRACKS, type TrackSlug } from "@/services/lessons";
 import { ContinueWatching } from "./continue-watching";
 
-const ICONS: Record<TrackSlug, Icon> = {
-  estrategia: StrategyIcon,
-  "mental-game": BrainIcon,
-  torneios: TrophyIcon,
-  "analise-de-maos": ChartLineUpIcon,
-  fundamentos: BookOpenIcon,
-  ferramentas: ToolboxIcon,
-  profissional: BriefcaseIcon,
-};
+/** O que a navegação precisa de cada trilha. */
+type TrackLink = Pick<Track, "slug" | "name" | "dot">;
 
 /**
  * Trilhas do acervo.
@@ -42,7 +25,7 @@ function useTracks() {
   const current = searchParams.get(PARAMS.track);
   const search = searchParams.get(PARAMS.search);
 
-  function href(slug?: TrackSlug) {
+  function href(slug?: string) {
     const params = new URLSearchParams();
     if (slug) params.set(PARAMS.track, slug);
     if (search) params.set(PARAMS.search, search);
@@ -55,8 +38,10 @@ function useTracks() {
 }
 
 export function LessonsSidebar({
+  tracks,
   continueWatching,
 }: {
+  tracks: Array<TrackLink>;
   continueWatching: Lesson | null;
 }) {
   const { current, href } = useTracks();
@@ -75,11 +60,11 @@ export function LessonsSidebar({
           Todas as Aulas
         </Item>
 
-        {TRACKS.map((track) => (
+        {tracks.map((track) => (
           <Item
             key={track.slug}
             href={href(track.slug)}
-            icon={ICONS[track.slug]}
+            dot={track.dot}
             active={current === track.slug}
           >
             {track.name}
@@ -98,14 +83,20 @@ export function LessonsSidebar({
   );
 }
 
+/**
+ * Item da sidebar: "Todas as Aulas" leva ícone; cada trilha, a bolinha da cor
+ * dela — a mesma do selo nos cards, que liga a lista à trilha.
+ */
 function Item({
   href,
   icon: ItemIcon,
+  dot,
   active,
   children,
 }: {
   href: string;
-  icon: Icon;
+  icon?: Icon;
+  dot?: string;
   active: boolean;
   children: React.ReactNode;
 }) {
@@ -120,7 +111,13 @@ function Item({
           : "text-prime-light/70 hover:bg-white/5 hover:text-prime-light",
       )}
     >
-      <ItemIcon className="size-5" weight={active ? "fill" : "regular"} />
+      {ItemIcon ? (
+        <ItemIcon className="size-5" weight={active ? "fill" : "regular"} />
+      ) : (
+        <span className="flex size-5 items-center justify-center">
+          <span className={twMerge("size-2.5 rounded-full", dot)} />
+        </span>
+      )}
       {children}
     </Link>
   );
@@ -132,7 +129,7 @@ function Item({
  * Sem isso, o mobile perderia o único acesso às categorias — elas não estão
  * no painel de configurações, que trata de ordenação e filtros.
  */
-export function MobileTracks() {
+export function MobileTracks({ tracks }: { tracks: Array<TrackLink> }) {
   const { current, href } = useTracks();
 
   return (
@@ -144,7 +141,7 @@ export function MobileTracks() {
         Todas
       </Chip>
 
-      {TRACKS.map((track) => (
+      {tracks.map((track) => (
         <Chip
           key={track.slug}
           href={href(track.slug)}
