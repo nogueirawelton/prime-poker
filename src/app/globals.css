@@ -25,6 +25,13 @@
 
   /* Painel do menu mobile: entra descendo, sai subindo. */
   --animate-to-top: toTop 0.3s ease-in-out forwards;
+
+  /* Painel de filtros das aulas, que abre em altura.
+     A altura de destino vem do Radix (`--radix-collapsible-content-height`):
+     `height: auto` não anima, e um valor fixo quebraria quando o painel
+     mudasse de conteúdo. */
+  --animate-collapsible-open: collapsibleOpen 0.25s ease-out;
+  --animate-collapsible-close: collapsibleClose 0.2s ease-in forwards;
 }
 
 @layer utilities {
@@ -109,6 +116,30 @@
   }
   to {
     height: var(--radix-collapsible-content-height);
+  }
+}
+
+@keyframes collapsibleOpen {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+
+  to {
+    height: var(--radix-collapsible-content-height);
+    opacity: 1;
+  }
+}
+
+@keyframes collapsibleClose {
+  from {
+    height: var(--radix-collapsible-content-height);
+    opacity: 1;
+  }
+
+  to {
+    height: 0;
+    opacity: 0;
   }
 }
 

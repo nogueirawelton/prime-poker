@@ -174,6 +174,10 @@ export type LessonFilter = {
   track?: string;
   /** ID do instrutor no WordPress. */
   instructor?: number;
+  /** Slug do tier mínimo da aula (`player_gold`). */
+  tier?: string;
+  /** Nível da aula: `iniciante`, `intermediario` ou `avancado`. */
+  level?: Level;
   /** Intervalo de publicação, em `AAAA-MM-DD`. Os dois lados são opcionais. */
   from?: string;
   to?: string;

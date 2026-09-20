@@ -1,10 +1,18 @@
-import { type LessonFilter, SORT_ORDERS, type SortOrder } from "@/lib/lessons";
+import {
+  type LessonFilter,
+  type Level,
+  LEVELS,
+  SORT_ORDERS,
+  type SortOrder,
+} from "@/lib/lessons";
 
 /** Nomes dos parâmetros na URL — a mesma tabela serve leitura e escrita. */
 export const PARAMS = {
   search: "q",
   track: "cat",
   instructor: "instrutor",
+  tier: "plano",
+  level: "nivel",
   from: "de",
   to: "ate",
   order: "ordem",
@@ -44,6 +52,15 @@ function slug(value: string | Array<string> | undefined) {
   return text && /^[a-z0-9-]{1,200}$/.test(text) ? text : undefined;
 }
 
+/**
+ * Slug de tier. Só o formato — um tier inexistente devolve lista vazia, como
+ * acontece com uma trilha que não existe.
+ */
+function tier(value: string | Array<string> | undefined) {
+  const text = first(value);
+  return text && /^[a-z_]{1,40}$/.test(text) ? text : undefined;
+}
+
 /** ID do instrutor no WordPress. */
 function id(value: string | Array<string> | undefined) {
   const text = first(value);
@@ -64,6 +81,9 @@ export function parseFilter(params: LessonsSearchParams): LessonFilter {
     search: first(params[PARAMS.search]),
     track: slug(params[PARAMS.track]),
     instructor: id(params[PARAMS.instructor]),
+    // Slug de tier (`player_gold`): o sublinhado não passa no `slug()`.
+    tier: tier(params[PARAMS.tier]),
+    level: oneOf<Level>(params[PARAMS.level], LEVELS),
     // Intervalo invertido é entrada em construção, não filtro: ignorado até
     // o segundo campo fazer sentido.
     from: !from || !to || from <= to ? from : undefined,
@@ -79,7 +99,11 @@ export function parseFilter(params: LessonsSearchParams): LessonFilter {
  * diria nada. O intervalo de datas conta como um só.
  */
 export function countFilters(filter: LessonFilter) {
-  return [filter.track, filter.instructor, filter.from || filter.to].filter(
-    Boolean,
-  ).length;
+  return [
+    filter.track,
+    filter.instructor,
+    filter.tier,
+    filter.level,
+    filter.from || filter.to,
+  ].filter(Boolean).length;
 }

@@ -15,7 +15,7 @@ export function PlayerHeader() {
   return (
     <header className="sticky top-0 z-40 border-white/10 border-b bg-prime-dark">
       <div className="flex h-20 items-center justify-between gap-4 px-4 lg:px-8">
-        <Link href="/player" className="shrink-0">
+        <Link href="/player/aulas/" className="shrink-0">
           <Image
             src="/img/logo.svg"
             width={210}

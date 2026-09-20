@@ -1,22 +1,32 @@
 import "server-only";
 
+import { authMutate, authQuery } from "@/graphql/auth-client";
+import {
+  MARK_ALL_NOTIFICATIONS_READ,
+  MARK_NOTIFICATION,
+} from "@/graphql/mutations/player/MARK_NOTIFICATION";
+import {
+  NOTIFICATIONS,
+  NOTIFICATIONS_UNREAD,
+} from "@/graphql/queries/player/NOTIFICATIONS";
+
 /**
- * Notificações do jogador.
+ * Notificações do jogador, vindas do WordPress (módulo `Notifications`).
  *
- * Mock, como o acervo de aulas: o WordPress ainda não expõe nada disso. O
- * estado de leitura vive na memória do processo — some a cada restart e não é
- * compartilhado entre instâncias. É o bastante para a interface funcionar de
- * ponta a ponta; ao ligar no CMS, só as funções deste arquivo mudam.
+ * Tudo aqui é por jogador — quem recebe cada aviso e o que já foi lido —,
+ * então vai pelo `authQuery`, sem cache.
  *
- * `server-only` porque o "banco" aqui é um módulo mutável: importado no
- * cliente, cada aba teria a própria cópia divergente.
+ * `server-only` porque o cliente autenticado não pode ir para o navegador.
  */
 
 /**
  * `aviso` é o comunicado do time — o antigo mural. Não existe página separada
  * para ele: tudo o que o time anuncia chega como notificação.
+ *
+ * `aula` e `suporte` o site cria sozinho, ao publicar uma aula e ao responder
+ * uma dúvida.
  */
-export type NotificationType = "aula" | "aviso" | "conquista" | "suporte";
+export type NotificationType = "aula" | "aviso" | "suporte";
 
 export type PlayerNotification = {
   id: string;
@@ -36,81 +46,6 @@ export type PlayerNotification = {
   href?: string;
 };
 
-type NotificationRecord = Omit<PlayerNotification, "read">;
-
-const NOW = Date.UTC(2026, 7, 30, 14, 0);
-const HOUR = 3600000;
-
-const RECORDS: Array<NotificationRecord> = [
-  {
-    id: "n-1",
-    type: "aula",
-    title: "Nova aula publicada",
-    description: "“Como Explorar Range Advantage no Flop”, com Felipe Martins.",
-    data: new Date(NOW - HOUR).toISOString(),
-    href: "/player/aulas",
-  },
-  {
-    id: "n-2",
-    type: "aviso",
-    title: "Mesa final do Prime Series",
-    description: "Transmissão comentada hoje às 20h no canal do time.",
-    data: new Date(NOW - 5 * HOUR).toISOString(),
-  },
-  {
-    id: "n-3",
-    type: "conquista",
-    title: "Trilha de Fundamentos concluída",
-    description:
-      "Você terminou as 12 aulas da trilha. Próxima parada: Torneios.",
-    data: new Date(NOW - 26 * HOUR).toISOString(),
-    href: "/player/aulas?cat=torneios",
-  },
-  {
-    id: "n-4",
-    type: "suporte",
-    title: "Resposta do seu coach",
-    description: "Rafael Moraes comentou a mão que você enviou para revisão.",
-    data: new Date(NOW - 30 * HOUR).toISOString(),
-    href: "/player",
-  },
-  {
-    id: "n-5",
-    type: "aula",
-    title: "Nova aula publicada",
-    description:
-      "“ICM na Prática: Fases Finais de Torneios”, com Rafael Moraes.",
-    data: new Date(NOW - 52 * HOUR).toISOString(),
-    href: "/player/aulas?cat=torneios",
-  },
-  {
-    id: "n-6",
-    type: "aviso",
-    title: "Manutenção programada",
-    description: "A área do jogador ficará indisponível domingo, das 3h às 5h.",
-    data: new Date(NOW - 78 * HOUR).toISOString(),
-  },
-  {
-    id: "n-7",
-    type: "conquista",
-    title: "7 dias seguidos de estudo",
-    description: "Sequência mantida. Continue assim.",
-    data: new Date(NOW - 100 * HOUR).toISOString(),
-    href: "/player",
-  },
-  {
-    id: "n-8",
-    type: "aula",
-    title: "Aula atualizada",
-    description: "“Configurando seu HUD do Zero” ganhou uma nova seção.",
-    data: new Date(NOW - 140 * HOUR).toISOString(),
-    href: "/player/aulas?cat=ferramentas",
-  },
-];
-
-/** Ids já lidos. Começa com as mais antigas lidas, como numa conta em uso. */
-const READ_IDS = new Set(["n-5", "n-6", "n-7", "n-8"]);
-
 export const FILTERS = ["todas", "nao-lidas", "lidas"] as const;
 export type NotificationFilter = (typeof FILTERS)[number];
 
@@ -120,8 +55,37 @@ export const FILTER_LABEL: Record<NotificationFilter, string> = {
   lidas: "Lidas",
 };
 
-function withReadState(record: NotificationRecord): PlayerNotification {
-  return { ...record, read: READ_IDS.has(record.id) };
+/** Filtros da URL → `NotificationFilterEnum` do plugin. */
+const ENUM: Record<NotificationFilter, string> = {
+  todas: "ALL",
+  "nao-lidas": "UNREAD",
+  lidas: "READ",
+};
+
+const TYPES: Array<NotificationType> = ["aula", "aviso", "suporte"];
+
+type NotificationNode = {
+  id: number;
+  type: string;
+  title: string;
+  description: string;
+  date: string;
+  read: boolean;
+  href: string | null;
+};
+
+function toNotification(node: NotificationNode): PlayerNotification {
+  const type = TYPES.find((known) => known === node.type) ?? "aviso";
+
+  return {
+    id: String(node.id),
+    type,
+    title: node.title,
+    description: node.description,
+    data: node.date,
+    read: node.read,
+    href: node.href ?? undefined,
+  };
 }
 
 /** Da mais recente para a mais antiga; `limit` corta o topo da lista. */
@@ -129,29 +93,28 @@ export async function listNotifications(
   filter: NotificationFilter = "todas",
   limit?: number,
 ): Promise<Array<PlayerNotification>> {
-  const list = RECORDS.map(withReadState)
-    .filter((notification) => {
-      if (filter === "nao-lidas") return !notification.read;
-      if (filter === "lidas") return notification.read;
-      return true;
-    })
-    .sort((a, b) => b.data.localeCompare(a.data));
+  const data = await authQuery<{
+    myNotifications: Array<NotificationNode> | null;
+  }>(NOTIFICATIONS, { filter: ENUM[filter], first: limit });
 
-  return limit ? list.slice(0, limit) : list;
+  return (data.myNotifications ?? []).map(toNotification);
 }
 
 export async function countUnread(): Promise<number> {
-  return RECORDS.filter((record) => !READ_IDS.has(record.id)).length;
+  const data = await authQuery<{ notificationsUnread: number | null }>(
+    NOTIFICATIONS_UNREAD,
+  );
+
+  return data.notificationsUnread ?? 0;
 }
 
 export async function markAsRead(id: string, read: boolean) {
-  if (read) {
-    READ_IDS.add(id);
-  } else {
-    READ_IDS.delete(id);
-  }
+  await authMutate(MARK_NOTIFICATION, {
+    notificationId: Number(id),
+    read,
+  });
 }
 
 export async function markAllAsRead() {
-  for (const record of RECORDS) READ_IDS.add(record.id);
+  await authMutate(MARK_ALL_NOTIFICATIONS_READ);
 }

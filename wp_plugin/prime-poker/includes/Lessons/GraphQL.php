@@ -36,10 +36,14 @@ final class GraphQL {
 
 	/** Metas gravadas pelo ACF — o `name` de cada campo em `lessonFields`. */
 	private const META_INSTRUCTOR     = 'instructor';
+	private const META_LEVEL          = 'level';
 	private const META_DURATION       = 'duration';
 	private const META_VIDEO_PROVIDER = 'video_provider';
 	private const META_VIDEO_ID       = 'video_id';
 	private const META_MATERIALS      = 'materials';
+
+	/** Níveis aceitos no filtro — os mesmos do select do ACF. */
+	private const LEVELS = array( 'iniciante', 'intermediario', 'avancado' );
 
 	/**
 	 * Ordens da listagem → `orderby` da WP_Query.
@@ -143,6 +147,14 @@ final class GraphQL {
 			'instructor' => array(
 				'type'        => 'Int',
 				'description' => __( 'databaseId do Instrutor.', 'prime-poker' ),
+			),
+			'tier'       => array(
+				'type'        => 'String',
+				'description' => __( 'Slug do tier mínimo (player_gold…). Traz só as aulas daquele nível de acesso.', 'prime-poker' ),
+			),
+			'level'      => array(
+				'type'        => 'String',
+				'description' => __( 'Nível da aula: iniciante, intermediario ou avancado.', 'prime-poker' ),
 			),
 			'from'       => array(
 				'type'        => 'String',
@@ -396,12 +408,14 @@ final class GraphQL {
 		register_graphql_mutation(
 			'toggleLessonSaved',
 			array(
-				'description'         => __( 'Salva a aula na lista do jogador, ou a tira de lá.', 'prime-poker' ),
+				'description'         => __( 'Salva a aula na lista do jogador, ou a tira de lá. Vale para aula trancada: salvar é a lista de desejos de quem ainda vai fazer upgrade.', 'prime-poker' ),
 				'inputFields'         => $lesson_input,
 				'outputFields'        => array(
 					'saved' => array( 'type' => 'Boolean' ),
 				),
 				'mutateAndGetPayload' => static function ( array $input ): array {
+					// De propósito sem `can_watch`: guardar para depois é
+					// justamente o que faz sentido numa aula ainda trancada.
 					$post_id = self::lesson_from_input( $input );
 
 					return array( 'saved' => Progress::toggle_saved( get_current_user_id(), $post_id ) );
@@ -419,6 +433,12 @@ final class GraphQL {
 				),
 				'mutateAndGetPayload' => static function ( array $input ): array {
 					$post_id = self::lesson_from_input( $input );
+
+					// Concluir uma aula que não se pode assistir não quer
+					// dizer nada — e ainda contaria no progresso da trilha.
+					if ( ! Access::can_watch( $post_id ) ) {
+						throw new \GraphQL\Error\UserError( __( 'Sem acesso a esta aula.', 'prime-poker' ) );
+					}
 
 					return array( 'completed' => Progress::toggle_completed( get_current_user_id(), $post_id ) );
 				},
@@ -512,6 +532,26 @@ final class GraphQL {
 			$query_args['meta_query'][] = array(
 				'key'   => self::META_INSTRUCTOR,
 				'value' => (string) $instructor,
+			);
+		}
+
+		$tier = isset( $filters['tier'] ) ? (string) $filters['tier'] : '';
+
+		if ( Tiers::exists( $tier ) ) {
+			$query_args['meta_query']   = is_array( $query_args['meta_query'] ?? null ) ? $query_args['meta_query'] : array();
+			$query_args['meta_query'][] = array(
+				'key'   => Access::META_MINIMUM_TIER,
+				'value' => $tier,
+			);
+		}
+
+		$level = isset( $filters['level'] ) ? (string) $filters['level'] : '';
+
+		if ( in_array( $level, self::LEVELS, true ) ) {
+			$query_args['meta_query']   = is_array( $query_args['meta_query'] ?? null ) ? $query_args['meta_query'] : array();
+			$query_args['meta_query'][] = array(
+				'key'   => self::META_LEVEL,
+				'value' => $level,
 			);
 		}
 

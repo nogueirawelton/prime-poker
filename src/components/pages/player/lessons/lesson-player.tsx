@@ -3,7 +3,7 @@
 import { LockSimpleIcon, PlayIcon } from "@phosphor-icons/react";
 import Image from "next/image";
 import Script from "next/script";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { registerLessonProgress, registerLessonView } from "@/actions/lesson";
 import { coverStyle } from "@/lib/lessons";
 
@@ -30,12 +30,21 @@ type Props = {
  */
 const SAVE_EVERY = 15;
 
-/** O pedaço do player.js do Bunny que este componente usa. */
+/**
+ * O pedaço do player.js do Bunny que este componente usa.
+ *
+ * Só o `timeupdate` recebe dados: `ready`, `pause` e `ended` são avisos
+ * secos, sem posição nenhuma. Por isso guardamos o último ponto conhecido —
+ * é ele que vale na hora de pausar ou terminar.
+ */
 type BunnyPlayer = {
-  on: (
-    event: "ready" | "timeupdate" | "pause" | "ended",
-    handler: (data: { seconds: number; duration: number }) => void,
-  ) => void;
+  on: {
+    (
+      event: "timeupdate",
+      handler: (data: { seconds: number; duration: number }) => void,
+    ): void;
+    (event: "ready" | "pause" | "ended", handler: () => void): void;
+  };
   setCurrentTime: (seconds: number) => void;
 };
 
@@ -72,6 +81,22 @@ export function LessonPlayer({
   // O último ponto já enviado, para não repetir a escrita a cada segundo.
   const sent = useRef(watched);
   const connected = useRef(false);
+  // O último ponto que o player informou, já que pausar e terminar não
+  // dizem onde o vídeo estava.
+  const position = useRef({ seconds: watched, duration: 0 });
+
+  /**
+   * O link do vídeo é fixado na primeira renderização desta aula.
+   *
+   * O WordPress assina o link com a hora atual, então cada renderização
+   * devolve um endereço diferente para o MESMO vídeo. Salvar a aula pede um
+   * `refresh()`, e sem isto o iframe trocaria de `src` no meio da aula: o
+   * vídeo reiniciaria do zero enquanto o jogador assiste. O link vale seis
+   * horas, muito mais do que uma sessão de estudo.
+   */
+  const [shown, setShown] = useState({ lessonId, video });
+
+  if (shown.lessonId !== lessonId) setShown({ lessonId, video });
 
   // Conta a visualização de quem de fato abriu a aula (ver a action).
   useEffect(() => {
@@ -87,6 +112,10 @@ export function LessonPlayer({
     },
     [lessonId],
   );
+
+  // Sair da aula clicando em outro link não pausa o vídeo: sem esta
+  // gravação, quem navega para outra página perderia até 15 segundos.
+  useEffect(() => () => save(Math.floor(position.current.seconds)), [save]);
 
   /**
    * Liga o player.js ao iframe, depois que o script carrega.
@@ -112,7 +141,9 @@ export function LessonPlayer({
       if (watched > 0) player.setCurrentTime(watched);
     });
 
-    player.on("timeupdate", ({ seconds }) => {
+    player.on("timeupdate", ({ seconds, duration }) => {
+      position.current = { seconds, duration };
+
       if (Math.abs(seconds - sent.current) >= SAVE_EVERY) {
         save(Math.floor(seconds));
       }
@@ -120,10 +151,15 @@ export function LessonPlayer({
 
     // Sair no meio é o caso mais comum de "continuar depois": vale uma
     // gravação fora do intervalo.
-    player.on("pause", ({ seconds }) => save(Math.floor(seconds)));
-    player.on("ended", ({ seconds, duration }) =>
-      save(Math.floor(duration > 0 ? duration : seconds)),
-    );
+    player.on("pause", () => save(Math.floor(position.current.seconds)));
+
+    // No fim, grava a duração cheia: o último `timeupdate` costuma parar uns
+    // décimos antes, e é isso que decide se a aula conclui sozinha.
+    player.on("ended", () => {
+      const { seconds, duration } = position.current;
+
+      save(Math.floor(duration > 0 ? duration : seconds));
+    });
   }, [save, watched]);
 
   if (locked) {
@@ -170,7 +206,7 @@ export function LessonPlayer({
     <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-white/10 bg-prime-dark">
       <iframe
         ref={frame}
-        src={video}
+        src={shown.video ?? video}
         title={title}
         className="absolute inset-0 size-full border-0"
         allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"

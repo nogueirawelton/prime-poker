@@ -10,8 +10,9 @@ import {
   LESSON_SUGGESTION,
   LESSON_TRACKS,
   LESSONS,
+  PLAYER_TIERS,
 } from "@/graphql/queries/player/LESSONS";
-import { LESSONS_CACHE_TAG } from "@/lib/cache-tags";
+import { LESSONS_CACHE_TAG, POSTS_CACHE_TAG } from "@/lib/cache-tags";
 import {
   type Instructor,
   LEVELS,
@@ -88,6 +89,20 @@ export type LessonDetailNode = LessonNode & {
     url: string;
     fileSize: number | null;
   }> | null;
+  comments: {
+    nodes: Array<{
+      databaseId: number;
+      /** 0 quando é uma pergunta; o ID da pergunta quando é resposta. */
+      parentDatabaseId: number;
+      date: string;
+      text: string;
+      authorLabel: string;
+      isInstructor: boolean;
+      isMine: boolean;
+      likeCount: number;
+      liked: boolean;
+    }>;
+  } | null;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -172,6 +187,8 @@ export async function listLessons(
     search: filter.search,
     track: filter.track,
     instructor: filter.instructor,
+    tier: filter.tier,
+    level: filter.level,
     from: filter.from,
     to: filter.to,
   };
@@ -254,6 +271,25 @@ export async function getTracks(): Promise<Array<Track>> {
     .map(toTrack);
 }
 
+/**
+ * Tiers do site, do mais baixo para o mais alto.
+ *
+ * Público e igual para todos, então cacheado como as trilhas: os nomes já
+ * aparecem no selo de cada aula trancada.
+ *
+ * Pelo `optionalQuery`: é um filtro a mais, e com um plugin antigo no ar ele
+ * some do painel em vez de derrubar a listagem inteira.
+ */
+export async function getTiers(): Promise<
+  Array<{ slug: string; label: string }>
+> {
+  const data = await optionalQuery<{
+    playerTiers: Array<{ slug: string; label: string }> | null;
+  }>(PLAYER_TIERS, { tags: [LESSONS_CACHE_TAG] });
+
+  return data?.playerTiers ?? [];
+}
+
 /** Instrutores do filtro, em ordem alfabética. */
 export async function getInstructors(): Promise<Array<Instructor>> {
   const data = await query<{
@@ -271,13 +307,19 @@ export async function getInstructors(): Promise<Array<Instructor>> {
 /* -------------------------------------------------------------------------- */
 
 /**
- * A aula mais próxima de um assunto — liga um post do blog à aula
- * correspondente. A escolha é do plugin (`lessonSuggestion`); `null` quando
- * nenhuma aula tem palavra em comum com o assunto.
+ * A aula que um post do blog divulga.
+ *
+ * Quem decide é o plugin: primeiro a **Aula relacionada** escolhida no painel
+ * do post; sem ela, a aula de título mais próximo do assunto. `null` quando
+ * não há escolha nem palavra em comum.
+ *
+ * O caminho passa pelo plugin porque a relação do ACF, lida direto, volta
+ * vazia para visitante — a aula é privada, e quem lê o blog não está logado.
  */
 export async function getSuggestedLesson(
   subject: string,
   trackSlug?: string,
+  postId?: number,
 ): Promise<LessonSuggestion | null> {
   // Um extra da lateral: se falhar (WP fora, plugin antigo sem o campo), o
   // post continua de pé com a chamada institucional no lugar.
@@ -289,8 +331,11 @@ export async function getSuggestedLesson(
       duration: number | null;
     } | null;
   }>(LESSON_SUGGESTION, {
-    variables: { subject, track: trackSlug },
-    tags: [LESSONS_CACHE_TAG],
+    variables: { subject, track: trackSlug, postId },
+    // `posts` também: agora a resposta depende do campo Aula relacionada, que
+    // vive no post. Sem esta tag, trocar a aula no painel só apareceria no
+    // site quando o cache expirasse sozinho.
+    tags: [LESSONS_CACHE_TAG, POSTS_CACHE_TAG],
   });
 
   const suggestion = data?.lessonSuggestion;

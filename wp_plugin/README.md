@@ -268,11 +268,21 @@ mutation { toggleLessonSaved(input: { lessonId: 123 }) { saved } }
 mutation { toggleLessonCompleted(input: { lessonId: 123 }) { completed } }
 ```
 
-- `lessonSuggestion(subject, track)`: a **única leitura pública** de aulas, para
-  o post do blog sugerir a aula do mesmo tema. Devolve só `slug`, `title`,
-  `instructor` (nome) e `duration`, da aula publicada com mais palavras do
-  título em comum com o assunto (siglas de 3 letras como ICM contam; palavras
-  vazias não). A trilha de mesmo slug desempata. Sem palavra em comum: `null`.
+- `lessonSuggestion(subject, track, postId)`: a **única leitura pública** de
+  aulas, para o post do blog divulgar uma aula. Devolve só `slug`, `title`,
+  `instructor` (nome) e `duration`.
+  - Com `postId`, **a escolha do painel vem primeiro**: o campo *Aula
+    relacionada* do post (ACF `relatedlesson`). Ela precisa passar por aqui
+    porque a relação lida direto do ACF volta vazia para visitante — a aula é
+    privada, e quem lê o blog não está logado.
+  - Sem escolha (ou com a aula despublicada), cai no palpite: a aula publicada
+    com mais palavras do título em comum com o assunto (siglas de 3 letras como
+    ICM contam; palavras vazias não). A trilha de mesmo slug desempata. Sem
+    palavra em comum: `null`.
+- Filtro `level`: `iniciante`, `intermediario` ou `avancado`.
+- Filtro `tier`: slug do tier mínimo da aula (`player_gold`). A lista para o
+  select sai de `playerTiers { slug label }`, pública — os nomes já aparecem
+  no selo de cada aula trancada.
 - `sort`: `NEWEST` (padrão), `OLDEST`, `MOST_VIEWED`, `SHORTEST`, `LONGEST`.
   Filtro vazio ou malformado (data inexistente, offset negativo) é ignorado.
 - `lessonsTotal` devolve 0 para quem não é jogador.
@@ -294,6 +304,10 @@ lê o estado de uma vez só:
 | `_prime_poker_uncompleted` | aulas desmarcadas na mão |
 | `_prime_poker_study_days` | dias em que estudou (últimos 400) |
 
+- **Salvar vale para aula trancada** — é a lista de desejos de quem ainda vai
+  pedir upgrade. **Concluir e curtir, não**: as duas mutations exigem poder
+  assistir, porque concluir uma aula trancada contaria no progresso da trilha
+  sem ela ter sido vista.
 - **Conclusão automática aos 90%** da duração cadastrada. Aula sem duração no
   painel nunca conclui sozinha — não há como saber o que são 90%.
 - Desmarcar na mão também **desliga a conclusão automática** daquela aula,
@@ -305,6 +319,93 @@ lê o estado de uma vez só:
   até o fim do dia de hoje; dois dias parado zera.
 - Aula apagada no painel não é limpa das metas (varrer todos os jogadores
   sairia caro); a leitura ignora ID que não existe mais.
+
+**Dúvidas nas aulas** (`includes/Lessons/Questions.php`)
+
+São **comentários do WordPress** no CPT aula — moderação, resposta e exclusão
+saem de graça no painel de sempre, em *Comentários*.
+
+- **Quem responde é a equipe, em nome do instrutor**: a resposta escrita **no
+  painel** por quem tem `edit_posts` aparece com o nome do Instrutor cadastrado
+  na aula. Aula sem instrutor assina com o nome de quem escreveu.
+- O que separa pergunta de resposta é **por onde o comentário entrou**, não
+  quem escreveu: o que vem pelo site ganha a meta `_prime_poker_question`.
+  Sem isso, alguém da equipe que estudasse uma aula e perguntasse pelo site
+  veria a própria pergunta assinada pelo instrutor.
+- **Todos os jogadores da aula veem** as dúvidas; visitante anônimo não vê
+  nada (nem no GraphQL, nem em `/wp/v2/comments`, que fica fechado para quem
+  não é da equipe).
+- **Sem moderação prévia**: a dúvida aparece na hora. Spam marcado por plugin
+  continua spam.
+- Perguntar exige **poder assistir** à aula, não só vê-la.
+- No `Comment`, o plugin acrescenta `text` (texto puro, sem o HTML do
+  `content`), `authorLabel` (o nome a exibir) e `isInstructor`.
+- **Responda pelo botão "Responder"** do comentário, não criando um
+  comentário novo: é o `comment_parent` que prende a resposta à pergunta na
+  tela do jogador. Os comentários aninhados ficam ligados à força pelo plugin
+  (`option_thread_comments`), porque sem isso o Responder do painel soltaria a
+  resposta no fim da lista.
+- O site mostra a conversa em um nível: resposta de resposta aparece embaixo
+  da pergunta original.
+- O jogador também responde **pelo site**, dentro da conversa (a mutation
+  aceita `parentId`, conferido contra a aula). A resposta dele continua
+  marcada como pergunta, então não sai assinada pelo instrutor. No site, o
+  botão só aparece na resposta do instrutor a uma dúvida do próprio jogador
+  (campo `isMine`): a ideia é continuar a sua dúvida, não conversar na dos
+  outros.
+- **Curtidas** (`likeCount` / `liked`, mutation `toggleQuestionLike`) valem
+  para qualquer mensagem e guardam os IDs de quem curtiu em
+  `_prime_poker_likes` — uma por jogador, com desfazer.
+
+```graphql
+aula(id: "aula-01", idType: SLUG) {
+  comments(first: 100, where: { order: ASC, orderby: COMMENT_DATE }) {
+    nodes { databaseId date text authorLabel isInstructor }
+  }
+}
+
+mutation { askLessonQuestion(input: { lessonId: 123, text: "..." }) { commentId } }
+```
+
+### Notificações
+
+CPT `notificacao` (JSON do ACF em `wp_plugin/acf/notificacoes.json`) com os
+módulos em `includes/Notifications/`. O CPT **não é exposto no GraphQL**: o
+front lê pelo tipo `PlayerNotification`, que já aplica o público-alvo. Um CPT
+aberto com um filtro por cima seria uma porta a mais para esquecer de trancar.
+
+**Três tipos**, decididos em 20/09/2026: `aviso` (escrito por você no painel),
+`aula` e `suporte` (criados sozinhos — ver abaixo).
+
+**Quem recebe cada aviso:**
+
+| Preenchido | Vai para |
+| --- | --- |
+| Nada | todos os jogadores |
+| Tier mínimo | aquele tier para cima, pela capability acumulada |
+| Jogador | só ele — e o tier é ignorado |
+
+A equipe (`edit_posts`) alcança todos os tiers, para conferir o que publicou.
+
+**Automáticas:**
+
+- **Aula publicada** → aviso para quem tem o tier da aula, com link para ela.
+  Só na passagem *para* publicada: salvar de novo uma aula já no ar não avisa
+  ninguém outra vez.
+- **Dúvida respondida** → aviso para quem perguntou, quando a resposta vem da
+  equipe. A réplica do próprio jogador na conversa não notifica.
+
+**Lidas** ficam em user meta (`_prime_poker_read_notifications`), não no post:
+a mesma notificação é lida por um jogador e não por outro. "Marcar todas"
+marca só o que aquele jogador enxerga.
+
+```graphql
+myNotifications(filter: UNREAD, first: 20) { id type title description date read href }
+notificationsUnread
+
+mutation { markNotification(input: { notificationId: 12, read: true }) { unread } }
+mutation { markAllNotificationsRead(input: {}) { unread } }
+```
 
 ### Revalidação do cache do front
 

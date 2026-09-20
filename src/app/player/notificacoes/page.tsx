@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { markAllRead } from "@/actions/notifications";
 import { FilterNav } from "@/components/pages/player/notifications/filter-nav";
 import { NotificationItem } from "@/components/shared/player/notification-item";
+import { groupByPeriod } from "@/lib/notification-groups";
 import {
   countUnread,
   FILTERS,
@@ -81,13 +82,26 @@ async function Content({ searchParams }: Props) {
           </p>
         </div>
       ) : (
-        <ul className="flex flex-col gap-1 rounded-xl border border-white/10 bg-white/3 p-2">
-          {notifications.map((notification) => (
-            <li key={notification.id}>
-              <NotificationItem notification={notification} />
-            </li>
+        // Um bloco por período. O título fica grudado no topo enquanto o
+        // bloco rola: em lista longa, é o que diz de que dia é o que está
+        // na tela sem precisar voltar.
+        <div className="flex flex-col gap-6">
+          {groupByPeriod(notifications).map((group) => (
+            <section key={group.label} className="flex flex-col gap-2">
+              <h2 className="sticky top-20 z-10 bg-prime-dark py-1 font-semibold text-[11px] text-prime-light/50 uppercase tracking-wider">
+                {group.label}
+              </h2>
+
+              <ul className="flex flex-col gap-1 rounded-xl border border-white/10 bg-white/3 p-2">
+                {group.items.map((notification) => (
+                  <li key={notification.id}>
+                    <NotificationItem notification={notification} />
+                  </li>
+                ))}
+              </ul>
+            </section>
           ))}
-        </ul>
+        </div>
       )}
     </>
   );

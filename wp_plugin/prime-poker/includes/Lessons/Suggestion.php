@@ -14,21 +14,29 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * `lessonSuggestion(subject, track)`: a aula mais próxima de um assunto.
+ * `lessonSuggestion(subject, track, postId)`: a aula a divulgar num post.
  *
  * É a ÚNICA leitura de aulas aberta a visitantes, de propósito: o post do
  * blog é público e convida o leitor para a aula do mesmo tema. Sai só o que
  * um card de divulgação mostra — título, slug, instrutor e duração. Vídeo,
  * materiais e tier nunca passam por aqui.
  *
- * Pontua cada palavra do título da aula em comum com o assunto e dá um
- * empurrão para a trilha de mesmo slug. Sem palavra em comum, devolve null:
- * uma sugestão aleatória é pior do que nenhuma.
+ * Com `postId`, **a escolha do painel vem primeiro**: o campo Aula
+ * relacionada do post (ACF `relatedlesson`) ganha de qualquer palpite. Ele
+ * precisa passar por aqui porque a relação do ACF, lida direto, devolve nada
+ * para visitante — a aula é privada, e o leitor do blog não está logado.
+ *
+ * Sem escolha no painel, o palpite: pontua cada palavra do título da aula em
+ * comum com o assunto e dá um empurrão para a trilha de mesmo slug. Sem
+ * palavra em comum, devolve null — uma sugestão aleatória é pior que nenhuma.
  */
 final class Suggestion {
 
 	/** Aulas avaliadas, das mais recentes. O acervo previsto cabe folgado. */
 	private const POOL = 500;
+
+	/** Meta do ACF com a aula escolhida à mão no post (campo `relatedlesson`). */
+	private const META_RELATED = 'relatedlesson';
 
 	/**
 	 * Tamanho mínimo da palavra: 3, para as siglas do poker (ICM, GTO, HUD)
@@ -87,13 +95,73 @@ final class Suggestion {
 						'type'        => 'String',
 						'description' => __( 'Slug de trilha que ganha preferência.', 'prime-poker' ),
 					),
+					'postId'  => array(
+						'type'        => 'Int',
+						'description' => __( 'databaseId do post. Se ele tiver Aula relacionada, é ela que volta.', 'prime-poker' ),
+					),
 				),
-				'resolve'     => static fn( $root, array $args ): ?array => self::find(
+				'resolve'     => static fn( $root, array $args ): ?array => self::for_post(
+					(int) ( $args['postId'] ?? 0 ),
 					(string) $args['subject'],
 					isset( $args['track'] ) ? (string) $args['track'] : ''
 				),
 			)
 		);
+	}
+
+	/**
+	 * A aula a divulgar num post: a escolhida no painel, ou o palpite.
+	 *
+	 * @param int    $post_id databaseId do post; 0 pula direto para o palpite.
+	 * @param string $subject Assunto (título do post).
+	 * @param string $track   Slug de trilha preferida, ou vazio.
+	 * @return array{slug: string, title: string, instructor: string|null, duration: int|null}|null
+	 */
+	public static function for_post( int $post_id, string $subject, string $track ): ?array {
+		$chosen = $post_id > 0 ? self::related( $post_id ) : null;
+
+		return null !== $chosen ? $chosen : self::find( $subject, $track );
+	}
+
+	/**
+	 * A aula escolhida à mão no post.
+	 *
+	 * A leitura tenta o ACF primeiro e cai na meta crua depois. São dois
+	 * caminhos porque nem sempre dão no mesmo lugar: o ACF resolve o campo
+	 * pela definição do grupo — é o que a área administrativa e o WPGraphQL
+	 * usam — enquanto a meta crua depende de o valor estar gravado com o nome
+	 * do campo. Com os dois, o painel manda mesmo que o nome no banco não
+	 * seja exatamente este, e o campo continua funcionando se o ACF sair do
+	 * ar. O `false` pede o valor sem formatação: IDs, não objetos.
+	 *
+	 * @param int $post_id databaseId do post.
+	 * @return array{slug: string, title: string, instructor: string|null, duration: int|null}|null
+	 */
+	private static function related( int $post_id ): ?array {
+		$stored = function_exists( 'get_field' ) ? get_field( self::META_RELATED, $post_id, false ) : null;
+
+		if ( empty( $stored ) ) {
+			$stored = get_post_meta( $post_id, self::META_RELATED, true );
+		}
+
+		$ids   = is_array( $stored ) ? $stored : array( $stored );
+		$first = reset( $ids );
+		// Um ACF configurado para devolver o post inteiro chega como objeto.
+		$id = $first instanceof \WP_Post ? (int) $first->ID : (int) ( $first ?: 0 );
+
+		if ( $id <= 0 ) {
+			return null;
+		}
+
+		$lesson = get_post( $id );
+
+		// Aula despublicada ou apagada depois de relacionada: cai no palpite,
+		// em vez de virar um link quebrado no post.
+		if ( ! $lesson instanceof \WP_Post || Content::POST_TYPE !== $lesson->post_type || 'publish' !== $lesson->post_status ) {
+			return null;
+		}
+
+		return self::card( $id );
 	}
 
 	/**
@@ -144,16 +212,25 @@ final class Suggestion {
 			}
 		}
 
-		if ( 0 === $best ) {
-			return null;
-		}
+		return 0 === $best ? null : self::card( $best );
+	}
 
-		$instructor = (int) get_post_meta( $best, 'instructor', true );
-		$duration   = (int) get_post_meta( $best, 'duration', true );
+	/**
+	 * O card público de uma aula.
+	 *
+	 * Só o que a divulgação mostra. Tudo o que é protegido — vídeo, materiais,
+	 * tier — fica de fora por construção, e não por um filtro depois.
+	 *
+	 * @param int $lesson_id ID da aula.
+	 * @return array{slug: string, title: string, instructor: string|null, duration: int|null}
+	 */
+	private static function card( int $lesson_id ): array {
+		$instructor = (int) get_post_meta( $lesson_id, 'instructor', true );
+		$duration   = (int) get_post_meta( $lesson_id, 'duration', true );
 
 		return array(
-			'slug'       => (string) get_post_field( 'post_name', $best ),
-			'title'      => html_entity_decode( get_the_title( $best ), ENT_QUOTES, 'UTF-8' ),
+			'slug'       => (string) get_post_field( 'post_name', $lesson_id ),
+			'title'      => html_entity_decode( get_the_title( $lesson_id ), ENT_QUOTES, 'UTF-8' ),
 			'instructor' => $instructor > 0 ? html_entity_decode( get_the_title( $instructor ), ENT_QUOTES, 'UTF-8' ) : null,
 			'duration'   => $duration > 0 ? $duration : null,
 		);

@@ -107,6 +107,7 @@ async function Content({ params }: Props) {
           lessonId={lesson.databaseId}
           saved={lesson.saved}
           completed={lesson.completed}
+          canComplete={lesson.canWatch}
         />
       </div>
 
@@ -133,9 +134,10 @@ async function Content({ params }: Props) {
 
       <Section title="Dúvidas com o instrutor">
         <Questions
-          slug={lesson.slug}
+          lessonId={lesson.databaseId}
           questions={lesson.questions}
           instructor={lesson.instructor}
+          canAsk={lesson.canWatch}
         />
       </Section>
 

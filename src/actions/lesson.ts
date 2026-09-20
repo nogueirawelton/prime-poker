@@ -8,6 +8,7 @@ import {
   registerView,
   saveProgress,
   toggleCompleted,
+  toggleQuestionLike,
   toggleSaved,
 } from "@/services/lesson-detail";
 
@@ -94,9 +95,15 @@ export async function registerLessonView(lessonId: number) {
 
 export type QuestionState = { error?: string };
 
-/** Envia a dúvida do jogador ao instrutor da aula. */
+/**
+ * Envia a dúvida do jogador ao instrutor da aula.
+ *
+ * Com `parentId`, entra como resposta dentro daquela conversa; sem ele, abre
+ * uma dúvida nova.
+ */
 export async function sendQuestion(
-  slug: string,
+  lessonId: number,
+  parentId: number | undefined,
   _state: QuestionState,
   formData: FormData,
 ): Promise<QuestionState> {
@@ -105,15 +112,37 @@ export async function sendQuestion(
   const text = String(formData.get("text") ?? "").trim();
 
   // Validação mínima e no servidor: o cliente só desabilita o botão, e isso
-  // é conveniência, não garantia.
+  // é conveniência, não garantia. O plugin confere de novo — quem publica a
+  // dúvida é ele.
   if (!text) return { error: "Escreva sua dúvida antes de enviar." };
   if (text.length > 2000) {
     return { error: "Dúvida muito longa: use no máximo 2000 caracteres." };
   }
 
-  await addQuestion(slug, text);
+  try {
+    await addQuestion(lessonId, text, parentId);
+  } catch (error) {
+    console.error("Falha ao enviar a dúvida da aula", lessonId, error);
+
+    return { error: "Não foi possível enviar sua dúvida. Tente de novo." };
+  }
 
   refresh();
 
   return {};
+}
+
+/** Curte ou descurte uma dúvida ou resposta. */
+export async function likeQuestion(commentId: number) {
+  await ensureSession();
+
+  if (!Number.isInteger(commentId) || commentId <= 0) return;
+
+  try {
+    await toggleQuestionLike(commentId);
+  } catch (error) {
+    console.error("Falha ao marcar a dúvida", commentId, error);
+  }
+
+  refresh();
 }

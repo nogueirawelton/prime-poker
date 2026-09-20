@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AuthorCard } from "@/components/pages/blog/author-card";
 import { Breadcrumbs } from "@/components/pages/blog/breadcrumbs";
+import { LessonCallout } from "@/components/pages/blog/lesson-callout";
 import { PostCard } from "@/components/pages/blog/post-card";
 import { PostComments } from "@/components/pages/blog/post-comments";
 import { PostCover } from "@/components/pages/blog/post-cover";
@@ -61,9 +62,10 @@ export default async function PostPage({ params }: Props) {
 
   const [related, lesson, comments] = await Promise.all([
     getRelated(post),
-    // A chamada da lateral aponta para a aula do acervo que trata do mesmo
-    // assunto; o título do post é o que aproxima os dois.
-    getSuggestedLesson(post.title, post.category?.slug),
+    // A chamada da lateral aponta para a aula que o post divulga: a
+    // escolhida no painel, em *Aula relacionada*, ou — sem ela — a do acervo
+    // que trata do mesmo assunto, aproximada pelo título.
+    getSuggestedLesson(post.title, post.category?.slug, post.databaseId),
     getComments(post.databaseId),
   ]);
 
@@ -138,11 +140,16 @@ export default async function PostPage({ params }: Props) {
                 linha em ~75 caracteres, que é a medida confortável de
                 leitura. */}
             <div
-              className="rich-text max-w-3xl"
+              className="rich-text"
               dangerouslySetInnerHTML={{ __html: html }}
             />
 
             <PostFaq faqItems={faq} />
+
+            {/* A aula do painel, no fim do texto: é o único lugar onde ela
+                aparece no celular, já que a coluna lateral some abaixo de
+                `lg`. */}
+            <LessonCallout lesson={lesson} />
 
             <AuthorCard post={post} />
 

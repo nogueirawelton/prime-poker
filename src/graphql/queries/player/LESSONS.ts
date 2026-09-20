@@ -65,6 +65,8 @@ export const LESSONS = gql`
     $search: String
     $track: String
     $instructor: Int
+    $tier: String
+    $level: String
     $from: String
     $to: String
   ) {
@@ -77,6 +79,8 @@ export const LESSONS = gql`
       search: $search
       track: $track
       instructor: $instructor
+      tier: $tier
+      level: $level
       from: $from
       to: $to
     )
@@ -98,6 +102,19 @@ export const LESSON = gql`
         name
         url
         fileSize
+      }
+      comments(first: 100, where: { order: ASC, orderby: COMMENT_DATE }) {
+        nodes {
+          databaseId
+          parentDatabaseId
+          date
+          text
+          authorLabel
+          isInstructor
+          isMine
+          likeCount
+          liked
+        }
       }
     }
   }
@@ -136,6 +153,16 @@ export const LESSON_TRACKS = gql`
   }
 `;
 
+/** Tiers do site, para o filtro por nível de acesso. Pública. */
+export const PLAYER_TIERS = gql`
+  query PlayerTiers {
+    playerTiers {
+      slug
+      label
+    }
+  }
+`;
+
 /** Instrutores do filtro. Pública. */
 export const LESSON_INSTRUCTORS = gql`
   query LessonInstructors {
@@ -148,10 +175,15 @@ export const LESSON_INSTRUCTORS = gql`
   }
 `;
 
-/** Aula mais próxima do assunto de um post. Pública e só com dados de card. */
+/**
+ * A aula a divulgar num post. Pública e só com dados de card.
+ *
+ * Com `postId`, o plugin devolve a **Aula relacionada** escolhida no painel;
+ * sem ela, a aula de título mais próximo do assunto.
+ */
 export const LESSON_SUGGESTION = gql`
-  query LessonSuggestion($subject: String!, $track: String) {
-    lessonSuggestion(subject: $subject, track: $track) {
+  query LessonSuggestion($subject: String!, $track: String, $postId: Int) {
+    lessonSuggestion(subject: $subject, track: $track, postId: $postId) {
       slug
       title
       instructor

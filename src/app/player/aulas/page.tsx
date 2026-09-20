@@ -10,7 +10,12 @@ import {
   type LessonsSearchParams,
   parseFilter,
 } from "@/lib/lessons-params";
-import { getInstructors, getTracks, listLessons } from "@/services/lessons";
+import {
+  getInstructors,
+  getTiers,
+  getTracks,
+  listLessons,
+} from "@/services/lessons";
 
 export const metadata: Metadata = {
   title: "Aulas | Prime Poker Team",
@@ -33,11 +38,11 @@ export default function LessonsPage({ searchParams }: Props) {
       {/* Busca e resultados dependem da URL, que só existe em tempo de
           requisição. Atrás dos boundaries, o cabeçalho continua
           prerenderizado no shell estático. */}
-      <Suspense fallback={<div className="h-10 lg:hidden" />}>
+      <Suspense fallback={<TracksSkeleton />}>
         <Tracks />
       </Suspense>
 
-      <Suspense fallback={<div className="h-14" />}>
+      <Suspense fallback={<ControlsSkeleton />}>
         <Controls searchParams={searchParams} />
       </Suspense>
 
@@ -53,10 +58,11 @@ async function Tracks() {
 }
 
 async function Controls({ searchParams }: Props) {
-  const [params, tracks, instructors] = await Promise.all([
+  const [params, tracks, instructors, tiers] = await Promise.all([
     searchParams,
     getTracks(),
     getInstructors(),
+    getTiers(),
   ]);
 
   return (
@@ -64,6 +70,7 @@ async function Controls({ searchParams }: Props) {
       activeFilters={countFilters(parseFilter(params))}
       tracks={tracks}
       instructors={instructors}
+      tiers={tiers}
     />
   );
 }
@@ -102,6 +109,45 @@ async function Results({ searchParams }: Props) {
         hasMore={hasMore}
         params={params}
       />
+    </div>
+  );
+}
+
+/**
+ * Faixa de trilhas do mobile enquanto elas não chegam.
+ *
+ * Só aparece onde a faixa existe (`lg:hidden`), com a altura e o formato de
+ * pílula dos chips reais. Larguras diferentes porque nomes de trilha têm
+ * tamanhos diferentes — uma fileira de blocos idênticos não se parece com o
+ * que vai entrar no lugar.
+ */
+function TracksSkeleton() {
+  return (
+    <div
+      className="-mx-4 flex gap-2 overflow-hidden px-4 lg:hidden"
+      aria-hidden="true"
+    >
+      {["w-20", "w-28", "w-24", "w-32"].map((width) => (
+        <div
+          key={width}
+          className={`h-10 shrink-0 animate-pulse rounded-full border border-white/10 bg-white/3 ${width}`}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Busca e botão de filtros enquanto as trilhas e os instrutores não chegam.
+ *
+ * As medidas espelham as de `LessonsSearch` — `h-14` no campo, `size-14` no
+ * botão —, para a barra não pular de tamanho quando o conteúdo entra.
+ */
+function ControlsSkeleton() {
+  return (
+    <div className="flex items-center gap-3" aria-hidden="true">
+      <div className="h-14 flex-1 animate-pulse rounded-xl border border-white/10 bg-white/3" />
+      <div className="size-14 shrink-0 animate-pulse rounded-xl border border-white/10 bg-white/3" />
     </div>
   );
 }

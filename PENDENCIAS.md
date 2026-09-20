@@ -473,7 +473,7 @@ funcionam só com dados do WP.
 
 ---
 
-## Etapa 8 — Progresso, salvas e concluídas (por usuário)
+## Etapa 8 — Progresso, salvas e concluídas ✅ concluída (20/09/2026, plugin 1.13.0)
 
 **Decisões (19/09/2026):**
 - **Sequência de estudo**: conta o dia em que o jogador **abriu qualquer aula** que pode
@@ -484,10 +484,10 @@ funcionam só com dados do WP.
   player remarcaria tudo).
 
 **👤 Você**
-- [ ] Subir o plugin **1.13.0** (módulo `Lessons/Progress.php` + os campos e mutations
+- [x] Subir o plugin **1.13.0** (módulo `Lessons/Progress.php` + os campos e mutations
       novos). **Antes do front**: sem ele, as telas do jogador quebram, porque a
       listagem pede `watchedSeconds`, `saved` e `completed`.
-- [ ] Testar no navegador com um usuário de cada tier:
+- [x] Testar no navegador com um usuário de cada tier:
       - assistir um trecho, sair, voltar (de preferência em outro navegador) e conferir
         se retoma do mesmo ponto;
       - deixar o vídeo passar de 90% e ver a aula virar "Assistida" sozinha;
@@ -515,52 +515,208 @@ funcionam só com dados do WP.
 - [x] Verificado: typecheck, lint, build de produção e 32 casos do `Progress` em WP
       simulado (conclusão aos 90%, aula sem duração, desmarcar na mão, ordem das
       salvas, retomada, aula apagada, sequência com buraco e virada de dia).
-- [ ] Verificar no ar depois que o plugin 1.13.0 subir.
+- [x] Correções encontradas no seu teste (20/09/2026):
+      - **`pause` e `ended` do player.js do Bunny não recebem dados** — só o `timeupdate`
+        traz `{seconds, duration}`. Eu tinha escrito os três iguais, então pausar mandava
+        `NaN` e a action descartava: nada era gravado, e a conclusão automática no fim do
+        vídeo nunca chegou a rodar. Agora o último ponto informado fica guardado e é ele
+        que vale ao pausar e ao terminar. O progresso também é gravado ao **sair da aula
+        por navegação** — clicar em outro link não pausa o vídeo.
+      - **O carregando aparecia no botão errado**: os dois botões dividiam um único
+        `useTransition`, e só o de concluir trocava o ícone pelo spinner, então salvar
+        parecia estar concluindo a aula. Um estado por botão.
+      - **O iframe recarregava a cada `refresh()`**: o link do Bunny é assinado com a hora
+        atual, então cada leitura devolve um endereço diferente para o mesmo vídeo, e
+        salvar reiniciava o vídeo do zero. O link é fixado na primeira renderização da
+        aula (vale 6 horas, bem mais que uma sessão).
+- [x] Verificado no ar: mutations isoladas no WordPress (salvar não mexe em concluída),
+      progresso de 2s fazendo o `continueWatching` responder, e o fluxo completo no
+      navegador por você.
 
 **✅ Pronto quando:** você assiste um trecho, sai, volta em outro navegador e continua
 do mesmo ponto; salvas e concluídas persistem.
 
 ---
 
-## Etapa 9 — Dúvidas nas aulas
+## Etapa 9 — Dúvidas nas aulas ✅ concluída (20/09/2026, plugin 1.17.0)
+
+**Decisões (20/09/2026):** a **equipe responde em nome do instrutor** (ninguém precisa de
+usuário novo no WP); as dúvidas são **visíveis para todos os jogadores** da aula; e
+**sem moderação prévia** — só jogador pagante escreve, e a equipe apaga ou edita pelo painel.
 
 **👤 Você**
-- [ ] ❓ Quem responde as dúvidas: o instrutor da aula tem usuário no WP, ou a equipe responde
-      pelo painel em nome dele?
-- [ ] ❓ Dúvidas são visíveis para todos os jogadores da aula ou só para quem perguntou?
-- [ ] ❓ Precisam de moderação antes de aparecer?
-- [ ] Se o instrutor tiver usuário: criar os usuários e me dizer como ligar a cada Instrutor.
+- [x] Subir o plugin **1.15.0** (`Lessons/Questions.php`). **Antes do front**: a página da
+      aula passa a pedir `text`, `authorLabel`, `isInstructor`, `likeCount` e `liked` nos
+      comentários.
+- [x] Apagar a dúvida de teste que você mandou com a 1.14.0 — ela ficou sem a marca de
+      pergunta e continuaria aparecendo como instrutor.
+- [x] Responder sempre pelo botão **Responder** do comentário, nunca criando um comentário
+      solto: é o `comment_parent` que prende a resposta à pergunta na tela.
+- [x] Testar: perguntar como jogador no site, responder pelo painel em *Comentários* e
+      conferir que a resposta aparece com o nome do **instrutor da aula** e o selo.
+- [x] Conferir que aula trancada não mostra o campo de pergunta.
 
 **🤖 Claude**
-- [ ] Plugin: comentários do CPT aula restritos a `access_player_area` (leitura e escrita),
-      com aprovação automática ou moderação conforme sua decisão.
-- [ ] Plugin GraphQL: `ehInstrutor` no comentário.
-- [ ] `sendQuestion` e a listagem de dúvidas usando os comentários reais (via `authMutate`).
-- [ ] Remover a conversa de exemplo (`initialQuestions`).
-- [ ] Notificar o jogador quando a dúvida for respondida (liga com a etapa 10).
+- [x] Plugin `Lessons/Questions.php`: as dúvidas são comentários do CPT aula — aprovação
+      automática, leitura fechada a jogador logado (GraphQL e `/wp/v2/comments`), e
+      perguntar exige poder **assistir** à aula, não só vê-la.
+- [x] Plugin GraphQL: `isInstructor`, `authorLabel` e `text` no `Comment`; mutation
+      `askLessonQuestion`. O `authorLabel` é o que faz a resposta da equipe sair assinada
+      pelo instrutor da aula.
+- [x] `sendQuestion` e a listagem usando os comentários reais; a conversa de exemplo
+      (`initialQuestions`) saiu, e a seção abre vazia com o convite a perguntar.
+- [x] Aula trancada mostra "Libere o acesso a esta aula para perguntar" no lugar do campo.
+- [x] Correção apontada por você (20/09/2026): eu decidia "é resposta do instrutor" só
+      pela capability de quem escreveu, então **a sua própria pergunta pelo site saiu
+      assinada como instrutor** — você é da equipe. O que separa pergunta de resposta
+      agora é por onde o comentário entrou: o que vem do site ganha a meta
+      `_prime_poker_question` e nunca é tratado como resposta (plugin 1.14.1).
+- [x] Conversas aninhadas (pedido em 20/09/2026): lista corrida, sem caixas — a resposta
+      aparece recuada sob a pergunta. O elo vem do
+      **Responder** do painel (`parentDatabaseId`); resposta de resposta sobe para a
+      pergunta original, e resposta órfã (pergunta apagada) vira um bloco próprio em vez
+      de sumir. O plugin liga os comentários aninhados à força — com a opção desligada,
+      o Responder soltaria a resposta no fim da lista.
+- [x] Curtir e responder na conversa (pedido em 20/09/2026): saiu o "Aguardando resposta".
+      **Curtir** vale para qualquer mensagem, pergunta ou resposta — uma por jogador, com
+      desfazer, contagem ao lado. **Responder** aparece só na resposta do instrutor a uma
+      dúvida do próprio jogador (campo `isMine`): serve para continuar a sua dúvida quando
+      a resposta não bastou, não para conversar na dúvida dos outros — quem quer perguntar
+      abre a sua. A resposta entra dentro da conversa (`parentId` na mutation, validado
+      contra a aula) e continua marcada como pergunta, então não sai assinada pelo
+      instrutor.
+- [x] Verificado: typecheck, lint, build, a forma da consulta conferida contra o schema
+      real (a conexão `comments` na `Aula` e o `orderby: COMMENT_DATE` existem) e 8 casos
+      da regra pergunta/resposta em WP simulado (incluindo alguém da equipe perguntando
+      pelo site e aula sem instrutor cadastrado), 7 das curtidas (alternância, dois
+      jogadores na mesma dúvida, dúvida inexistente) e 8 da montagem das conversas
+      (resposta de resposta, resposta órfã, fora de ordem, ciclo, lista vazia).
+- [x] Correção apontada por você (20/09/2026): o campo de resposta aparecia e sumia na
+      hora. O efeito que fecha o campo depois do envio rodava já na montagem — campo
+      recém-aberto está "parado e sem erro", que era a condição de fechar. Agora ele só
+      age depois de um envio de verdade. O mesmo furo existia no formulário de nova
+      dúvida, invisível porque lá ele só limpava um campo já vazio.
+- [x] Notificar o jogador quando a dúvida for respondida — entregue na etapa 10, que é
+      onde as notificações nasceram.
 
 **✅ Pronto quando:** você pergunta em staging, responde pelo WP e a resposta aparece como instrutor.
 
 ---
 
-## Etapa 10 — Notificações
+## Etapa 10 — Notificações ✅ concluída (20/09/2026, plugin 1.17.0)
+
+**Decisões (20/09/2026):** três tipos — **nova aula**, **resposta à minha dúvida** e
+**aviso da equipe**. Conquistas ficaram de fora: é o tipo que mais vira ruído e o que
+menos leva o jogador a fazer algo. Alcance do aviso: **por tier ou para um jogador
+específico**.
 
 **👤 Você**
-- [ ] ❓ Quais tipos entram na primeira versão: `aula` (nova aula), `aviso` (comunicado),
-      `suporte` (resposta de dúvida), `conquista` (trilha concluída, sequência)?
-- [ ] ❓ Um aviso pode ser direcionado por tier ou para um usuário específico?
-- [ ] Depois do plugin: importar o JSON do ACF e criar 2–3 avisos de teste.
+- [x] Importar `wp_plugin/acf/notificacoes.json` em *ACF → Ferramentas → Importar*.
+- [x] Subir o plugin **1.17.0**. **Antes do front**, como sempre.
+- [x] Criar 2–3 avisos de teste em *Notificações*: um para todos, um por tier e um para
+      um jogador específico.
+- [x] Testar: publicar uma aula nova e conferir que o aviso chega a quem tem o tier dela;
+      responder uma dúvida e conferir que quem perguntou é avisado.
 
 **🤖 Claude**
-- [ ] Plugin: CPT `notificacao` + ACF (`tipo`, `descricao`, `link`, `tierMinimo`, `usuario`).
-- [ ] Plugin: lidas em user meta; query `minhasNotificacoes(filtro)`, `notificacoesNaoLidas`;
-      mutations `marcarNotificacao(id, lida)` e `marcarTodasLidas`.
-- [ ] Plugin: gerar a notificação automaticamente ao publicar aula, ao responder dúvida
-      e nas conquistas escolhidas.
-- [ ] `services/notifications.ts` e `actions/notifications.ts` ligados no WP; sino, painel
-      e página de notificações com dados reais.
+- [x] CPT `notificacao` pelo JSON do ACF (`type`, `description`, `link`, `minimum_tier`,
+      `user`), fora do GraphQL — o front lê pelo tipo próprio do plugin, que já aplica o
+      público-alvo.
+- [x] `Notifications/Content.php`: quem recebe o quê (recado individual ignora o tier;
+      tier vale pela capability acumulada; equipe alcança todos) e o estado de leitura em
+      user meta, por jogador.
+- [x] `Notifications/Triggers.php`: aviso automático ao **publicar** uma aula (só na
+      passagem para publicada, senão cada correção avisaria o time inteiro) e ao a equipe
+      **responder uma dúvida** (a réplica do próprio jogador não notifica).
+- [x] `Notifications/GraphQL.php`: `myNotifications(filter, first, offset)`,
+      `notificationsUnread`, mutations `markNotification` e `markAllNotificationsRead`.
+- [x] `services/notifications.ts` ligado no WP: caiu o mock em memória, que sumia a cada
+      restart e não era compartilhado entre instâncias. Sino, painel e página de
+      notificações passam a usar dados reais sem mudar de forma.
+- [x] Tipo `conquista` removido da interface, junto com o ícone de troféu.
+- [x] Verificado: typecheck, lint, build e 17 casos do público-alvo em WP simulado
+      (tier acumulado, recado individual ignorando o tier, recado de outro não vazando,
+      equipe alcançando tudo, filtros lidas/não lidas, "marcar todas" mexendo só no que
+      o jogador vê, limite e offset).
+- [x] Correções apontadas por você (20/09/2026), fora do escopo da etapa mas no
+      mesmo caminho:
+      - **jogador sem o tier conseguia concluir a aula e curtir comentários**. As duas
+        mutations agora exigem poder assistir, e os botões somem da tela. **Salvar
+        continua valendo** em aula trancada: é a lista de desejos de quem vai pedir
+        upgrade, como você observou.
+      - **filtro de aulas por nível de acesso** (`?plano=player_gold`): novo select no
+        painel de filtros, alimentado por `playerTiers` do plugin. Vai pelo
+        `optionalQuery` — é um filtro a mais, então com plugin antigo no ar ele some
+        do painel em vez de derrubar a listagem.
+- [x] Ação de leitura escrita, não só o ✓ (pedido em 20/09/2026): sozinho, o ícone
+      tanto podia dizer "isto está lido" quanto "clique para marcar". Virou
+      "Marcar como lida" / "Marcar como não lida" embaixo de cada notificação.
+- [x] Página de notificações em blocos por período (pedido em 20/09/2026): Hoje,
+      Ontem, Últimos 7 dias, Últimos 30 dias e Mais antigas, com o título grudado no
+      topo enquanto o bloco rola. Agrupei por data, e não por tipo: a lista é
+      cronológica e é assim que se procura nela ("o que chegou hoje", "o que perdi na
+      semana") — por tipo, coisas que aconteceram juntas ficariam separadas.
+      O corte é por dia do calendário, então 23h de ontem é "Ontem" mesmo fazendo
+      três horas.
+- [x] Painel de filtros revisto (pedido em 20/09/2026): entrou o filtro por **Nível**
+      (iniciante, intermediário, avançado, `?nivel=`); "Partição" virou **Trilha**, que
+      é o nome da taxonomia no WordPress; "Nível de acesso" virou **Tier**, para não
+      confundir com o nível da aula; e **Data** e **Ordenar por** foram para o fim.
+      Ordem final: Trilha, Nível, Instrutor, Tier, Data, Ordenar por.
+- [x] Esqueleto na barra de busca, no botão de filtros e na faixa de trilhas do mobile
+      (pedido em 20/09/2026): os fallbacks só reservavam altura, sem mostrar nada. Agora
+      espelham a forma real (`h-14` no campo, `size-14` no botão, pílulas de larguras
+      diferentes nos chips) para nada pular quando o conteúdo entra. Conferido no HTML
+      servido: os três aparecem no stream.
+- [x] Painel de filtros deixou de ser popover de 20rem e virou um **collapsible em
+      largura cheia**, abrindo abaixo da busca com animação de altura (pedido em
+      20/09/2026): com seis filtros, a coluna estreita virava uma tira alta demais.
+      Agora eles se espalham em grade (2 colunas no tablet, 4 no desktop): os cinco
+      selects ocupam uma célula cada e a Data ocupa duas, com "de" e "até" lado a lado
+      — empilhados, ela ficava mais alta que a linha e abria buracos na grade. O
+      "Limpar filtros" saiu da grade e foi para um rodapé à direita, separado por um
+      traço: é ação, não filtro.
+- [x] Verificar no ar depois que o plugin 1.17.0 subir.
 
 **✅ Pronto quando:** publicar uma aula gera a notificação, e o "lida" persiste entre dispositivos.
+
+---
+
+## Aula relacionada no post ✅ concluída (20/09/2026, plugin 1.18.1)
+
+Ficou pendente desde a etapa 7 ("a aula no blog deixa pro final q vamos relacionar no
+post com a aula").
+
+**👤 Você**
+- [x] Criar o campo **Aula relacionada** (ACF `relatedlesson`, relacionamento) no post.
+- [ ] Subir o plugin **1.18.1**.
+- [ ] Depois de subir, conferir se a aula escolhida aparece no post (ver a observação
+      abaixo sobre o nome do campo).
+
+**🤖 Claude**
+- [x] `lessonSuggestion` passou a aceitar `postId` e a honrar a escolha do painel antes
+      de palpitar pelo título. A relação **precisa** passar pelo plugin: lida direto do
+      ACF, ela volta vazia para visitante — a aula é privada e quem lê o blog não está
+      logado. Confirmei isso no ar: anônimo recebe `nodes: []`, jogador logado recebe a
+      aula.
+- [x] Aula relacionada despublicada, apagada ou apontando para algo que não é aula cai
+      no palpite, em vez de virar link quebrado no post.
+- [x] A consulta passou a levar também a tag `posts`: a resposta agora depende de um
+      campo do post, e sem isso trocar a aula no painel só apareceria quando o cache
+      expirasse sozinho.
+- [x] Verificado: typecheck, lint, build e 11 casos em WP simulado (escolha ganhando do
+      palpite, ID gravado como string, aula em rascunho, aula apagada, relação para
+      não-aula, sem palavra em comum, e a chamada sem `postId`).
+- [x] A chamada agora aparece também **dentro do post**, no fim do texto
+      (`LessonCallout`), e não só na coluna lateral — que some no celular. O link vai
+      direto para `/player/aulas/<slug>`: quem não entrou cai no login, quem entrou sem
+      o plano vê o cadeado com o tier necessário. A lateral continua como estava.
+- [x] A leitura da escolha do painel passou a tentar o ACF (`get_field`) antes da meta
+      crua. **Motivo:** no ar, os posts `cash-game-x-torneios` e `gestao-de-banca`
+      apontam para a aula 1111 pelo WPGraphQL, mas `get_post_meta` volta vazia — ou
+      seja, o valor não está gravado com o nome `relatedlesson`. Se depois do 1.18.1
+      ainda não aparecer, o nome do campo no ACF é outro: me diga qual é (o **Nome**,
+      não o rótulo) que eu ajusto a constante `META_RELATED`.
 
 ---
 
@@ -574,6 +730,8 @@ do mesmo ponto; salvas e concluídas persistem.
 - [ ] ❓ Para onde leva o botão de "fazer upgrade" nas aulas bloqueadas?
 - [ ] Se houver gateway: criar a conta e me passar as credenciais **de teste** e o webhook.
 - [ ] Confirmar que o cron do WP roda (WP-Cron real ou cron do servidor) — o vencimento depende disso.
+- [ ] Corrigir a aula relacionada no post. Já está no plugin, mas não aparece no post. puxar sempre o relacionado e nao por termo
+- [ ] Criar página de edição de perfil, com fotos informações pra contato e etc...
 
 **🤖 Claude**
 - [ ] Integração com o gateway via webhook → `Membership::set_tier()` (hook `prime_player_tier_changed`).
@@ -597,7 +755,16 @@ do mesmo ponto; salvas e concluídas persistem.
 - [ ] Revisar o grid do rodapé (voltou a ter 3 colunas).
 - [ ] ⚠️ O `sitemap.ts` lista o blog. Se staging for mergeada na master **antes** do
       lançamento, comentar o trecho do blog no sitemap na master junto com os links.
-- [ ] Remover qualquer mock restante e rodar `typecheck`, `lint` e `build`.
+- [x] Varredura de mocks (20/09/2026): **nada de dado inventado sobrou** no front. Os
+      `Set`/`Map` em memória de salvas, concluídas, dúvidas e notificações foram embora
+      nas etapas 8, 9 e 10; a sequência fixa `7` e o `getContinueWatching` que devolvia
+      `null` também. Não há `TODO`, `FIXME` nem conversa de exemplo no código. Sobrou
+      só o que está listado abaixo.
+- [ ] **Rodapé: Facebook, X e YouTube apontam para `#`** (`shared/footer/index.tsx`).
+      Só o Instagram tem endereço. Me passe os links ou diga quais redes tirar.
+- [ ] Decidir sobre três arquivos sem nenhum uso: `ui/form/select-input.tsx`,
+      `ui/form/text-area.tsx` e `ui/icon.tsx` — apagar ou manter.
+- [ ] Rodar `typecheck`, `lint` e `build` uma última vez antes do merge.
 - [ ] Fazer o merge staging → master sem desfazer nada da master.
 - [ ] Conferir no Bunny: `primepokerteam.com.br` nos *Allowed domains* e `localhost` removido.
 
@@ -616,7 +783,7 @@ do mesmo ponto; salvas e concluídas persistem.
 | ~~7~~ | 6 | ~~Regra de acesso por tier e o que o bloqueado vê~~ → tier mínimo + cadeado |
 | ~~8~~ | 6 | ~~Trilhas e níveis definitivos~~ → cliente cadastra as trilhas |
 | ~~9~~ | 8 | ~~Regra da sequência de estudo~~ → conta o dia com qualquer aula aberta; conclusão automática aos 90% |
-| 10 | 9 | Quem responde as dúvidas, visibilidade e moderação |
-| 11 | 10 | Tipos de notificação e direcionamento |
+| ~~10~~ | 9 | ~~Quem responde as dúvidas, visibilidade e moderação~~ → equipe em nome do instrutor, visíveis para todos, sem moderação |
+| ~~11~~ | 10 | ~~Tipos de notificação e direcionamento~~ → aula, resposta e aviso; por tier ou jogador |
 | 12 | 11 | Como o jogador muda de plano (manual ou gateway) |
 | 13 | 11 | Aviso de vencimento e destino do upgrade |

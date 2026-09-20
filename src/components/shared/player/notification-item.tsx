@@ -6,7 +6,6 @@ import {
   type Icon,
   MegaphoneIcon,
   PlayCircleIcon,
-  TrophyIcon,
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useTransition } from "react";
@@ -20,14 +19,12 @@ import type {
 const ICONS: Record<NotificationType, Icon> = {
   aula: PlayCircleIcon,
   aviso: MegaphoneIcon,
-  conquista: TrophyIcon,
   suporte: ChatCircleIcon,
 };
 
 const COLORS: Record<NotificationType, string> = {
   aula: "bg-prime-red/15 text-prime-red",
   aviso: "bg-blue-500/15 text-blue-400",
-  conquista: "bg-amber-500/15 text-amber-400",
   suporte: "bg-emerald-500/15 text-emerald-400",
 };
 
@@ -49,9 +46,12 @@ function when(data: string) {
 /**
  * Uma notificação, no sino e na página.
  *
- * Abrir a notificação já a marca como lida — é o que o clique significa. O
- * botão à direita existe para o caminho inverso (voltar a "não lida") e para
+ * Abrir a notificação já a marca como lida — é o que o clique significa. A
+ * ação embaixo existe para o caminho inverso (voltar a "não lida") e para
  * quem quer limpar o selo sem sair da página.
+ *
+ * Ela é escrita, não um ✓ solto: sozinho, o ícone tanto pode dizer "isto
+ * está lido" quanto "clique para marcar", e quem lê escolhe a errada.
  */
 export function NotificationItem({
   notification,
@@ -82,68 +82,68 @@ export function NotificationItem({
         <ItemIcon className="size-5" weight="fill" aria-hidden="true" />
       </span>
 
-      {/* Só vira link quando há para onde ir: comunicados do time se esgotam
-          no próprio texto. */}
-      <Body
-        href={notification.href}
-        onOpen={() => {
-          onNavigate?.();
-          if (!notification.read) toggleRead();
-        }}
-      >
-        <span className="flex items-center gap-2">
-          <span
-            className={twMerge(
-              "text-sm leading-snug",
-              notification.read
-                ? "text-prime-light/70"
-                : "font-semibold text-prime-light",
+      <div className="flex min-w-0 flex-1 flex-col items-start">
+        {/* Só vira link quando há para onde ir: comunicados do time se
+            esgotam no próprio texto. */}
+        <Body
+          href={notification.href}
+          onOpen={() => {
+            onNavigate?.();
+            if (!notification.read) toggleRead();
+          }}
+        >
+          <span className="flex items-center gap-2">
+            <span
+              className={twMerge(
+                "text-sm leading-snug",
+                notification.read
+                  ? "text-prime-light/70"
+                  : "font-semibold text-prime-light",
+              )}
+            >
+              {notification.title}
+            </span>
+
+            {!notification.read && (
+              <>
+                {/* O ponto é decorativo; quem usa leitor de tela recebe o
+                  estado pelo texto, não pela cor. */}
+                <span
+                  aria-hidden="true"
+                  className="size-2 shrink-0 rounded-full bg-prime-red"
+                />
+                <span className="sr-only">Não lida</span>
+              </>
             )}
-          >
-            {notification.title}
           </span>
 
-          {!notification.read && (
-            <>
-              {/* O ponto é decorativo; quem usa leitor de tela recebe o
-                  estado pelo texto, não pela cor. */}
-              <span
-                aria-hidden="true"
-                className="size-2 shrink-0 rounded-full bg-prime-red"
-              />
-              <span className="sr-only">Não lida</span>
-            </>
+          <span className="mt-0.5 block text-prime-light/60 text-xs leading-relaxed">
+            {notification.description}
+          </span>
+
+          <time
+            dateTime={notification.data}
+            className="mt-1 block text-[11px] text-prime-light/40"
+          >
+            {when(notification.data)}
+          </time>
+        </Body>
+
+        <button
+          type="button"
+          onClick={toggleRead}
+          disabled={pending}
+          className={twMerge(
+            "mt-2 flex items-center gap-1.5 rounded text-xs transition-colors duration-300 disabled:opacity-60",
+            notification.read
+              ? "text-prime-light/40 hover:text-prime-light/70"
+              : "text-prime-light/60 hover:text-prime-red",
           )}
-        </span>
-
-        <span className="mt-0.5 block text-prime-light/60 text-xs leading-relaxed">
-          {notification.description}
-        </span>
-
-        <time
-          dateTime={notification.data}
-          className="mt-1 block text-[11px] text-prime-light/40"
         >
-          {when(notification.data)}
-        </time>
-      </Body>
-
-      <button
-        type="button"
-        onClick={toggleRead}
-        disabled={pending}
-        aria-label={
-          notification.read ? "Marcar como não lida" : "Marcar como lida"
-        }
-        className={twMerge(
-          "shrink-0 rounded p-1 transition-colors duration-300",
-          notification.read
-            ? "text-prime-light/30 hover:text-prime-light/70"
-            : "text-prime-light/50 hover:text-prime-red",
-        )}
-      >
-        <CheckIcon className="size-4" weight="bold" />
-      </button>
+          <CheckIcon className="size-3.5" weight="bold" aria-hidden="true" />
+          {notification.read ? "Marcar como não lida" : "Marcar como lida"}
+        </button>
+      </div>
     </div>
   );
 }
@@ -157,10 +157,13 @@ function Body({
   onOpen: () => void;
   children: React.ReactNode;
 }) {
-  if (!href) return <div className="min-w-0 flex-1">{children}</div>;
+  // `w-full`, e não `flex-1`: agora o corpo vive numa coluna com a ação
+  // embaixo, e esticar na vertical deixaria o alvo do clique maior do que o
+  // texto que ele contém.
+  if (!href) return <div className="w-full min-w-0">{children}</div>;
 
   return (
-    <Link href={href} onClick={onOpen} className="min-w-0 flex-1">
+    <Link href={href} onClick={onOpen} className="w-full min-w-0">
       {children}
     </Link>
   );

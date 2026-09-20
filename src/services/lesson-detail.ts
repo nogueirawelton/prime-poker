@@ -1,10 +1,12 @@
 import "server-only";
 
 import { authMutate } from "@/graphql/auth-client";
+import { ASK_LESSON_QUESTION } from "@/graphql/mutations/player/ASK_LESSON_QUESTION";
 import { REGISTER_LESSON_PROGRESS } from "@/graphql/mutations/player/REGISTER_LESSON_PROGRESS";
 import { REGISTER_LESSON_VIEW } from "@/graphql/mutations/player/REGISTER_LESSON_VIEW";
 import { TOGGLE_LESSON_COMPLETED } from "@/graphql/mutations/player/TOGGLE_LESSON_COMPLETED";
 import { TOGGLE_LESSON_SAVED } from "@/graphql/mutations/player/TOGGLE_LESSON_SAVED";
+import { TOGGLE_QUESTION_LIKE } from "@/graphql/mutations/player/TOGGLE_QUESTION_LIKE";
 import type { Lesson } from "@/lib/lessons";
 import { getCatalog, getLessonNode, listLessons, toLesson } from "./lessons";
 
@@ -14,8 +16,9 @@ import { getCatalog, getLessonNode, listLessons, toLesson } from "./lessons";
  * Separado de `lessons.ts` porque aqui há estado do jogador: progresso,
  * salvas, concluídas e dúvidas.
  *
- * Tudo vem do WordPress, menos as dúvidas, que seguem em memória até a
- * etapa 9 — só as funções deste arquivo mudam quando elas forem para o CMS.
+ * Tudo vem do WordPress. As dúvidas são comentários do CPT aula: o plugin
+ * as fecha para a área do jogador e devolve o texto puro, o nome a exibir e
+ * se a resposta é do instrutor.
  */
 
 export type Material = {
@@ -32,6 +35,14 @@ export type Question = {
   isInstructor: boolean;
   text: string;
   data: string;
+  /** Respostas penduradas nesta pergunta, da mais antiga para a mais nova. */
+  replies: Array<Question>;
+  /** Foi o jogador logado que escreveu? */
+  isMine: boolean;
+  /** Quantas curtidas. */
+  likes: number;
+  /** O jogador logado marcou esta? */
+  liked: boolean;
 };
 
 export type LessonDetail = Lesson & {
@@ -48,12 +59,6 @@ export type LessonDetail = Lesson & {
 };
 
 /* -------------------------------------------------------------------------- */
-/*                            Dúvidas (mock, etapa 9)                         */
-/* -------------------------------------------------------------------------- */
-
-const QUESTIONS = new Map<string, Array<Question>>();
-
-/* -------------------------------------------------------------------------- */
 /*                                  Conteúdo                                  */
 /* -------------------------------------------------------------------------- */
 
@@ -67,28 +72,6 @@ function formatSize(bytes: number | null) {
   if (bytes < 1024 * 1024) return `${sizeFormatter.format(bytes / 1024)} KB`;
 
   return `${sizeFormatter.format(bytes / (1024 * 1024))} MB`;
-}
-
-/** Conversa de exemplo, para a aba não abrir vazia em toda aula. */
-function initialQuestions(lesson: Lesson): Array<Question> {
-  const base = new Date(lesson.data).getTime();
-
-  return [
-    {
-      id: `${lesson.id}-d1`,
-      author: "Você",
-      isInstructor: false,
-      text: "No flop Q♦ 7♥ 2♦, em que situações devo c-betar com meu range polarizado?",
-      data: new Date(base + 3600000).toISOString(),
-    },
-    {
-      id: `${lesson.id}-d2`,
-      author: lesson.instructor,
-      isInstructor: true,
-      text: "Prioriza c-bet polarizada quando você tem vantagem de nut e o board favorece seu range de 3-bet. Em Q72 rainbow, a frequência sobe bastante.",
-      data: new Date(base + 5400000).toISOString(),
-    },
-  ];
 }
 
 /* -------------------------------------------------------------------------- */
@@ -112,8 +95,93 @@ export async function getLesson(slug: string): Promise<LessonDetail | null> {
         size: formatSize(material.fileSize),
         url: material.url,
       })) ?? null,
-    questions: QUESTIONS.get(slug) ?? initialQuestions(lesson),
+    questions: toThreads(node.comments?.nodes ?? []),
   };
+}
+
+/**
+ * Comentários soltos → perguntas com as respostas penduradas.
+ *
+ * O WordPress guarda a conversa como uma lista plana com o ID do pai; quem
+ * responde pelo painel usa o **Responder**, e é esse elo que a tela usa para
+ * mostrar a resposta embaixo da pergunta certa.
+ *
+ * Resposta cuja pergunta sumiu (apagada no painel) sobe para o primeiro
+ * nível em vez de desaparecer junto — é conteúdo que alguém escreveu.
+ */
+function toThreads(
+  nodes: Array<{
+    databaseId: number;
+    parentDatabaseId: number;
+    date: string;
+    text: string;
+    authorLabel: string;
+    isInstructor: boolean;
+    isMine: boolean;
+    likeCount: number;
+    liked: boolean;
+  }>,
+): Array<Question> {
+  const byId = new Map<number, Question>(
+    nodes.map((comment) => [
+      comment.databaseId,
+      {
+        id: String(comment.databaseId),
+        author: comment.authorLabel,
+        isInstructor: comment.isInstructor,
+        text: comment.text,
+        data: comment.date,
+        replies: [],
+        isMine: comment.isMine,
+        likes: comment.likeCount,
+        liked: comment.liked,
+      },
+    ]),
+  );
+
+  const parentOf = new Map(
+    nodes.map((comment) => [comment.databaseId, comment.parentDatabaseId]),
+  );
+
+  /**
+   * A pergunta que abriu a conversa deste comentário.
+   *
+   * Sobe pela corrente de pais até achar quem não tem pai na lista. O painel
+   * do WordPress aceita responder uma resposta, e a tela mostra tudo num
+   * nível só: o que importa ao jogador é a pergunta a que aquilo responde.
+   */
+  function rootOf(id: number): number {
+    const seen = new Set<number>();
+    let current = id;
+
+    while (!seen.has(current)) {
+      seen.add(current);
+
+      const parent = parentOf.get(current) ?? 0;
+      if (!byId.has(parent)) return current;
+
+      current = parent;
+    }
+
+    return current;
+  }
+
+  const threads: Array<Question> = [];
+
+  for (const comment of nodes) {
+    const question = byId.get(comment.databaseId);
+    if (!question) continue;
+
+    const root = rootOf(comment.databaseId);
+
+    if (root === comment.databaseId) {
+      threads.push(question);
+    } else {
+      byId.get(root)?.replies.push(question);
+    }
+  }
+
+  return threads;
 }
 
 /** As aulas que o jogador salvou, da mais recente para a mais antiga. */
@@ -190,21 +258,21 @@ export async function saveProgress(
   };
 }
 
-/** Registra a pergunta do jogador. A resposta do instrutor vem por fora. */
-export async function addQuestion(slug: string, text: string) {
-  const lesson = await getLesson(slug);
-  if (!lesson) return;
+/**
+ * Registra a pergunta do jogador.
+ *
+ * Vira um comentário aprovado na aula; a resposta vem pelo painel do
+ * WordPress, em nome do instrutor.
+ */
+export async function addQuestion(
+  lessonId: number,
+  text: string,
+  parentId?: number,
+) {
+  await authMutate(ASK_LESSON_QUESTION, { lessonId, text, parentId });
+}
 
-  const currentItems = QUESTIONS.get(slug) ?? initialQuestions(lesson);
-
-  QUESTIONS.set(slug, [
-    ...currentItems,
-    {
-      id: `${slug}-${Date.now()}`,
-      author: "Você",
-      isInstructor: false,
-      text,
-      data: new Date().toISOString(),
-    },
-  ]);
+/** Curte ou descurte uma dúvida ou resposta. */
+export async function toggleQuestionLike(commentId: number) {
+  await authMutate(TOGGLE_QUESTION_LIKE, { commentId });
 }
