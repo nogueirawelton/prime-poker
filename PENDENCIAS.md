@@ -68,7 +68,7 @@ Precisa estar certa antes de qualquer outra etapa.
       3. Na mesma aba, sem aviso de erro de configuração (tags inexistentes como `[your-name]`).
       4. WP Mail SMTP → *Log de e-mails* (ou *Debug Events*): mensagem exata da falha.
 - [x] Confirmar que os e-mails "TESTE Claude 2 — ignorar" (inscrição) e `teste-newsletter@…` (newsletter) chegaram com todos os campos e as 3 UTMs.
-- [ ] Apagar os envios de teste marcados "TESTE Claude — ignorar", se o Flamingo/CFDB guardar.
+- [x] Apagar os envios de teste marcados "TESTE Claude — ignorar" (feito em 19/09/2026).
 
 **🤖 Claude**
 - [x] Conferir os nomes dos campos (schema, UTMs em `utils/utm.ts`) contra o CF7 — batem 1:1.
@@ -219,7 +219,7 @@ Desligar em *GraphQL → Settings → Enable GraphQL Debug Mode*. O front não d
 - [x] Testar o **cadastro** na staging com um e-mail seu: a conta é criada rápido (o e-mail
       sai depois da resposta) e chega "Boas-vindas ao Prime Poker Team!" com o seu nome e o
       botão apontando para a staging.
-- [] ❓ Avisar a equipe (admin) a cada cadastro novo? Hoje ninguém é notificado — **em aberto, não bloqueia**.
+- [x] ❓ Avisar a equipe (admin) a cada cadastro novo → **não**, ninguém é notificado (19/09/2026).
 - [x] Me contar o resultado (e mandar print do e-mail, se algo parecer estranho).
 
 **🤖 Claude**
@@ -378,29 +378,29 @@ Substitui o mock de `services/lessons.ts` e `services/lesson-detail.ts`.
       `localhost` e de `prime-poker.vercel.app`).
 - [ ] Bunny → *Allowed domains*: acrescentar **`primepokerteam.com.br`** — hoje recusado;
       sem isso nenhum vídeo toca no lançamento. Tirar `localhost` no lançamento (etapa 12).
-- [ ] Opcional: reimportar o `aulas.json` para o texto de ajuda da duração citar "minutos (25)".
+- [x] Reimportado o `aulas.json` com o texto de ajuda novo da duração (19/09/2026).
 
 **✅ Pronto quando:** a query `aulas` devolve as aulas de teste com filtros e ordenação,
 e um usuário free não recebe o vídeo de uma aula gold.
 
 ---
 
-## Etapa 7 — Aulas: front ligado no WP 🟡 código pronto (19/09/2026, plugin 1.12.0) — falta a sua parte
+## Etapa 7 — Aulas: front ligado no WP ✅ concluída (19/09/2026, plugin 1.12.1)
 
 **👤 Você**
-- [ ] Commit + push na `staging`.
-- [ ] Subir o plugin **1.12.0** (sugestão de aula no blog + correção de slug numérico).
-- [ ] Abrir a **Aula 01** no painel e clicar em **Atualizar** (sem mudar nada): o slug
+- [x] Commit + push na `staging`.
+- [x] Subir o plugin **1.12.0** (sugestão de aula no blog + correção de slug numérico).
+- [x] Abrir a **Aula 01** no painel e clicar em **Atualizar** (sem mudar nada): o slug
       dela é `1108` (foi publicada antes de ter título) e dá 404 no site. Ao salvar, o
       plugin troca por `aula-01`.
-- [ ] Testar no navegador (staging ou `localhost`) com os usuários de cada tier:
+- [x] Testar no navegador (staging ou `localhost`) com os usuários de cada tier:
       - listagem, filtros da sidebar e do painel ⚙, busca, ordens;
       - cards com cadeado e o tier exigido; página da aula bloqueada;
       - **o vídeo toca** no player do Bunny (não consegui abrir navegador aqui);
       - **o contador de visualizações sobe** ao abrir uma aula (1× por jogador a cada 12h);
       - material de apoio da Aula 01 abrindo em nova aba;
       - menu ⋮ do card → "Copiar link".
-- [ ] Me dizer o que ficou estranho.
+- [x] Me dizer o que ficou estranho — nada apontado.
 
 **🤖 Claude**
 - [x] `services/lessons.ts` ligado no WP: `listLessons` (filtros, ordem e paginação no
@@ -411,7 +411,8 @@ e um usuário free não recebe o vídeo de uma aula gold.
       `server-only`).
 - [x] Trilhas e instrutores do filtro vindos do WP; trilha vazia não aparece; ordem pelo
       campo `order`. Na sidebar, cada trilha ganha a bolinha da sua cor.
-- [x] Cor da trilha → classes do selo, da capa e da bolinha (`trackStyle`).
+- [x] Cor da trilha → selo, capa e bolinha da sidebar (`lib/lessons.ts`: `badgeStyle`,
+      `coverStyle`, `dotStyle`).
 - [x] Filtro de instrutor na URL por **ID** (`?instrutor=106`): os slugs dos instrutores no
       WP estão desatualizados (o Caio Brick tem slug `carlos-gto`).
 - [x] Card: imagem destacada (gradiente da trilha quando não há), cadeado + tier exigido
@@ -423,6 +424,22 @@ e um usuário free não recebe o vídeo de uma aula gold.
       em link de outro domínio); sem acesso, aviso no lugar da lista.
 - [x] Visualização contada ao abrir a aula (action chamada pelo navegador, não na
       renderização — o prefetch de links contaria aulas que ninguém abriu).
+- [x] Cor da trilha por **seletor de cor** do ACF (pedido em 19/09/2026), no lugar da
+      lista fechada (`vermelho`, `esmeralda`…): qualquer cor serve, e o texto do selo fica
+      preto ou branco conforme o brilho dela. As classes fixas do Tailwind deram lugar a
+      estilo em linha calculado do hex.
+- [x] Ícone por trilha na sidebar (pedido em 19/09/2026): campo de texto **Ícone** em
+      *Aparência da trilha* com o nome do ícone no Phosphor; vazio mantém a bolinha da cor,
+      nome errado aparece como interrogação vermelha. Renderizado no servidor — o
+      `DynamicIcon` importa o catálogo inteiro do Phosphor e a sidebar é componente cliente.
+      **Exige reimportar o `aulas.json` ANTES de subir o front** (sem o campo, o build cai).
+- [x] Avatar do instrutor no card: foto cadastrada no Instrutor quando existe; sem foto,
+      as iniciais do **nome real** — o apelido entre aspas (`Renato “rbmrenato” Barbosa`)
+      é ignorado, e quem só tem apelido ainda ganha uma letra (pedido em 19/09/2026).
+- [x] Correção (apontada por você): os `select` do painel de filtros abriam com texto
+      branco sobre fundo branco — a lista era desenhada pelo sistema, que ignora o tema.
+      Trocados pelo **Select do Radix**, com o mesmo visual do Popover que os contém e do
+      menu dos cards.
 - [x] Menu ⋮ do card: **copiar link** e **compartilhar** (onde o sistema oferece).
       *Salvar* e *marcar como assistida* ficaram para a etapa 8: hoje esse estado é mock
       em memória, e o card não teria como mostrar se a aula já está salva.
@@ -437,8 +454,12 @@ e um usuário free não recebe o vídeo de uma aula gold.
       visitante → login; listagem, trilha, instrutor, busca, 2 ordens e data (7 cenários ×
       2 tiers, total e cadeados certos); aula bloqueada para free com o tier certo; iframe
       com link assinado para gold; painel sem NaN; post do blog de pé com o plugin antigo.
-- [ ] Não verificado aqui (sem navegador): o vídeo tocando e o contador disparado pela
-      página — ver a sua parte acima.
+- [x] Verificado por você no navegador: vídeo e contador (não consegui abrir navegador aqui).
+- [x] Verificado depois da reimportação do `aulas.json` (19/09/2026): build de produção
+      passa com os campos novos; as duas trilhas chegam com cor em hex (`#b70101`,
+      `#7213d8`) e ícone (`strategy`, `brain`), que a sidebar renderiza como SVG; selo
+      com texto branco sobre as duas cores; tiers retestados nos três usuários —
+      free vê só a Aula 01, gold 01 e 02, platinum as três.
 
 **Observações:**
 - A busca do WordPress procura em título e conteúdo, não no nome do instrutor: o texto de
@@ -454,23 +475,47 @@ funcionam só com dados do WP.
 
 ## Etapa 8 — Progresso, salvas e concluídas (por usuário)
 
+**Decisões (19/09/2026):**
+- **Sequência de estudo**: conta o dia em que o jogador **abriu qualquer aula** que pode
+  assistir. Exigir minutos assistidos dependeria de o player avisar antes de a aba
+  fechar — quem estudou perderia o dia por um detalhe técnico.
+- **Conclusão automática aos 90%** do vídeo, com marcar/desmarcar na mão por cima.
+  Desmarcar desliga a conclusão automática daquela aula (senão o próximo aviso do
+  player remarcaria tudo).
+
 **👤 Você**
-- [ ] ❓ Regra da "sequência de estudo": conta dia com qualquer aula aberta, ou só com
-      X minutos assistidos?
+- [ ] Subir o plugin **1.13.0** (módulo `Lessons/Progress.php` + os campos e mutations
+      novos). **Antes do front**: sem ele, as telas do jogador quebram, porque a
+      listagem pede `watchedSeconds`, `saved` e `completed`.
+- [ ] Testar no navegador com um usuário de cada tier:
+      - assistir um trecho, sair, voltar (de preferência em outro navegador) e conferir
+        se retoma do mesmo ponto;
+      - deixar o vídeo passar de 90% e ver a aula virar "Assistida" sozinha;
+      - salvar/dessalvar e marcar/desmarcar pelo botão da aula e pelo menu ⋮ do card;
+      - "Continue assistindo" na sidebar apontando para a última aula em andamento;
+      - painel: concluídas por trilha, horas assistidas e a sequência de dias.
 
 **🤖 Claude**
-- [ ] Plugin: user meta para progresso por aula, salvas, concluídas e dias de estudo.
-- [ ] Plugin GraphQL: campos `meuProgresso`, `salva`, `concluida` na `Aula`; mutations
-      `alternarAulaSalva`, `alternarAulaConcluida`, `registrarProgresso`; `viewer.sequenciaEstudo`.
-- [ ] `services/lesson-detail.ts` e `services/profile.ts`: remover os `Set`/`Map` em memória
-      e a sequência fixa `7` (TODO).
-- [ ] `LessonPlayer`: enviar o progresso periodicamente (a cada ~15s e ao pausar/sair,
-      pelos eventos `timeupdate`/`pause` do player.js do Bunny) e retomar de onde parou
-      (`setCurrentTime`).
-- [ ] "Continuar assistindo", painel de progresso por trilha e horas assistidas com dados reais.
-- [ ] Menu ⋮ do card: acrescentar **Salvar** e **Marcar como assistida**, com o estado da
-      aula para o jogador vindo na listagem (ficou fora da etapa 7 por isso).
-- [ ] `getContinueWatching` (hoje sempre `null`) e o `watched` das aulas com o progresso real.
+- [x] Plugin `Lessons/Progress.php`: posição por aula, salvas, concluídas, desmarcadas
+      na mão e dias de estudo, tudo em user meta indexada por ID de aula (uma leitura
+      serve a listagem inteira).
+- [x] Plugin GraphQL: `watchedSeconds`, `saved` e `completed` na `Aula`; `studyStreak`
+      no `User` (só para o próprio); `continueWatching` na raiz; mutations
+      `registerLessonProgress`, `toggleLessonSaved` e `toggleLessonCompleted`.
+      Nomes em inglês, como o resto do plugin.
+- [x] `services/lesson-detail.ts` e `services/profile.ts`: fim dos `Set` em memória e da
+      sequência fixa `7`. As dúvidas seguem mock até a etapa 9.
+- [x] `LessonPlayer`: player.js do Bunny ligado ao iframe — retoma no `ready`, grava a
+      cada 15s de vídeo, ao pausar e ao terminar. Guarda contra ligar dois players no
+      mesmo iframe (o script e o iframe podem ficar prontos em qualquer ordem).
+- [x] "Continuar assistindo", progresso por trilha e horas assistidas com dados reais.
+- [x] Menu ⋮ do card: **Salvar** e **Marcar assistida** (esta só para aula destrancada),
+      mais o selo "Assistida" sobre a capa.
+- [x] Rever uma aula concluída começa do início, não dos créditos.
+- [x] Verificado: typecheck, lint, build de produção e 32 casos do `Progress` em WP
+      simulado (conclusão aos 90%, aula sem duração, desmarcar na mão, ordem das
+      salvas, retomada, aula apagada, sequência com buraco e virada de dia).
+- [ ] Verificar no ar depois que o plugin 1.13.0 subir.
 
 **✅ Pronto quando:** você assiste um trecho, sai, volta em outro navegador e continua
 do mesmo ponto; salvas e concluídas persistem.
@@ -564,13 +609,13 @@ do mesmo ponto; salvas e concluídas persistem.
 
 | # | Etapa | Decisão |
 |---|---|---|
-| 2 | 1 | Nomes finais dos campos do formulário de inscrição |
-| 3 | 1 | Newsletter só por e-mail ou integrada a uma ferramenta |
-| 4 | 2 | Serviço/URL do feed do Instagram |
+| ~~2~~ | 1 | ~~Nomes finais dos campos do formulário de inscrição~~ → confirmados |
+| ~~3~~ | 1 | ~~Newsletter~~ → só e-mail |
+| ~~4~~ | 2 | ~~Serviço/URL do feed do Instagram~~ → serviço próprio, URL fixa |
 | ~~6~~ | 6 | ~~Onde hospedar os vídeos~~ → Bunny Stream |
 | ~~7~~ | 6 | ~~Regra de acesso por tier e o que o bloqueado vê~~ → tier mínimo + cadeado |
 | ~~8~~ | 6 | ~~Trilhas e níveis definitivos~~ → cliente cadastra as trilhas |
-| 9 | 8 | Regra da sequência de estudo |
+| ~~9~~ | 8 | ~~Regra da sequência de estudo~~ → conta o dia com qualquer aula aberta; conclusão automática aos 90% |
 | 10 | 9 | Quem responde as dúvidas, visibilidade e moderação |
 | 11 | 10 | Tipos de notificação e direcionamento |
 | 12 | 11 | Como o jogador muda de plano (manual ou gateway) |

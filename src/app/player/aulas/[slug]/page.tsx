@@ -8,7 +8,7 @@ import { LessonCard } from "@/components/pages/player/lessons/lesson-card";
 import { LessonPlayer } from "@/components/pages/player/lessons/lesson-player";
 import { Materials } from "@/components/pages/player/lessons/materials";
 import { Questions } from "@/components/pages/player/lessons/questions";
-import { formatDuration, NEUTRAL_COVER } from "@/lib/lessons";
+import { formatDuration } from "@/lib/lessons";
 import { getLesson, getNextLessons } from "@/services/lesson-detail";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -73,7 +73,9 @@ async function Content({ params }: Props) {
           lesson.canWatch ? null : { tierLabel: lesson.minimumTier.label }
         }
         image={lesson.image}
-        cover={lesson.track?.cover ?? NEUTRAL_COVER}
+        trackColor={lesson.track?.color ?? null}
+        // Rever uma aula concluída começa do início.
+        watched={lesson.completed ? 0 : lesson.watched}
       />
 
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -102,7 +104,7 @@ async function Content({ params }: Props) {
         </div>
 
         <LessonActions
-          slug={lesson.slug}
+          lessonId={lesson.databaseId}
           saved={lesson.saved}
           completed={lesson.completed}
         />

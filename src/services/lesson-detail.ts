@@ -1,19 +1,21 @@
 import "server-only";
 
 import { authMutate } from "@/graphql/auth-client";
+import { REGISTER_LESSON_PROGRESS } from "@/graphql/mutations/player/REGISTER_LESSON_PROGRESS";
 import { REGISTER_LESSON_VIEW } from "@/graphql/mutations/player/REGISTER_LESSON_VIEW";
+import { TOGGLE_LESSON_COMPLETED } from "@/graphql/mutations/player/TOGGLE_LESSON_COMPLETED";
+import { TOGGLE_LESSON_SAVED } from "@/graphql/mutations/player/TOGGLE_LESSON_SAVED";
 import type { Lesson } from "@/lib/lessons";
 import { getCatalog, getLessonNode, listLessons, toLesson } from "./lessons";
 
 /**
  * Conteúdo e estado da aula aberta.
  *
- * Separado de `lessons.ts` porque aqui há estado do jogador (salvas,
- * concluídas, dúvidas).
+ * Separado de `lessons.ts` porque aqui há estado do jogador: progresso,
+ * salvas, concluídas e dúvidas.
  *
- * A aula, a descrição, o vídeo e os materiais vêm do WordPress. Salvas e
- * concluídas continuam em memória até a etapa 8, e as dúvidas até a etapa 9:
- * só as funções deste arquivo mudam quando forem para o CMS.
+ * Tudo vem do WordPress, menos as dúvidas, que seguem em memória até a
+ * etapa 9 — só as funções deste arquivo mudam quando elas forem para o CMS.
  */
 
 export type Material = {
@@ -43,16 +45,12 @@ export type LessonDetail = Lesson & {
   /** `null` para quem não pode assistir: o WordPress nem os envia. */
   materials: Array<Material> | null;
   questions: Array<Question>;
-  saved: boolean;
-  completed: boolean;
 };
 
 /* -------------------------------------------------------------------------- */
-/*                          Estado do jogador (mock)                          */
+/*                            Dúvidas (mock, etapa 9)                         */
 /* -------------------------------------------------------------------------- */
 
-const SAVED = new Set<string>();
-const COMPLETED = new Set<string>();
 const QUESTIONS = new Map<string, Array<Question>>();
 
 /* -------------------------------------------------------------------------- */
@@ -115,14 +113,7 @@ export async function getLesson(slug: string): Promise<LessonDetail | null> {
         url: material.url,
       })) ?? null,
     questions: QUESTIONS.get(slug) ?? initialQuestions(lesson),
-    saved: SAVED.has(slug),
-    completed: COMPLETED.has(slug),
   };
-}
-
-/** Slugs marcados como concluídos pelo jogador. */
-export async function getCompletedSlugs(): Promise<Set<string>> {
-  return new Set(COMPLETED);
 }
 
 /** As aulas que o jogador salvou, da mais recente para a mais antiga. */
@@ -130,7 +121,7 @@ export async function getSavedLessons(): Promise<Array<Lesson>> {
   const catalog = await getCatalog();
 
   return catalog
-    .filter((lesson) => SAVED.has(lesson.slug))
+    .filter((lesson) => lesson.saved)
     .sort((a, b) => b.data.localeCompare(a.data));
 }
 
@@ -158,20 +149,45 @@ export async function registerView(lessonId: number) {
   await authMutate(REGISTER_LESSON_VIEW, { lessonId });
 }
 
-export async function toggleSaved(slug: string) {
-  if (SAVED.has(slug)) {
-    SAVED.delete(slug);
-  } else {
-    SAVED.add(slug);
-  }
+/** Salva a aula na lista do jogador, ou a tira de lá. */
+export async function toggleSaved(lessonId: number): Promise<boolean> {
+  const data = await authMutate<{
+    toggleLessonSaved: { saved: boolean } | null;
+  }>(TOGGLE_LESSON_SAVED, { lessonId });
+
+  return data.toggleLessonSaved?.saved ?? false;
 }
 
-export async function toggleCompleted(slug: string) {
-  if (COMPLETED.has(slug)) {
-    COMPLETED.delete(slug);
-  } else {
-    COMPLETED.add(slug);
-  }
+/** Marca ou desmarca a aula como concluída. */
+export async function toggleCompleted(lessonId: number): Promise<boolean> {
+  const data = await authMutate<{
+    toggleLessonCompleted: { completed: boolean } | null;
+  }>(TOGGLE_LESSON_COMPLETED, { lessonId });
+
+  return data.toggleLessonCompleted?.completed ?? false;
+}
+
+/**
+ * Guarda onde o jogador parou.
+ *
+ * O plugin conclui a aula sozinho ao passar de 90%, e é por isso que o
+ * retorno diz se ela ficou concluída: o card muda sem recarregar a página.
+ */
+export async function saveProgress(
+  lessonId: number,
+  seconds: number,
+): Promise<{ watched: number; completed: boolean }> {
+  const data = await authMutate<{
+    registerLessonProgress: {
+      watchedSeconds: number | null;
+      completed: boolean | null;
+    } | null;
+  }>(REGISTER_LESSON_PROGRESS, { lessonId, seconds });
+
+  return {
+    watched: data.registerLessonProgress?.watchedSeconds ?? seconds,
+    completed: data.registerLessonProgress?.completed ?? false,
+  };
 }
 
 /** Registra a pergunta do jogador. A resposta do instrutor vem por fora. */

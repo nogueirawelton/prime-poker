@@ -17,6 +17,7 @@ export const VIEWER = gql`
       playerTier
       playerTierLabel
       playerTierExpiresAt
+      studyStreak
     }
   }
 `;

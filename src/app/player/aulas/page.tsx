@@ -4,6 +4,7 @@ import { GRID } from "@/components/pages/player/lessons/grid";
 import { LessonsList } from "@/components/pages/player/lessons/lessons-list";
 import { LessonsSearch } from "@/components/pages/player/lessons/lessons-search";
 import { MobileTracks } from "@/components/shared/player/lessons-sidebar";
+import { trackLinks } from "@/components/shared/player/track-links";
 import {
   countFilters,
   type LessonsSearchParams,
@@ -48,7 +49,7 @@ export default function LessonsPage({ searchParams }: Props) {
 }
 
 async function Tracks() {
-  return <MobileTracks tracks={await getTracks()} />;
+  return <MobileTracks tracks={await trackLinks()} />;
 }
 
 async function Controls({ searchParams }: Props) {

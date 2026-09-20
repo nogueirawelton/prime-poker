@@ -1,15 +1,23 @@
 "use client";
 
-import { type Icon, PlayCircleIcon } from "@phosphor-icons/react";
+import { PlayCircleIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { twMerge } from "tailwind-merge";
-import type { Lesson, Track } from "@/lib/lessons";
+import { dotStyle, type Lesson, type Track } from "@/lib/lessons";
 import { PARAMS } from "@/lib/lessons-params";
 import { ContinueWatching } from "./continue-watching";
 
-/** O que a navegação precisa de cada trilha. */
-type TrackLink = Pick<Track, "slug" | "name" | "dot">;
+/**
+ * O que a navegação precisa de cada trilha.
+ *
+ * O ícone chega **pronto**, montado no servidor: o componente que resolve o
+ * nome do ícone (`DynamicIcon`) importa o catálogo inteiro do Phosphor, e
+ * aqui, num componente cliente, isso iria inteiro para o navegador.
+ */
+export type TrackLink = Pick<Track, "slug" | "name" | "color"> & {
+  icon: React.ReactNode;
+};
 
 /**
  * Trilhas do acervo.
@@ -56,7 +64,16 @@ export function LessonsSidebar({
         aria-label="Trilhas"
         className="flex flex-1 flex-col gap-1 overflow-y-auto p-4"
       >
-        <Item href={href()} icon={PlayCircleIcon} active={!current}>
+        <Item
+          href={href()}
+          icon={
+            <PlayCircleIcon
+              className="size-5"
+              weight={!current ? "fill" : "regular"}
+            />
+          }
+          active={!current}
+        >
           Todas as Aulas
         </Item>
 
@@ -64,7 +81,8 @@ export function LessonsSidebar({
           <Item
             key={track.slug}
             href={href(track.slug)}
-            dot={track.dot}
+            icon={track.icon}
+            color={track.color}
             active={current === track.slug}
           >
             {track.name}
@@ -84,19 +102,21 @@ export function LessonsSidebar({
 }
 
 /**
- * Item da sidebar: "Todas as Aulas" leva ícone; cada trilha, a bolinha da cor
- * dela — a mesma do selo nos cards, que liga a lista à trilha.
+ * Item da sidebar.
+ *
+ * Com ícone cadastrado na trilha, ele; sem ícone, a bolinha na cor dela — a
+ * mesma do selo nos cards, que liga a lista à trilha.
  */
 function Item({
   href,
-  icon: ItemIcon,
-  dot,
+  icon,
+  color,
   active,
   children,
 }: {
   href: string;
-  icon?: Icon;
-  dot?: string;
+  icon?: React.ReactNode;
+  color?: string;
   active: boolean;
   children: React.ReactNode;
 }) {
@@ -111,11 +131,12 @@ function Item({
           : "text-prime-light/70 hover:bg-white/5 hover:text-prime-light",
       )}
     >
-      {ItemIcon ? (
-        <ItemIcon className="size-5" weight={active ? "fill" : "regular"} />
-      ) : (
+      {icon ?? (
         <span className="flex size-5 items-center justify-center">
-          <span className={twMerge("size-2.5 rounded-full", dot)} />
+          <span
+            style={color ? dotStyle(color) : undefined}
+            className="size-2.5 rounded-full"
+          />
         </span>
       )}
       {children}

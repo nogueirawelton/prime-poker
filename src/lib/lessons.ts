@@ -16,67 +16,79 @@ export type Track = {
   name: string;
   /** Nome curto para o selo sobre a capa. */
   badge: string;
-  /** Classes do selo. */
+  /** Cor da trilha em hex, escolhida no painel (`trackFields.color`). */
   color: string;
-  /** Gradiente da capa quando a aula não tem imagem destacada. */
-  cover: string;
-  /** Classe da bolinha que identifica a trilha na sidebar. */
-  dot: string;
+  /** Nome do ícone no Phosphor, cadastrado no painel; sem ele, a bolinha. */
+  icon: string | null;
 };
 
-type TrackStyle = Pick<Track, "color" | "cover" | "dot">;
+/** Cor de trilha sem cor válida cadastrada — o vermelho do site. */
+const FALLBACK_COLOR = "#ff1820";
 
 /**
- * Aparência por cor da trilha.
+ * Normaliza o que veio do painel.
  *
- * As chaves são os valores do select `color` no ACF (`trackFields`). Cor nova
- * lá exige entrada aqui — sem ela a trilha cai na primeira. As classes ficam
- * escritas por extenso para o Tailwind encontrá-las.
+ * O seletor do ACF devolve `#rrggbb`, mas o campo é texto no banco: pode
+ * chegar vazio (trilha antiga), abreviado ou preenchido na mão.
  */
-const TRACK_STYLES: Record<string, TrackStyle> = {
-  vermelho: {
-    color: "bg-prime-red text-prime-light",
-    cover: "from-prime-red/40 via-prime-darkgray to-prime-dark",
-    dot: "bg-prime-red",
-  },
-  esmeralda: {
-    color: "bg-emerald-600 text-prime-light",
-    cover: "from-emerald-500/35 via-prime-darkgray to-prime-dark",
-    dot: "bg-emerald-500",
-  },
-  violeta: {
-    color: "bg-violet-600 text-prime-light",
-    cover: "from-violet-500/35 via-prime-darkgray to-prime-dark",
-    dot: "bg-violet-500",
-  },
-  laranja: {
-    color: "bg-orange-500 text-prime-dark",
-    cover: "from-orange-500/35 via-prime-darkgray to-prime-dark",
-    dot: "bg-orange-500",
-  },
-  azul: {
-    color: "bg-blue-600 text-prime-light",
-    cover: "from-blue-500/35 via-prime-darkgray to-prime-dark",
-    dot: "bg-blue-500",
-  },
-  indigo: {
-    color: "bg-indigo-600 text-prime-light",
-    cover: "from-indigo-500/35 via-prime-darkgray to-prime-dark",
-    dot: "bg-indigo-500",
-  },
-  ambar: {
-    color: "bg-amber-500 text-prime-dark",
-    cover: "from-amber-500/35 via-prime-darkgray to-prime-dark",
-    dot: "bg-amber-500",
-  },
-};
+export function trackColor(value: string | null | undefined): string {
+  const color = (value ?? "").trim();
 
-export function trackStyle(colorKey: string | null | undefined): TrackStyle {
-  return TRACK_STYLES[colorKey ?? ""] ?? TRACK_STYLES.vermelho;
+  if (/^#[0-9a-f]{6}$/i.test(color)) return color.toLowerCase();
+
+  // `#abc` → `#aabbcc`.
+  if (/^#[0-9a-f]{3}$/i.test(color)) {
+    const [, r, g, b] = color.toLowerCase();
+    return `#${r}${r}${g}${g}${b}${b}`;
+  }
+
+  return FALLBACK_COLOR;
 }
 
-/** Capa de aula sem trilha e sem imagem. */
-export const NEUTRAL_COVER = "from-white/10 via-prime-darkgray to-prime-dark";
+/**
+ * Preto ou branco sobre a cor da trilha.
+ *
+ * Usa o brilho percebido (média do YIQ, que pesa muito mais o verde do que o
+ * azul): amarelo e verde pedem texto preto; vermelho, violeta e azul, branco.
+ *
+ * Não é a luminância da WCAG de propósito. Por ela, o vermelho da marca
+ * (`#ff1820`) levaria texto preto — e o site inteiro usa branco sobre ele,
+ * nos botões e nos selos. Num selo de 10px, seguir a fórmula deixaria a
+ * identidade inconsistente sem ganho real de leitura.
+ */
+export function readableOn(color: string): string {
+  const channel = (hex: string) => Number.parseInt(hex, 16);
+
+  const brightness =
+    (channel(color.slice(1, 3)) * 299 +
+      channel(color.slice(3, 5)) * 587 +
+      channel(color.slice(5, 7)) * 114) /
+    1000;
+
+  return brightness >= 128 ? "#000000" : "#ffffff";
+}
+
+/** Selo da trilha sobre a capa. */
+export function badgeStyle(color: string) {
+  return { backgroundColor: color, color: readableOn(color) };
+}
+
+/** Bolinha da trilha na sidebar. */
+export function dotStyle(color: string) {
+  return { backgroundColor: color };
+}
+
+/**
+ * Capa da aula sem imagem destacada: a cor da trilha esmaecendo até o preto.
+ * Sem trilha, um cinza neutro.
+ */
+export function coverStyle(color: string | null) {
+  const start = color ? `${color}59` : "rgba(255,255,255,0.1)";
+
+  return {
+    backgroundImage: `linear-gradient(to bottom right, ${start}, #27272a, #000000)`,
+  };
+}
 
 /* -------------------------------------------------------------------------- */
 /*                                    Aulas                                   */
@@ -102,11 +114,17 @@ export type Lesson = {
   track: Track | null;
   /** Nome do instrutor; vazio quando não informado. */
   instructor: string;
+  /** Foto do instrutor (imagem destacada do Instrutor); sem ela, as iniciais. */
+  instructorImage: string | null;
   level: Level | null;
   /** Duração em segundos; 0 quando não informada. */
   duration: number;
-  /** Segundos já assistidos pelo jogador. */
+  /** Onde o jogador parou, em segundos. */
   watched: number;
+  /** O jogador salvou esta aula? */
+  saved: boolean;
+  /** Concluída, na mão ou por ter passado de 90%. */
+  completed: boolean;
   /** Publicação, em ISO. */
   data: string;
   views: number;

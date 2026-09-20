@@ -184,6 +184,10 @@ GraphQL, vídeo, validações).
   site. Por isso `Fields::problems()` confere chaves e nomes e mostra um aviso
   vermelho nas telas de aulas, trilhas e do ACF quando algo não bate (ou quando
   o JSON não foi importado).
+- **Importar o JSON antes de subir o front.** Campo novo no `aulas.json` é
+  contrato: o front consulta os campos pelo nome, e um campo que ainda não
+  existe no WordPress derruba o build (a consulta de trilhas é feita na
+  geração das páginas).
 - Mudou algo de propósito no painel? Exporte de novo (*ACF → Ferramentas →
   Exportar*, os 4 itens) e substitua o `aulas.json`, para o repositório não
   ficar para trás.
@@ -198,7 +202,8 @@ GraphQL, vídeo, validações).
 | | `video_id` | não | Video ID do Bunny (GUID) ou link do player; validado ao salvar |
 | | `materials` (`name`, `file`) | não | Repeater; sai em `Aula.materials` |
 | `trackFields` | `badge` | sim | Selo curto; vazio usa o nome da trilha |
-| | `color` | sim | `vermelho`, `esmeralda`, `violeta`, `laranja`, `azul`, `indigo`, `ambar` — o front converte em classes |
+| | `icon` | sim | Nome do ícone no Phosphor (`strategy`, `brain`…) para a sidebar; vazio mostra a bolinha da cor |
+| | `color` | sim | Seletor de cor (hex). O front usa no selo, na bolinha da barra lateral e no degradê da capa; o texto do selo vira preto ou branco conforme o brilho da cor |
 | | `order` | sim | Posição no filtro |
 
 Vídeo, materiais e tier mínimo ficam **fora** do GraphQL do ACF de propósito:
@@ -248,12 +253,19 @@ aulas(first: 12, where: {
   from: "2026-09-01", to: "2026-09-19", sort: MOST_VIEWED
 }) { nodes { databaseId slug title canWatch minimumTier minimumTierLabel
              duration viewCount video { provider id url } materials { name url fileSize mimeType }
+             watchedSeconds saved completed
              lessonFields { level instructor { nodes { databaseId ... on Instrutor { title } } } }
-             trilhas { nodes { slug name trackFields { badge color order } } } } }
+             trilhas { nodes { slug name trackFields { badge color icon order } } } } }
 
 lessonsTotal(search: "icm", track: "torneios", instructor: 42, from: "…", to: "…")
 
+continueWatching { slug title watchedSeconds duration }
+viewer { studyStreak }
+
 mutation { registerLessonView(input: { lessonId: 123 }) { viewCount } }
+mutation { registerLessonProgress(input: { lessonId: 123, seconds: 340 }) { watchedSeconds completed } }
+mutation { toggleLessonSaved(input: { lessonId: 123 }) { saved } }
+mutation { toggleLessonCompleted(input: { lessonId: 123 }) { completed } }
 ```
 
 - `lessonSuggestion(subject, track)`: a **única leitura pública** de aulas, para
@@ -267,6 +279,32 @@ mutation { registerLessonView(input: { lessonId: 123 }) { viewCount } }
 - Visualizações em `_prime_poker_views` (toda aula nasce com 0, para não sumir
   da ordem `MOST_VIEWED`). O mesmo jogador conta uma vez a cada 12 horas por
   aula.
+
+**Progresso do jogador** (`includes/Lessons/Progress.php`)
+
+Tudo em user meta, em arrays indexados pelo ID da aula — a listagem inteira
+lê o estado de uma vez só:
+
+| Meta | Guarda |
+| --- | --- |
+| `_prime_poker_position` | onde parou em cada aula, em segundos |
+| `_prime_poker_position_at` | quando foi esse último avanço |
+| `_prime_poker_completed` | quando concluiu cada aula |
+| `_prime_poker_saved` | quando salvou cada aula |
+| `_prime_poker_uncompleted` | aulas desmarcadas na mão |
+| `_prime_poker_study_days` | dias em que estudou (últimos 400) |
+
+- **Conclusão automática aos 90%** da duração cadastrada. Aula sem duração no
+  painel nunca conclui sozinha — não há como saber o que são 90%.
+- Desmarcar na mão também **desliga a conclusão automática** daquela aula,
+  senão o próximo aviso do player marcaria tudo de novo. Marcar na mão religa.
+- A posição segue o vídeo, inclusive para trás: voltar para rever um trecho e
+  sair retoma dali.
+- **Sequência de estudo**: conta o dia em que o jogador abriu qualquer aula
+  que pode assistir, no fuso do site. Quem estudou ontem mantém a sequência
+  até o fim do dia de hoje; dois dias parado zera.
+- Aula apagada no painel não é limpa das metas (varrer todos os jogadores
+  sairia caro); a leitura ignora ID que não existe mais.
 
 ### Revalidação do cache do front
 

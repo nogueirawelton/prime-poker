@@ -23,7 +23,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  * - `lessonsTotal`: total do mesmo filtro, para saber se há mais páginas.
  * - Na `Aula`: `canWatch`, `minimumTier`, `duration`, `viewCount`, e o conteúdo
  *   protegido `video` e `materials`, que só saem para quem pode assistir.
- * - Mutation `registerLessonView`.
+ * - Estado do jogador logado: `watchedSeconds`, `saved` e `completed` na
+ *   `Aula`, `studyStreak` no `User` e `continueWatching` na raiz.
+ * - Mutations `registerLessonView`, `registerLessonProgress`,
+ *   `toggleLessonSaved` e `toggleLessonCompleted`.
  *
  * O vídeo, os materiais e o tier mínimo ficam FORA do GraphQL do ACF (ver o
  * JSON em `wp_plugin/acf/`): se saíssem por lá, qualquer jogador leria o
@@ -121,7 +124,9 @@ final class GraphQL {
 		);
 
 		self::register_lesson_fields();
+		self::register_progress_fields();
 		self::register_view_mutation();
+		self::register_progress_mutations();
 	}
 
 	/**
@@ -246,6 +251,67 @@ final class GraphQL {
 	}
 
 	/**
+	 * O estado do jogador logado: progresso, salvas, concluídas e sequência.
+	 *
+	 * Tudo aqui é por usuário, então nada disso pode ser cacheado no front —
+	 * é o mesmo motivo de a listagem inteira ir pelo cliente autenticado.
+	 */
+	private static function register_progress_fields(): void {
+		register_graphql_fields(
+			'Aula',
+			array(
+				'watchedSeconds' => array(
+					'type'        => array( 'non_null' => 'Int' ),
+					'description' => __( 'Onde o jogador logado parou nesta aula, em segundos. 0 se nunca assistiu.', 'prime-poker' ),
+					'resolve'     => static fn( $post ): int => Progress::position( get_current_user_id(), self::post_id( $post ) ),
+				),
+				'saved'          => array(
+					'type'        => array( 'non_null' => 'Boolean' ),
+					'description' => __( 'Se o jogador logado salvou esta aula.', 'prime-poker' ),
+					'resolve'     => static fn( $post ): bool => Progress::is_saved( get_current_user_id(), self::post_id( $post ) ),
+				),
+				'completed'      => array(
+					'type'        => array( 'non_null' => 'Boolean' ),
+					'description' => __( 'Se o jogador logado concluiu esta aula (na mão ou por ter passado de 90%).', 'prime-poker' ),
+					'resolve'     => static fn( $post ): bool => Progress::is_completed( get_current_user_id(), self::post_id( $post ) ),
+				),
+			)
+		);
+
+		register_graphql_field(
+			'User',
+			'studyStreak',
+			array(
+				'type'        => array( 'non_null' => 'Int' ),
+				'description' => __( 'Dias seguidos de estudo. Só o próprio jogador enxerga a sua.', 'prime-poker' ),
+				'resolve'     => static function ( $user ): int {
+					$user_id = isset( $user->databaseId ) ? (int) $user->databaseId : 0;
+
+					return get_current_user_id() === $user_id ? Progress::streak( $user_id ) : 0;
+				},
+			)
+		);
+
+		register_graphql_field(
+			'RootQuery',
+			'continueWatching',
+			array(
+				'type'        => 'Aula',
+				'description' => __( 'A aula em andamento mais recente do jogador logado. null quando não há nenhuma.', 'prime-poker' ),
+				'resolve'     => static function ( $root, array $args, $context ) {
+					if ( ! Access::can_browse() ) {
+						return null;
+					}
+
+					$lesson_id = Progress::continue_watching( get_current_user_id() );
+
+					return null === $lesson_id ? null : $context->get_loader( 'post' )->load_deferred( $lesson_id );
+				},
+			)
+		);
+	}
+
+	/**
 	 * `registerLessonView(input: { lessonId })`.
 	 */
 	private static function register_view_mutation(): void {
@@ -263,21 +329,122 @@ final class GraphQL {
 					'viewCount' => array( 'type' => 'Int' ),
 				),
 				'mutateAndGetPayload' => static function ( array $input ): array {
-					$post_id = (int) $input['lessonId'];
-					$post    = get_post( $post_id );
+					$post_id = self::lesson_from_input( $input );
 
-					if ( ! Access::can_browse() ) {
-						throw new \GraphQL\Error\UserError( __( 'É preciso estar logado como jogador.', 'prime-poker' ) );
-					}
-
-					if ( ! $post instanceof \WP_Post || Content::POST_TYPE !== $post->post_type || 'publish' !== $post->post_status ) {
-						throw new \GraphQL\Error\UserError( __( 'Aula não encontrada.', 'prime-poker' ) );
-					}
+					// Abrir uma aula conta o dia de estudo (decisão de
+					// 19/09/2026): é a mesma ação que conta a visualização,
+					// e o front só a dispara para aula destrancada.
+					Progress::register_day( get_current_user_id() );
 
 					return array( 'viewCount' => Views::register( $post_id, get_current_user_id() ) );
 				},
 			)
 		);
+	}
+
+	/**
+	 * As mutations do estado do jogador na aula.
+	 *
+	 * O progresso chega do player a cada poucos segundos, então a mutation é
+	 * de escrita barata: grava a posição e devolve o que o front precisa para
+	 * atualizar o card sem recarregar a aula.
+	 */
+	private static function register_progress_mutations(): void {
+		$lesson_input = array(
+			'lessonId' => array(
+				'type'        => array( 'non_null' => 'Int' ),
+				'description' => __( 'databaseId da aula.', 'prime-poker' ),
+			),
+		);
+
+		register_graphql_mutation(
+			'registerLessonProgress',
+			array(
+				'description'         => __( 'Guarda onde o jogador parou. Passando de 90% da aula, ela se marca como concluída.', 'prime-poker' ),
+				'inputFields'         => array_merge(
+					$lesson_input,
+					array(
+						'seconds' => array(
+							'type'        => array( 'non_null' => 'Int' ),
+							'description' => __( 'Posição no vídeo, em segundos.', 'prime-poker' ),
+						),
+					)
+				),
+				'outputFields'        => array(
+					'watchedSeconds' => array( 'type' => 'Int' ),
+					'completed'      => array( 'type' => 'Boolean' ),
+				),
+				'mutateAndGetPayload' => static function ( array $input ): array {
+					$post_id = self::lesson_from_input( $input );
+
+					// Sem o tier da aula não há o que guardar: o player nem
+					// deveria estar tocando.
+					if ( ! Access::can_watch( $post_id ) ) {
+						throw new \GraphQL\Error\UserError( __( 'Sem acesso a esta aula.', 'prime-poker' ) );
+					}
+
+					$saved = Progress::save_position( get_current_user_id(), $post_id, (int) $input['seconds'] );
+
+					return array(
+						'watchedSeconds' => $saved['position'],
+						'completed'      => $saved['completed'],
+					);
+				},
+			)
+		);
+
+		register_graphql_mutation(
+			'toggleLessonSaved',
+			array(
+				'description'         => __( 'Salva a aula na lista do jogador, ou a tira de lá.', 'prime-poker' ),
+				'inputFields'         => $lesson_input,
+				'outputFields'        => array(
+					'saved' => array( 'type' => 'Boolean' ),
+				),
+				'mutateAndGetPayload' => static function ( array $input ): array {
+					$post_id = self::lesson_from_input( $input );
+
+					return array( 'saved' => Progress::toggle_saved( get_current_user_id(), $post_id ) );
+				},
+			)
+		);
+
+		register_graphql_mutation(
+			'toggleLessonCompleted',
+			array(
+				'description'         => __( 'Marca ou desmarca a aula como concluída. Desmarcar também desliga a conclusão automática dela.', 'prime-poker' ),
+				'inputFields'         => $lesson_input,
+				'outputFields'        => array(
+					'completed' => array( 'type' => 'Boolean' ),
+				),
+				'mutateAndGetPayload' => static function ( array $input ): array {
+					$post_id = self::lesson_from_input( $input );
+
+					return array( 'completed' => Progress::toggle_completed( get_current_user_id(), $post_id ) );
+				},
+			)
+		);
+	}
+
+	/**
+	 * A aula do `lessonId`, já conferidos o jogador e a publicação.
+	 *
+	 * @param array<string, mixed> $input Entrada da mutation.
+	 * @throws \GraphQL\Error\UserError Se não for jogador ou a aula não existir.
+	 */
+	private static function lesson_from_input( array $input ): int {
+		if ( ! Access::can_browse() ) {
+			throw new \GraphQL\Error\UserError( __( 'É preciso estar logado como jogador.', 'prime-poker' ) );
+		}
+
+		$post_id = (int) ( $input['lessonId'] ?? 0 );
+		$post    = get_post( $post_id );
+
+		if ( ! $post instanceof \WP_Post || Content::POST_TYPE !== $post->post_type || 'publish' !== $post->post_status ) {
+			throw new \GraphQL\Error\UserError( __( 'Aula não encontrada.', 'prime-poker' ) );
+		}
+
+		return $post_id;
 	}
 
 	/* ---------------------------------------------------------------------- */

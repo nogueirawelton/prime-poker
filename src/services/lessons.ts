@@ -4,6 +4,7 @@ import { cache } from "react";
 import { authQuery } from "@/graphql/auth-client";
 import { optionalQuery, query } from "@/graphql/client";
 import {
+  CONTINUE_WATCHING,
   LESSON,
   LESSON_INSTRUCTORS,
   LESSON_SUGGESTION,
@@ -22,7 +23,7 @@ import {
   PAGE_SIZE,
   type SortOrder,
   type Track,
-  trackStyle,
+  trackColor,
 } from "@/lib/lessons";
 
 /**
@@ -44,8 +45,12 @@ type TrackNode = {
   trackFields: {
     badge: string | null;
     // `select` do ACF chega como lista, mesmo sendo de escolha única.
-    color: Array<string> | null;
+    // O seletor de cor do ACF devolve o hex direto; o `select` que havia
+    // antes vinha em lista. Os dois formatos são aceitos para o site não
+    // depender do momento em que o `aulas.json` for reimportado.
+    color: string | Array<string> | null;
     order?: number | null;
+    icon?: string | null;
   } | null;
 };
 
@@ -59,10 +64,18 @@ type LessonNode = {
   minimumTierLabel: string;
   duration: number | null;
   viewCount: number;
+  watchedSeconds: number;
+  saved: boolean;
+  completed: boolean;
   featuredImage: { node: { sourceUrl: string | null } } | null;
   lessonFields: {
     level: Array<string> | null;
-    instructor: { nodes: Array<{ title?: string | null }> } | null;
+    instructor: {
+      nodes: Array<{
+        title?: string | null;
+        featuredImage?: { node: { sourceUrl: string | null } } | null;
+      }>;
+    } | null;
   } | null;
   trilhas: { nodes: Array<TrackNode> } | null;
 };
@@ -86,7 +99,12 @@ function toTrack(node: TrackNode): Track {
     slug: node.slug,
     name: node.name,
     badge: node.trackFields?.badge?.trim() || node.name,
-    ...trackStyle(node.trackFields?.color?.[0]),
+    icon: node.trackFields?.icon?.trim() || null,
+    color: trackColor(
+      Array.isArray(node.trackFields?.color)
+        ? node.trackFields?.color[0]
+        : node.trackFields?.color,
+    ),
   };
 }
 
@@ -97,6 +115,7 @@ function isLevel(value: string | undefined): value is Level {
 export function toLesson(node: LessonNode): Lesson {
   const track = node.trilhas?.nodes[0];
   const level = node.lessonFields?.level?.[0];
+  const instructor = node.lessonFields?.instructor?.nodes[0];
 
   return {
     id: String(node.databaseId),
@@ -104,11 +123,13 @@ export function toLesson(node: LessonNode): Lesson {
     slug: node.slug,
     title: node.title ?? "",
     track: track ? toTrack(track) : null,
-    instructor: node.lessonFields?.instructor?.nodes[0]?.title ?? "",
+    instructor: instructor?.title ?? "",
+    instructorImage: instructor?.featuredImage?.node.sourceUrl ?? null,
     level: isLevel(level) ? level : null,
     duration: node.duration ?? 0,
-    // Progresso por jogador chega na etapa 8.
-    watched: 0,
+    watched: node.watchedSeconds,
+    saved: node.saved,
+    completed: node.completed,
     // Hora do site, sem fuso: lida e formatada no mesmo fuso, sai igual.
     data: node.date,
     views: node.viewCount,
@@ -287,9 +308,13 @@ export async function getSuggestedLesson(
 /**
  * A aula mais recente ainda em andamento — o card fixo da sidebar.
  *
- * O progresso por jogador ainda não é gravado (etapa 8): até lá não há aula
- * em andamento, e a sidebar não mostra o card.
+ * `null` quando o jogador não começou nada, terminou tudo que começou, ou a
+ * aula em andamento saiu do ar.
  */
-export async function getContinueWatching(): Promise<Lesson | null> {
-  return null;
-}
+export const getContinueWatching = cache(async (): Promise<Lesson | null> => {
+  const data = await authQuery<{ continueWatching: LessonNode | null }>(
+    CONTINUE_WATCHING,
+  );
+
+  return data.continueWatching ? toLesson(data.continueWatching) : null;
+});

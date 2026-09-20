@@ -94,7 +94,7 @@ export function PlayerMenu({
         <DropdownMenu.Content
           align="end"
           sideOffset={8}
-          className="z-50 w-56 rounded-xl border border-white/10 bg-prime-darkgray p-2 shadow-2xl data-[state=closed]:animate-dialog-close data-[state=open]:animate-dialog-open"
+          className="z-50 w-56 rounded-xl border border-white/10 bg-zinc-800 p-2 shadow-2xl data-[state=closed]:animate-dialog-close data-[state=open]:animate-dialog-open"
         >
           {LINKS.map(({ href, label, icon }) => (
             <Item

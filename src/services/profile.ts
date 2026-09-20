@@ -5,15 +5,14 @@ import { cache } from "react";
 import { authQuery } from "@/graphql/auth-client";
 import { VIEWER } from "@/graphql/queries/player/VIEWER";
 import type { Track } from "@/lib/lessons";
-import { getCompletedSlugs } from "./lesson-detail";
 import { getCatalog, getTracks } from "./lessons";
 
 /**
  * Perfil e progresso do jogador.
  *
- * O perfil vem do WordPress (`viewer`, com os campos de tier do plugin). O
- * acervo e as trilhas também; o progresso por jogador (assistido, concluídas,
- * sequência) continua mock até a etapa 8.
+ * Tudo vem do WordPress: o perfil e a sequência de estudo do `viewer` (com os
+ * campos do plugin), o acervo e as trilhas das aulas. O progresso é soma do
+ * que cada aula já traz para o jogador logado.
  */
 
 export type TierSlug =
@@ -39,6 +38,13 @@ export type Profile = {
   /** ISO, ou `null` para tier sem vencimento. */
   expiresAt: string | null;
   memberSince: string;
+  /**
+   * Dias seguidos de estudo.
+   *
+   * Mora aqui, e não no progresso, porque vem do mesmo `viewer`: buscar em
+   * separado seria uma segunda ida ao WordPress pelo mesmo dado.
+   */
+  streak: number;
 };
 
 /**
@@ -68,6 +74,7 @@ type ViewerResponse = {
     playerTier: string | null;
     playerTierLabel: string | null;
     playerTierExpiresAt: string | null;
+    studyStreak: number;
   } | null;
 };
 
@@ -100,6 +107,7 @@ export const getProfile = cache(async (): Promise<Profile> => {
       : null,
     expiresAt: viewer.playerTierExpiresAt,
     memberSince: viewer.registeredDate ?? new Date().toISOString(),
+    streak: viewer.studyStreak,
   };
 });
 
@@ -126,18 +134,15 @@ export type Progress = {
 /**
  * Números do painel.
  *
- * Uma aula conta como concluída quando o jogador a marcou como tal ou quando
- * passou de 95% dela — assistir aos créditos não deveria ser requisito.
+ * Quem decide o que está concluído é o WordPress: o jogador marcou na mão ou
+ * passou de 90% da aula. Aqui é só soma.
  */
 export async function getProgress(): Promise<Progress> {
-  const [catalog, trackList, markedCompleted] = await Promise.all([
+  const [catalog, trackList, viewer] = await Promise.all([
     getCatalog(),
     getTracks(),
-    getCompletedSlugs(),
+    getProfile(),
   ]);
-
-  const completed = (slug: string, watched: number, duration: number) =>
-    markedCompleted.has(slug) || (duration > 0 && watched / duration >= 0.95);
 
   const tracks = trackList.map((track) => {
     const trackLessons = catalog.filter(
@@ -146,19 +151,16 @@ export async function getProgress(): Promise<Progress> {
 
     return {
       track,
-      completedCount: trackLessons.filter((lesson) =>
-        completed(lesson.slug, lesson.watched, lesson.duration),
-      ).length,
+      completedCount: trackLessons.filter((lesson) => lesson.completed).length,
       total: trackLessons.length,
     };
   });
 
+  // Aula concluída conta cheia: quem marcou na mão sem chegar ao fim do
+  // vídeo ainda assistiu a aula.
   const seconds = catalog.reduce(
     (total, lesson) =>
-      total +
-      (completed(lesson.slug, lesson.watched, lesson.duration)
-        ? lesson.duration
-        : lesson.watched),
+      total + (lesson.completed ? lesson.duration : lesson.watched),
     0,
   );
 
@@ -169,8 +171,7 @@ export async function getProgress(): Promise<Progress> {
     ),
     total: catalog.length,
     hours: Math.round(seconds / 3600),
-    // TODO: sequência real depende de um histórico de sessões no CMS.
-    streak: 7,
+    streak: viewer.streak,
     tracks,
   };
 }

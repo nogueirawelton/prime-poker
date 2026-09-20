@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  BookmarkSimpleIcon,
+  CheckCircleIcon,
   DotsThreeVerticalIcon,
   LinkSimpleIcon,
   LockSimpleIcon,
@@ -10,12 +12,15 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { DropdownMenu } from "radix-ui";
+import { useTransition } from "react";
 import { toast } from "react-toastify";
 import { twMerge } from "tailwind-merge";
+import { completeLesson, saveLesson } from "@/actions/lesson";
 import {
+  badgeStyle,
+  coverStyle,
   formatDuration,
   type Lesson,
-  NEUTRAL_COVER,
   watchedPercentage,
 } from "@/lib/lessons";
 import { initials } from "@/utils/initials";
@@ -51,19 +56,15 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
           />
         ) : (
           <div
-            className={twMerge(
-              "size-full bg-gradient-to-br transition-transform duration-700 group-hover:scale-105",
-              lesson.track?.cover ?? NEUTRAL_COVER,
-            )}
+            style={coverStyle(lesson.track?.color ?? null)}
+            className="size-full transition-transform duration-700 group-hover:scale-105"
           />
         )}
 
         {lesson.track && (
           <span
-            className={twMerge(
-              "absolute top-3 left-3 rounded px-2 py-1 font-bold text-[10px] uppercase tracking-wide",
-              lesson.track.color,
-            )}
+            style={badgeStyle(lesson.track.color)}
+            className="absolute top-3 left-3 rounded px-2 py-1 font-bold text-[10px] uppercase tracking-wide"
           >
             {lesson.track.badge}
           </span>
@@ -77,6 +78,17 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
               aria-hidden="true"
             />
             {lesson.minimumTier.label}
+          </span>
+        )}
+
+        {lesson.completed && !locked && (
+          <span className="absolute top-3 right-3 flex items-center gap-1 rounded bg-prime-dark/85 px-2 py-1 font-bold text-[10px] text-emerald-400 uppercase tracking-wide">
+            <CheckCircleIcon
+              className="size-3"
+              weight="fill"
+              aria-hidden="true"
+            />
+            Assistida
           </span>
         )}
 
@@ -111,7 +123,9 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
           </span>
         )}
 
-        {progress > 0 && (
+        {/* Concluída na mão sem ter assistido tudo ainda mostra a barra
+            cheia: é o estado que o jogador escolheu para a aula. */}
+        {(progress > 0 || lesson.completed) && (
           <span className="absolute inset-x-0 bottom-0 h-1 bg-prime-light/15">
             <span
               className="block h-full bg-prime-red"
@@ -132,9 +146,19 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
 
         {lesson.instructor && (
           <footer className="mt-auto flex items-center gap-2">
-            <span className="flex size-7 items-center justify-center rounded-full bg-white/10 font-bold text-[10px] text-prime-light">
-              {initials(lesson.instructor)}
-            </span>
+            {lesson.instructorImage ? (
+              <Image
+                src={lesson.instructorImage}
+                alt=""
+                width={28}
+                height={28}
+                className="size-7 shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <span className="flex size-7 items-center justify-center rounded-full bg-white/10 font-bold text-[10px] text-prime-light">
+                {initials(lesson.instructor)}
+              </span>
+            )}
             <span className="text-prime-light/70 text-sm">
               {lesson.instructor}
             </span>
@@ -148,11 +172,14 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
 /**
  * Menu ⋮ do card.
  *
- * Por enquanto só compartilhar: salvar e marcar como assistida entram quando
- * esse estado for gravado por jogador (etapa 8) — antes disso o card não tem
- * como mostrar se a aula já está salva.
+ * Salvar e concluir são Server Actions: elas gravam no WordPress e pedem um
+ * `refresh()`, então o rótulo do item muda sozinho na volta. Enquanto isso
+ * não chega, o menu fica desabilitado — clicar duas vezes seguidas
+ * alternaria o estado de ida e volta sem o jogador perceber.
  */
 function Actions({ lesson, href }: { lesson: Lesson; href: string }) {
+  const [pending, start] = useTransition();
+
   function url() {
     return new URL(href, window.location.origin).toString();
   }
@@ -187,8 +214,28 @@ function Actions({ lesson, href }: { lesson: Lesson; href: string }) {
         <DropdownMenu.Content
           align="end"
           sideOffset={6}
-          className="z-50 w-52 rounded-xl border border-white/10 bg-prime-darkgray p-2 shadow-2xl data-[state=closed]:animate-dialog-close data-[state=open]:animate-dialog-open"
+          className="z-50 w-56 rounded-xl border border-white/10 bg-zinc-800 p-2 shadow-2xl data-[state=closed]:animate-dialog-close data-[state=open]:animate-dialog-open"
         >
+          <Item
+            icon={BookmarkSimpleIcon}
+            disabled={pending}
+            onSelect={() => start(() => saveLesson(lesson.databaseId))}
+          >
+            {lesson.saved ? "Remover das salvas" : "Salvar aula"}
+          </Item>
+
+          {/* Só para quem pode assistir: marcar como assistida uma aula
+              trancada não faria sentido nenhum. */}
+          {lesson.canWatch && (
+            <Item
+              icon={CheckCircleIcon}
+              disabled={pending}
+              onSelect={() => start(() => completeLesson(lesson.databaseId))}
+            >
+              {lesson.completed ? "Marcar como não vista" : "Marcar assistida"}
+            </Item>
+          )}
+
           <Item icon={LinkSimpleIcon} onSelect={copyLink}>
             Copiar link
           </Item>
@@ -208,16 +255,19 @@ function Actions({ lesson, href }: { lesson: Lesson; href: string }) {
 function Item({
   icon: ItemIcon,
   onSelect,
+  disabled,
   children,
 }: {
   icon: typeof LinkSimpleIcon;
   onSelect: () => void;
+  disabled?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <DropdownMenu.Item
       onSelect={onSelect}
-      className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-prime-light/80 text-sm outline-none transition-colors duration-300 data-highlighted:bg-prime-red/15 data-highlighted:text-prime-red"
+      disabled={disabled}
+      className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-prime-light/80 text-sm outline-none transition-colors duration-300 data-disabled:cursor-default data-highlighted:bg-prime-red/15 data-highlighted:text-prime-red data-disabled:opacity-50"
     >
       <ItemIcon className="size-4" weight="bold" />
       {children}

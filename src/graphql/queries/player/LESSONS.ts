@@ -20,6 +20,9 @@ const LESSON_CARD = gql`
     minimumTierLabel
     duration
     viewCount
+    watchedSeconds
+    saved
+    completed
     featuredImage {
       node {
         sourceUrl
@@ -31,6 +34,11 @@ const LESSON_CARD = gql`
         nodes {
           ... on Instrutor {
             title
+            featuredImage {
+              node {
+                sourceUrl(size: THUMBNAIL)
+              }
+            }
           }
         }
       }
@@ -95,6 +103,21 @@ export const LESSON = gql`
   }
 `;
 
+/**
+ * A aula em andamento mais recente do jogador — o card fixo da sidebar.
+ *
+ * Quem decide qual é fica no plugin: é ele que tem o instante do último
+ * avanço de cada aula.
+ */
+export const CONTINUE_WATCHING = gql`
+  ${LESSON_CARD}
+  query ContinueWatching {
+    continueWatching {
+      ...LessonCard
+    }
+  }
+`;
+
 /** Trilhas com aula publicada. Pública: vai pelo `query()` cacheado. */
 export const LESSON_TRACKS = gql`
   query LessonTracks {
@@ -106,6 +129,7 @@ export const LESSON_TRACKS = gql`
           badge
           color
           order
+          icon
         }
       }
     }

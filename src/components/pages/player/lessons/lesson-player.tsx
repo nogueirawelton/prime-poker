@@ -2,9 +2,10 @@
 
 import { LockSimpleIcon, PlayIcon } from "@phosphor-icons/react";
 import Image from "next/image";
-import { useEffect } from "react";
-import { twMerge } from "tailwind-merge";
-import { registerLessonView } from "@/actions/lesson";
+import Script from "next/script";
+import { useCallback, useEffect, useRef } from "react";
+import { registerLessonProgress, registerLessonView } from "@/actions/lesson";
+import { coverStyle } from "@/lib/lessons";
 
 type Props = {
   lessonId: number;
@@ -14,9 +15,35 @@ type Props = {
   /** `null` quando o jogador pode assistir. */
   locked: { tierLabel: string } | null;
   image: string | null;
-  /** Gradiente da trilha, usado quando não há imagem. */
-  cover: string;
+  /** Cor da trilha, usada na capa quando não há imagem. */
+  trackColor: string | null;
+  /** Onde o jogador parou da última vez, em segundos. */
+  watched: number;
 };
+
+/**
+ * De quanto em quanto tempo o progresso vai para o WordPress.
+ *
+ * Quinze segundos: perder mais que isso ao fechar a aba de repente seria
+ * notado por quem volta, e gravar a cada segundo encheria o servidor de
+ * escritas para nada.
+ */
+const SAVE_EVERY = 15;
+
+/** O pedaço do player.js do Bunny que este componente usa. */
+type BunnyPlayer = {
+  on: (
+    event: "ready" | "timeupdate" | "pause" | "ended",
+    handler: (data: { seconds: number; duration: number }) => void,
+  ) => void;
+  setCurrentTime: (seconds: number) => void;
+};
+
+declare global {
+  interface Window {
+    playerjs?: { Player: new (iframe: HTMLIFrameElement) => BunnyPlayer };
+  }
+}
 
 /**
  * Player da aula.
@@ -28,6 +55,9 @@ type Props = {
  * Sem acesso, o lugar do vídeo vira o aviso do tier exigido. Sem vídeo
  * cadastrado, a capa com o play desabilitado — um player vazio pareceria
  * quebrado.
+ *
+ * O progresso é conversado com o iframe pelo player.js do Bunny: ele avisa
+ * onde o vídeo está, e é por ele que retomamos de onde o jogador parou.
  */
 export function LessonPlayer({
   lessonId,
@@ -35,16 +65,70 @@ export function LessonPlayer({
   video,
   locked,
   image,
-  cover,
+  trackColor,
+  watched,
 }: Props) {
+  const frame = useRef<HTMLIFrameElement>(null);
+  // O último ponto já enviado, para não repetir a escrita a cada segundo.
+  const sent = useRef(watched);
+  const connected = useRef(false);
+
   // Conta a visualização de quem de fato abriu a aula (ver a action).
   useEffect(() => {
     if (!locked) registerLessonView(lessonId);
   }, [lessonId, locked]);
 
+  const save = useCallback(
+    (seconds: number) => {
+      if (Math.abs(seconds - sent.current) < 1) return;
+
+      sent.current = seconds;
+      registerLessonProgress(lessonId, seconds);
+    },
+    [lessonId],
+  );
+
+  /**
+   * Liga o player.js ao iframe, depois que o script carrega.
+   *
+   * Passa a ser chamado de novo a cada troca de aula porque o iframe é
+   * remontado; o script em si o Next carrega uma vez só.
+   */
+  const connect = useCallback(() => {
+    const iframe = frame.current;
+
+    // Chamado por dois caminhos — o iframe que carregou e o script que
+    // ficou pronto —, porque qualquer um dos dois pode vir por último. Dois
+    // players no mesmo iframe gravariam o progresso em dobro.
+    if (!iframe || !window.playerjs || connected.current) return;
+
+    connected.current = true;
+
+    const player = new window.playerjs.Player(iframe);
+
+    // Quem já concluiu a aula recebe `watched` zerado da página: rever uma
+    // aula deve começar do início, não dos créditos.
+    player.on("ready", () => {
+      if (watched > 0) player.setCurrentTime(watched);
+    });
+
+    player.on("timeupdate", ({ seconds }) => {
+      if (Math.abs(seconds - sent.current) >= SAVE_EVERY) {
+        save(Math.floor(seconds));
+      }
+    });
+
+    // Sair no meio é o caso mais comum de "continuar depois": vale uma
+    // gravação fora do intervalo.
+    player.on("pause", ({ seconds }) => save(Math.floor(seconds)));
+    player.on("ended", ({ seconds, duration }) =>
+      save(Math.floor(duration > 0 ? duration : seconds)),
+    );
+  }, [save, watched]);
+
   if (locked) {
     return (
-      <Poster image={image} cover={cover}>
+      <Poster image={image} trackColor={trackColor}>
         <span className="flex size-16 items-center justify-center rounded-full border-2 border-amber-400/60 bg-prime-dark/60">
           <LockSimpleIcon
             className="size-7 text-amber-400"
@@ -67,7 +151,7 @@ export function LessonPlayer({
 
   if (!video) {
     return (
-      <Poster image={image} cover={cover}>
+      <Poster image={image} trackColor={trackColor}>
         <span className="flex size-16 items-center justify-center rounded-full border-2 border-prime-light/40 bg-prime-dark/40">
           <PlayIcon
             className="ml-1 size-7 text-prime-light/60"
@@ -85,11 +169,21 @@ export function LessonPlayer({
   return (
     <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-white/10 bg-prime-dark">
       <iframe
+        ref={frame}
         src={video}
         title={title}
         className="absolute inset-0 size-full border-0"
         allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
         allowFullScreen
+        onLoad={connect}
+      />
+
+      {/* A biblioteca é do próprio Bunny e conversa com o iframe dele por
+          postMessage; não há versão em pacote npm publicada por eles. */}
+      <Script
+        src="https://assets.mediadelivery.net/playerjs/playerjs-latest.min.js"
+        strategy="afterInteractive"
+        onReady={connect}
       />
     </div>
   );
@@ -97,19 +191,17 @@ export function LessonPlayer({
 
 function Poster({
   image,
-  cover,
+  trackColor,
   children,
 }: {
   image: string | null;
-  cover: string;
+  trackColor: string | null;
   children: React.ReactNode;
 }) {
   return (
     <div
-      className={twMerge(
-        "relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br",
-        cover,
-      )}
+      style={coverStyle(trackColor)}
+      className="relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl border border-white/10"
     >
       {image && (
         <Image

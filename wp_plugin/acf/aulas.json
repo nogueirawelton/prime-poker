@@ -334,21 +334,25 @@
                 "graphql_field_name": "badge"
             },
             {
+                "key": "field_prime_track_icon",
+                "name": "icon",
+                "label": "Ícone",
+                "instructions": "Nome do ícone no Phosphor (phosphoricons.com), como strategy, brain, trophy, chart-line-up. Vazio mostra só a bolinha da cor. Nome errado aparece como interrogação vermelha.",
+                "type": "text",
+                "placeholder": "strategy",
+                "maxlength": 60,
+                "show_in_graphql": 1,
+                "graphql_field_name": "icon"
+            },
+            {
                 "key": "field_prime_track_color",
                 "name": "color",
                 "label": "Cor",
-                "type": "select",
-                "choices": {
-                    "vermelho": "Vermelho",
-                    "esmeralda": "Esmeralda",
-                    "violeta": "Violeta",
-                    "laranja": "Laranja",
-                    "azul": "Azul",
-                    "indigo": "Índigo",
-                    "ambar": "Âmbar"
-                },
-                "default_value": "vermelho",
-                "return_format": "value",
+                "instructions": "Cor da trilha: selo sobre a capa das aulas, bolinha na barra lateral e o degradê da capa quando a aula não tem imagem.",
+                "type": "color_picker",
+                "default_value": "#ff1820",
+                "enable_opacity": 0,
+                "return_format": "string",
                 "required": 1,
                 "show_in_graphql": 1,
                 "graphql_field_name": "color"

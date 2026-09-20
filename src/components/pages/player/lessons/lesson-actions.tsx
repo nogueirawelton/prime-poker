@@ -11,11 +11,11 @@ import { completeLesson, saveLesson } from "@/actions/lesson";
 
 /** Salvar e marcar como concluído — os dois estados da aula para o jogador. */
 export function LessonActions({
-  slug,
+  lessonId,
   saved,
   completed,
 }: {
-  slug: string;
+  lessonId: number;
   saved: boolean;
   completed: boolean;
 }) {
@@ -26,7 +26,7 @@ export function LessonActions({
       <button
         type="button"
         disabled={pending}
-        onClick={() => startTransition(() => saveLesson(slug))}
+        onClick={() => startTransition(() => saveLesson(lessonId))}
         aria-pressed={saved}
         className={twMerge(
           "flex h-11 items-center gap-2 rounded-md border px-4 font-semibold text-sm transition-all duration-500 disabled:opacity-60",
@@ -45,7 +45,7 @@ export function LessonActions({
       <button
         type="button"
         disabled={pending}
-        onClick={() => startTransition(() => completeLesson(slug))}
+        onClick={() => startTransition(() => completeLesson(lessonId))}
         aria-pressed={completed}
         className={twMerge(
           "flex h-11 items-center gap-2 rounded-md px-4 font-semibold text-sm transition-all duration-500 disabled:opacity-60",

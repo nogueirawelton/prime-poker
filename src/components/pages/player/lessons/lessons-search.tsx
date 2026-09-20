@@ -2,12 +2,14 @@
 
 import {
   ArrowsClockwiseIcon,
+  CaretDownIcon,
+  CheckIcon,
   MagnifyingGlassIcon,
   SlidersIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Popover } from "radix-ui";
+import { Popover, Select as SelectPrimitive } from "radix-ui";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import {
   type Instructor,
@@ -177,20 +179,21 @@ export function LessonsSearch({
           <Popover.Content
             align="end"
             sideOffset={8}
-            className="z-50 flex w-80 flex-col gap-5 rounded-xl border border-white/10 bg-prime-darkgray p-5 shadow-2xl data-[state=closed]:animate-dialog-close data-[state=open]:animate-dialog-open"
+            className="z-50 flex w-80 flex-col gap-5 rounded-xl border border-white/10 bg-zinc-800 p-5 shadow-2xl data-[state=closed]:animate-dialog-close data-[state=open]:animate-dialog-open"
           >
             <Field label="Partição">
               <Select
+                label="Partição"
                 value={searchParams.get(PARAMS.track) ?? ""}
                 onChange={(nextValue) => applyFilter(PARAMS.track, nextValue)}
-              >
-                <option value="">Todas as partições</option>
-                {tracks.map((track) => (
-                  <option key={track.slug} value={track.slug}>
-                    {track.name}
-                  </option>
-                ))}
-              </Select>
+                options={[
+                  { value: "", label: "Todas as partições" },
+                  ...tracks.map((track) => ({
+                    value: track.slug,
+                    label: track.name,
+                  })),
+                ]}
+              />
             </Field>
 
             <Field label="Data">
@@ -216,22 +219,24 @@ export function LessonsSearch({
 
             <Field label="Instrutor">
               <Select
+                label="Instrutor"
                 value={searchParams.get(PARAMS.instructor) ?? ""}
                 onChange={(nextValue) =>
                   applyFilter(PARAMS.instructor, nextValue)
                 }
-              >
-                <option value="">Todos os instrutores</option>
-                {instructors.map((instructor) => (
-                  <option key={instructor.id} value={instructor.id}>
-                    {instructor.name}
-                  </option>
-                ))}
-              </Select>
+                options={[
+                  { value: "", label: "Todos os instrutores" },
+                  ...instructors.map((instructor) => ({
+                    value: String(instructor.id),
+                    label: instructor.name,
+                  })),
+                ]}
+              />
             </Field>
 
             <Field label="Ordenar por">
               <Select
+                label="Ordenar por"
                 value={searchParams.get(PARAMS.order) ?? "recentes"}
                 onChange={(nextValue) =>
                   applyFilter(
@@ -239,13 +244,11 @@ export function LessonsSearch({
                     nextValue === "recentes" ? "" : nextValue,
                   )
                 }
-              >
-                {SORT_ORDERS.map((nextValue) => (
-                  <option key={nextValue} value={nextValue}>
-                    {ORDER_LABEL[nextValue]}
-                  </option>
-                ))}
-              </Select>
+                options={SORT_ORDERS.map((order) => ({
+                  value: order,
+                  label: ORDER_LABEL[order],
+                }))}
+              />
             </Field>
 
             <button
@@ -283,25 +286,81 @@ function Field({
 const CONTROL =
   "h-11 w-full rounded-md border border-white/10 bg-white/5 px-3 text-prime-light text-sm outline-none transition-colors duration-500 focus:border-prime-red/60";
 
+type Option = { value: string; label: string };
+
+/**
+ * "Sem filtro" precisa de um valor de verdade: o Radix recusa `Item` com
+ * valor vazio, porque é assim que ele representa "nada escolhido".
+ */
+const ALL = "__todas";
+
+/**
+ * Select do Radix no lugar do `<select>` nativo.
+ *
+ * O nativo abre uma lista desenhada pelo sistema, que ignora o tema escuro
+ * do site (chegou a sair texto branco no branco). Este usa o mesmo visual do
+ * Popover que o envolve e do menu dos cards, e mantém teclado e leitor de
+ * tela a cargo do Radix.
+ */
 function Select({
   value,
   onChange,
-  children,
+  options,
+  label,
 }: {
   value: string;
   onChange: (nextValue: string) => void;
-  children: React.ReactNode;
+  options: Array<Option>;
+  /** Para leitor de tela: o campo não tem `<label>` associado. */
+  label: string;
 }) {
   return (
-    // `<select>` nativo: o menu do sistema já resolve teclado, toque e listas
-    // longas melhor do que um dropdown desenhado à mão.
-    <select
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      className={`${CONTROL} cursor-pointer`}
+    <SelectPrimitive.Root
+      value={value || ALL}
+      onValueChange={(nextValue) =>
+        onChange(nextValue === ALL ? "" : nextValue)
+      }
     >
-      {children}
-    </select>
+      <SelectPrimitive.Trigger
+        aria-label={label}
+        className={`${CONTROL} flex cursor-pointer items-center justify-between gap-2 text-left data-[state=open]:border-prime-red/60`}
+      >
+        <SelectPrimitive.Value />
+        <SelectPrimitive.Icon>
+          <CaretDownIcon
+            className="size-4 shrink-0 text-prime-light/50"
+            weight="bold"
+          />
+        </SelectPrimitive.Icon>
+      </SelectPrimitive.Trigger>
+
+      <SelectPrimitive.Portal>
+        {/* Acima do Popover dos filtros (`z-50`), que é quem o abriu. */}
+        <SelectPrimitive.Content
+          position="popper"
+          sideOffset={6}
+          className="z-60 max-h-64 min-w-(--radix-select-trigger-width) overflow-hidden rounded-xl border border-white/10 bg-zinc-800 shadow-2xl data-[state=closed]:animate-dialog-close data-[state=open]:animate-dialog-open"
+        >
+          <SelectPrimitive.Viewport className="p-1">
+            {options.map((option) => (
+              <SelectPrimitive.Item
+                key={option.value || ALL}
+                value={option.value || ALL}
+                className="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2 text-prime-light/80 text-sm outline-none transition-colors duration-300 data-highlighted:bg-prime-red/15 data-highlighted:text-prime-red"
+              >
+                <SelectPrimitive.ItemText>
+                  {option.label}
+                </SelectPrimitive.ItemText>
+
+                <SelectPrimitive.ItemIndicator>
+                  <CheckIcon className="size-4" weight="bold" />
+                </SelectPrimitive.ItemIndicator>
+              </SelectPrimitive.Item>
+            ))}
+          </SelectPrimitive.Viewport>
+        </SelectPrimitive.Content>
+      </SelectPrimitive.Portal>
+    </SelectPrimitive.Root>
   );
 }
 

@@ -6,6 +6,7 @@ import { getSession } from "@/lib/session";
 import {
   addQuestion,
   registerView,
+  saveProgress,
   toggleCompleted,
   toggleSaved,
 } from "@/services/lesson-detail";
@@ -19,22 +20,56 @@ async function ensureSession() {
   if (!session) redirect("/login");
 }
 
-export async function saveLesson(slug: string) {
+/**
+ * Salva a aula na lista do jogador, ou a tira de lá.
+ *
+ * Não devolve o novo estado: quem pinta o botão é a página recarregada pelo
+ * `refresh()`, e assim a action serve tanto ao botão da aula quanto ao menu
+ * do card, que não têm como guardar estado próprio.
+ */
+export async function saveLesson(lessonId: number) {
   await ensureSession();
 
-  await toggleSaved(slug);
+  await toggleSaved(lessonId);
 
   // Sem o `refresh`, o botão continuaria mostrando o estado anterior até a
   // próxima navegação.
   refresh();
 }
 
-export async function completeLesson(slug: string) {
+/** Marca ou desmarca a aula como concluída. */
+export async function completeLesson(lessonId: number) {
   await ensureSession();
 
-  await toggleCompleted(slug);
+  await toggleCompleted(lessonId);
 
   refresh();
+}
+
+/**
+ * Guarda onde o jogador parou no vídeo.
+ *
+ * Chamada de tempos em tempos pelo player, então NÃO chama `refresh()`:
+ * recarregar a página a cada quinze segundos atrapalharia justamente quem
+ * está assistindo. A tela só reflete o progresso na próxima navegação.
+ *
+ * Falha aqui não é problema de quem assiste — no pior caso ele retoma de um
+ * ponto um pouco anterior.
+ */
+export async function registerLessonProgress(
+  lessonId: number,
+  seconds: number,
+) {
+  await ensureSession();
+
+  if (!Number.isInteger(lessonId) || lessonId <= 0) return;
+  if (!Number.isFinite(seconds) || seconds < 0) return;
+
+  try {
+    await saveProgress(lessonId, Math.floor(seconds));
+  } catch (error) {
+    console.error("Falha ao guardar o progresso da aula", lessonId, error);
+  }
 }
 
 /**

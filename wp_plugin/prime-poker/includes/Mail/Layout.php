@@ -53,7 +53,7 @@ final class Layout {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;">
 	<tr>
 		<td align="center" style="padding:32px 16px;">
-			<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#221e1e;border-radius:12px;font-family:Montserrat,Arial,Helvetica,sans-serif;color:#ffffff;">
+			<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#27272a;border-radius:12px;font-family:Montserrat,Arial,Helvetica,sans-serif;color:#ffffff;">
 				<tr>
 					<td style="padding:28px 32px;border-bottom:1px solid rgba(255,255,255,0.1);">
 						<span style="font-size:18px;font-weight:900;letter-spacing:2px;text-transform:uppercase;">
