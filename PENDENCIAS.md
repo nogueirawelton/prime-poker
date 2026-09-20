@@ -9,7 +9,10 @@ funcionando, com typecheck, lint e teste real.
 
 Legenda: `[ ]` pendente · `[x]` feito · ❓ decisão sua antes de começar.
 
-**Ordem sugerida:** 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12
+**Ordem sugerida:** 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13
+
+**Onde estamos:** etapas 0 a 12 concluídas e validadas no ar. Falta a 13 (lançamento
+na master). Bloqueio conhecido: os links de Facebook, X e YouTube do rodapé.
 
 ---
 
@@ -377,7 +380,8 @@ Substitui o mock de `services/lessons.ts` e `services/lesson-detail.ts`.
 - [x] Bunny → *Allowed domains*: `localhost` liberado (conferido: o player abre a partir de
       `localhost` e de `prime-poker.vercel.app`).
 - [ ] Bunny → *Allowed domains*: acrescentar **`primepokerteam.com.br`** — hoje recusado;
-      sem isso nenhum vídeo toca no lançamento. Tirar `localhost` no lançamento (etapa 12).
+      sem isso nenhum vídeo toca no lançamento. Tirar `localhost` no lançamento.
+      ↳ Mesmo item da etapa 13; é lá que ele fecha.
 - [x] Reimportado o `aulas.json` com o texto de ajuda novo da duração (19/09/2026).
 
 **✅ Pronto quando:** a query `aulas` devolve as aulas de teste com filtros e ordenação,
@@ -684,14 +688,20 @@ específico**.
 
 ## Aula relacionada no post ✅ concluída (20/09/2026, plugin 1.18.1)
 
+> ⚠️ **Refeita na etapa 11 (plugin 1.19.0).** O que está descrito aqui vale como
+> histórico: o palpite por título saiu, `lessonSuggestion` virou
+> `relatedLesson(postId)` e a dúvida do último item — "o nome do campo é outro?" —
+> foi respondida: o nome está certo (`relatedlesson`, conferido no schema do
+> WPGraphQL); o que estava errado era o campo estar **vazio** nos posts do ar.
+
 Ficou pendente desde a etapa 7 ("a aula no blog deixa pro final q vamos relacionar no
 post com a aula").
 
 **👤 Você**
 - [x] Criar o campo **Aula relacionada** (ACF `relatedlesson`, relacionamento) no post.
-- [ ] Subir o plugin **1.18.1**.
-- [ ] Depois de subir, conferir se a aula escolhida aparece no post (ver a observação
-      abaixo sobre o nome do campo).
+- [x] ~~Subir o plugin **1.18.1**~~ — superado pela 1.19.2 (etapa 11).
+- [x] ~~Conferir se a aula escolhida aparece no post~~ — respondido na etapa 11: o nome
+      do campo estava certo; o campo é que estava vazio nos posts.
 
 **🤖 Claude**
 - [x] `lessonSuggestion` passou a aceitar `postId` e a honrar a escolha do painel antes
@@ -712,37 +722,190 @@ post com a aula").
       direto para `/player/aulas/<slug>`: quem não entrou cai no login, quem entrou sem
       o plano vê o cadeado com o tier necessário. A lateral continua como estava.
 - [x] A leitura da escolha do painel passou a tentar o ACF (`get_field`) antes da meta
-      crua. **Motivo:** no ar, os posts `cash-game-x-torneios` e `gestao-de-banca`
-      apontam para a aula 1111 pelo WPGraphQL, mas `get_post_meta` volta vazia — ou
-      seja, o valor não está gravado com o nome `relatedlesson`. Se depois do 1.18.1
-      ainda não aparecer, o nome do campo no ACF é outro: me diga qual é (o **Nome**,
-      não o rótulo) que eu ajusto a constante `META_RELATED`.
+      crua. **Motivo (revisto na etapa 11):** os posts `cash-game-x-torneios` e
+      `gestao-de-banca` respondem `relatedlesson: { nodes: [] }` — campo presente e
+      **vazio**, e não "gravado com outro nome", como se supôs aqui. O nome do campo
+      está certo.
 
 ---
 
-## Etapa 11 — Planos, upgrade e vencimento
+## Etapa 11 — Planos, upgrade e perfil ✅ concluída (20/09/2026, plugin 1.19.2)
+
+**Decisões (20/09/2026):** **sem gateway de pagamento** — quem muda o tier é você,
+pelo painel. **Sem vencimento** por enquanto, então nada de e-mail de expiração. O
+botão de upgrade abre um **diálogo que manda o pedido pelo Contact Form 7**.
+
+A etapa mudou de nome: sem cobrança e sem vencimento, o que sobrou dela é o pedido
+de upgrade e a tela de perfil.
 
 **👤 Você**
-- [ ] ❓ **Como o jogador vira Basic/Gold/Platinum?** Você altera manualmente no WP,
-      ou haverá pagamento (Hotmart, Kiwify, Stripe, Mercado Pago…)?
-- [ ] ❓ O que acontece no vencimento (o plugin já rebaixa via `Expiration`): avisar
-      por e-mail antes? Quantos dias?
-- [ ] ❓ Para onde leva o botão de "fazer upgrade" nas aulas bloqueadas?
-- [ ] Se houver gateway: criar a conta e me passar as credenciais **de teste** e o webhook.
-- [ ] Confirmar que o cron do WP roda (WP-Cron real ou cron do servidor) — o vencimento depende disso.
-- [ ] Corrigir a aula relacionada no post. Já está no plugin, mas não aparece no post. puxar sempre o relacionado e nao por termo
-- [ ] Criar página de edição de perfil, com fotos informações pra contato e etc...
+- [x] ❓ Como o jogador vira Basic/Gold/Platinum → **manual, no painel**.
+- [x] ❓ O que acontece no vencimento → **não haverá vencimento por enquanto**.
+- [x] ❓ Para onde leva o botão de upgrade → **diálogo com formulário, pelo CF7**.
+- [x] Subir o plugin **1.19.2**. **Antes do front**, como sempre — esta versão mexe
+      no `viewer`, que a área do jogador inteira lê.
+- [x] Criar no *Contato → Formulários* um formulário **Pedido de upgrade** com os
+      campos `nome_completo`, `email`, `numero_whatsapp`, `plano_atual`,
+      `plano_desejado`, `aula` e `mensagem` → **ID 1147**, já no código (constante
+      `FORM_ID`, como o da inscrição). Confira que o formulário tem os sete campos
+      com esses nomes: o CF7 recusa o envio quando falta um obrigatório.
+- [x] Conferir no post se a **Aula relacionada** está mesmo gravada: no ar, os posts
+      `cash-game-x-torneios` e `gestao-de-banca` tinham o campo presente mas **vazio**
+      (o WPGraphQL devolvia `relatedlesson: { nodes: [] }`, e não `null`). Abrir o
+      post, escolher a aula e **Atualizar** resolve — sem escolha não há chamada.
+- [x] Testar o perfil: trocar a foto, mudar o WhatsApp, trocar a senha e entrar de
+      novo com ela.
 
 **🤖 Claude**
-- [ ] Integração com o gateway via webhook → `Membership::set_tier()` (hook `prime_player_tier_changed`).
-- [ ] E-mail de aviso de vencimento e e-mail de boas-vindas (`prime_player_registered`).
-- [ ] CTA de upgrade no front e exibição do vencimento no perfil.
+- [x] **Aula relacionada, sempre a escolhida.** O palpite por palavras do título saiu
+      (`Lessons/Suggestion.php` virou `Lessons/Related.php`, e `lessonSuggestion`
+      virou `relatedLesson(postId)`). Era ele o culpado do que você viu: com o campo
+      vazio no post, o plugin caía no palpite — e como as aulas do ar hoje são de
+      teste, o post de gestão de banca não tinha palavra em comum com nenhuma e
+      voltava vazio. Agora, sem escolha no painel, não há chamada nenhuma.
+- [x] A leitura da escolha ganhou um terceiro caminho: `get_field()`, depois a meta
+      crua, e por fim uma **varredura pelos campos de relação do próprio post** —
+      achados pela chave da definição do ACF (`_<campo>` → `field_abc123`), e não
+      por qualquer número que bata com o ID de uma aula. Assim o campo funciona
+      mesmo que tenha sido criado com outro nome.
+- [x] **Perfil editável** em `/player/perfil`: foto, nome, e-mail, WhatsApp, cidade,
+      apresentação e troca de senha. O nome de usuário fica de fora de propósito —
+      é com ele que o jogador entra no site.
+- [x] `Players/Profile.php` no plugin: campos `playerPhone`, `playerCity` e
+      `playerAvatarUrl` no `User` (só para o dono e para quem administra usuários),
+      mutations `updatePlayerProfile` e `updatePlayerPassword`, e a rota REST
+      `prime-poker/v1/avatar` para a foto — multipart não passa pelo GraphQL, e
+      mandar a imagem em base64 dentro do JSON custaria um terço a mais de tráfego.
+- [x] A troca de senha **exige a senha atual**: o token do jogador vive num cookie, e
+      sem essa conferência quem pegasse o cookie ficaria com a conta. Quem esqueceu a
+      senha continua indo pelo "esqueci minha senha", que confere o e-mail.
+- [x] A foto vira anexo da biblioteca e entra no filtro de avatar do WordPress, então
+      o painel, os comentários e os e-mails passam a mostrá-la também. Trocar a foto
+      apaga a anterior — senão cada troca deixaria um arquivo órfão. O tipo do arquivo
+      é conferido **pelo conteúdo**, nunca pelo cabeçalho que o navegador manda.
+- [x] **Diálogo de upgrade** (`UpgradeDialog`), aberto pelo botão na aula trancada e
+      no perfil. Nome, e-mail e WhatsApp já vêm preenchidos do perfil; o plano
+      desejado já vem marcado com o tier que a aula exige; a aula de origem vai junto
+      no e-mail, para a equipe saber do que o jogador está falando.
+- [x] Vencimento no perfil **só quando existe**: hoje nenhum tier expira, e um "sem
+      vencimento" fixo na tela seria ruído. O campo já está pronto para o dia em que
+      houver cobrança recorrente — o `Expiration` do plugin continua agendado e sem
+      nada para fazer enquanto ninguém tiver data.
+- [x] Menu da área logada revisto: `/player` virou **Painel** (é o que ele sempre foi)
+      e **Meu perfil** passou a apontar para a tela nova. A foto do jogador aparece no
+      gatilho do menu e no card do painel.
+- [x] Verificado: typecheck, lint, build e **37 casos em WordPress simulado** — 13 da
+      aula relacionada (ACF, meta crua, campo com outro nome, aula em rascunho,
+      apagada, relação para não-aula, lista com item inválido, ID escalar, objeto
+      `WP_Post`, varredura ignorando `_thumbnail_id`) e 24 do perfil (campo ausente
+      preservando o resto, campo vazio limpando, HTML removido, limites de tamanho,
+      e-mail de outra conta recusado, o próprio e-mail não conflitando consigo, senha
+      atual errada, senha curta).
+- [x] Correções apontadas por você (20/09/2026), já no ar em 1.19.0:
+      - **"Body exceeded 1 MB limit" ao enviar a foto**. O limite é do Next, não do
+        WordPress: Server Action tem 1 MB de corpo por padrão, e um arquivo atravessa
+        essa fronteira codificado, ocupando mais que o tamanho em disco. Subiu para
+        **20 MB** (`serverActions.bodySizeLimit`), e o teto da foto no plugin foi
+        junto. Se o PHP do servidor recusar antes (`upload_max_filesize`), a mensagem
+        agora diz isso e mostra o limite real — antes dizia "nenhuma imagem recebida".
+      - **"Faça login para editar o seu perfil" com você logado**. Era capability: a
+        equipe não tem `access_player_area` — ela vive nas roles de tier —, então um
+        administrador logado na área batia na porta fechada. Agora vale a mesma dupla
+        do resto do plugin (`access_player_area` **ou** `edit_posts`), nas mutations e
+        na rota da foto.
+- [x] **Foto nas dúvidas da aula** (pedido em 20/09/2026), em 1.19.2: novo campo
+      `authorAvatar` no comentário. Ele acompanha o `authorLabel`, e pelo mesmo
+      motivo — a resposta da equipe sai em nome do instrutor da aula, então a cara
+      dela é a **imagem destacada do instrutor**, e não a de quem digitou; a pergunta
+      do jogador sai com a foto que ele enviou no perfil. Sem foto, voltam as
+      iniciais. O campo devolve `null` de propósito em vez de usar `get_avatar_url()`
+      do WordPress: aquele nunca volta vazio — sem Gravatar ele entrega a silhueta
+      cinza, e a conversa viraria uma fileira delas.
+- [x] Verificado no ar com o plugin 1.19.2 e o formulário 1147 no lugar.
 
-**✅ Pronto quando:** uma compra de teste muda o tier e libera as aulas na hora.
+**Etapa fechada por você em 20/09/2026.** O que ficou por testar no dia a dia, e
+que só o uso mostra: o e-mail do pedido de upgrade chegando à caixa certa, e a
+foto de perfil aparecendo nas dúvidas das aulas antigas (as que já tinham
+comentários antes da 1.19.2).
+
+**Fora do escopo, por decisão sua:** integração com gateway (Hotmart, Kiwify, Stripe,
+Mercado Pago), e-mail de aviso de vencimento e página pública de planos. O gancho do
+plugin (`Membership::set_tier()` e a action `prime_player_tier_changed`) continua de
+pé para o dia em que houver cobrança.
+
+**✅ Pronto quando:** o jogador edita o perfil e a foto, o pedido de upgrade chega no
+e-mail da equipe, e a aula relacionada escolhida no painel aparece no post.
 
 ---
 
-## Etapa 12 — Lançamento (master)
+## Etapa 12 — Painel de acompanhamento ✅ concluída (20/09/2026, plugin 1.20.0)
+
+**Decisões (20/09/2026):** as **duas visões, em abas** (acervo e jogadores); dúvidas
+sem resposta com **destaque de ação**; e **exportação CSV das duas listas**.
+
+**👤 Você**
+- [x] Subir o plugin **1.20.0**.
+- [x] Abrir **Prime Poker** no menu do painel e conferir se os números batem com o
+      que você sabe da base → **tudo ok em 20/09/2026.**
+- [x] Baixar os dois CSVs e abrir no Excel.
+
+**🤖 Claude**
+- [x] Menu **Prime Poker** no painel, com três abas: **Visão geral**, **Aulas** e
+      **Jogadores**. A divisão é essa porque são três perguntas diferentes — "como vai
+      o mês", "o que gravar em seguida" e "com quem falar" — e numa tela só nenhuma
+      ficaria respondida.
+- [x] **Dúvidas esperando resposta no topo da visão geral**, da mais antiga para a
+      mais nova, com botão que abre o comentário direto para responder. É o único
+      número do painel que pede uma ação hoje; o resto é acompanhamento.
+- [x] Visão geral: jogadores, novos em 30 dias, ativos em 7 dias, sumidos há 30+,
+      aulas publicadas, visualizações, conclusões e dúvidas em aberto. Mais a
+      distribuição por plano e a tabela de notificações com **alcance e leitura**.
+- [x] Aba **Aulas**: por aula, quem pode ver, visualizações, quantos começaram,
+      quantos concluíram e dúvidas (com as em aberto destacadas). Clicando na aula,
+      **a lista de quem assistiu**, separando quem começou de quem concluiu.
+- [x] Aba **Jogadores**: nome, contato, plano, entrada, último estudo, concluídas, em
+      andamento e sequência. O nome leva para a ficha do usuário no WordPress.
+- [x] **Exportação CSV** das duas listas, do mesmo retrato que está na tela — a
+      planilha nunca discorda do que a pessoa acabou de ver. Sai com `;` e BOM,
+      porque o Excel em português lê o CSV com o separador da região e sem a BOM
+      mostra os acentos como lixo.
+- [x] **Uma passada só, com cache de 15 minutos** e botão "Atualizar agora". O
+      progresso de cada jogador mora em user meta serializada, ótima para ler o
+      progresso de UMA pessoa — que é o que o site faz o tempo todo — e péssima para
+      perguntar "quem concluiu a aula 42": não há como o banco responder isso sem
+      abrir a meta de todo mundo. Então abrimos uma vez, calculamos tudo e
+      guardamos. Os jogadores são lidos em lotes de 200 para a memória não crescer
+      com a base.
+- [x] O cache se joga fora sozinho quando uma dúvida chega, um comentário muda de
+      status, alguém se cadastra ou um tier muda. **Assistir aula não invalida**: é o
+      evento mais frequente da área, e refazer a conta a cada play tiraria todo o
+      sentido do cache.
+- [x] **Duas permissões.** A tela pede `edit_posts` (a equipe); a aba de jogadores e
+      o CSV deles pedem `list_users`, porque ali aparecem e-mail e WhatsApp de gente
+      real — quem edita aulas não precisa disso para editar aulas.
+- [x] `Questions::from_team()` virou pública: o painel precisa da **mesma** regra para
+      separar dúvida de resposta. Uma segunda definição de "veio da equipe" contaria
+      dúvidas em aberto que não existem — a réplica do próprio jogador, por exemplo,
+      não fecha a dúvida dele.
+- [x] "Podem ver" é o denominador da conclusão, e não o total de jogadores: cobrar
+      audiência de quem nem tem o tier faria toda aula Platinum parecer um fracasso.
+- [x] Verificado: **32 casos em WordPress simulado** — equipe fora da lista de
+      jogadores, contagem por tier, ativos/sumidos/nunca estudou, aula em rascunho
+      fora, conclusão sem posição contando como início, alcance por tier, recado
+      individual alcançando uma pessoa mesmo pedindo Platinum, linha aberta pela
+      equipe não contando como dúvida, réplica do próprio jogador não fechando a
+      dúvida, e o cache servindo e sendo esquecido.
+
+**Limite conhecido:** "último estudo" é o último dia em que a pessoa **abriu uma
+aula**, não o último login. O WordPress não guarda data de login, e o site é
+headless — quem entra pelo front nem passa pela tela de login do painel. Para ter
+último acesso de verdade, o plugin precisaria gravar um carimbo a cada autenticação;
+diga se vale a pena.
+
+**✅ Pronto quando:** a equipe abre o painel, vê as dúvidas em aberto e baixa as duas
+planilhas.
+
+## Etapa 13 — Lançamento (master)
 
 **👤 Você**
 - [ ] Revisar tudo em staging e dar o OK final.
@@ -761,9 +924,14 @@ post com a aula").
       `null` também. Não há `TODO`, `FIXME` nem conversa de exemplo no código. Sobrou
       só o que está listado abaixo.
 - [ ] **Rodapé: Facebook, X e YouTube apontam para `#`** (`shared/footer/index.tsx`).
-      Só o Instagram tem endereço. Me passe os links ou diga quais redes tirar.
-- [ ] Decidir sobre três arquivos sem nenhum uso: `ui/form/select-input.tsx`,
-      `ui/form/text-area.tsx` e `ui/icon.tsx` — apagar ou manter.
+      Só o Instagram tem endereço. ⏳ Aguardando os links (20/09/2026). Enquanto isso
+      os três ficam como estão — link para `#` é melhor que link para uma página que
+      não existe, mas **não deve ir ao ar assim**.
+- [x] Arquivos sem uso: **`ui/form/select-input.tsx` e `ui/form/text-area.tsx`
+      apagados** (20/09/2026). Eram estilizados para o fundo claro da landing e nunca
+      chegaram a ser usados; o que a área do jogador precisava virou o `dark-select`.
+      **`ui/icon.tsx` ficou**: a nota antiga estava errada — ele é usado, só que
+      indiretamente (home → `ui/loading.tsx` → `Icon`).
 - [ ] Rodar `typecheck`, `lint` e `build` uma última vez antes do merge.
 - [ ] Fazer o merge staging → master sem desfazer nada da master.
 - [ ] Conferir no Bunny: `primepokerteam.com.br` nos *Allowed domains* e `localhost` removido.
@@ -785,5 +953,5 @@ post com a aula").
 | ~~9~~ | 8 | ~~Regra da sequência de estudo~~ → conta o dia com qualquer aula aberta; conclusão automática aos 90% |
 | ~~10~~ | 9 | ~~Quem responde as dúvidas, visibilidade e moderação~~ → equipe em nome do instrutor, visíveis para todos, sem moderação |
 | ~~11~~ | 10 | ~~Tipos de notificação e direcionamento~~ → aula, resposta e aviso; por tier ou jogador |
-| 12 | 11 | Como o jogador muda de plano (manual ou gateway) |
-| 13 | 11 | Aviso de vencimento e destino do upgrade |
+| ~~12~~ | 11 | ~~Como o jogador muda de plano (manual ou gateway)~~ → manual, no painel |
+| ~~13~~ | 11 | ~~Aviso de vencimento e destino do upgrade~~ → sem vencimento; upgrade por diálogo no CF7 |

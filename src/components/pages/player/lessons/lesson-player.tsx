@@ -3,7 +3,13 @@
 import { LockSimpleIcon, PlayIcon } from "@phosphor-icons/react";
 import Image from "next/image";
 import Script from "next/script";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { registerLessonProgress, registerLessonView } from "@/actions/lesson";
 import { coverStyle } from "@/lib/lessons";
 
@@ -14,6 +20,13 @@ type Props = {
   video: string | null;
   /** `null` quando o jogador pode assistir. */
   locked: { tierLabel: string } | null;
+  /**
+   * Botão de upgrade da aula trancada.
+   *
+   * Vem pronto de fora, do servidor, porque ele precisa do perfil do jogador
+   * e da lista de planos — dados que o player não tem e não deveria buscar.
+   */
+  upgrade?: ReactNode;
   image: string | null;
   /** Cor da trilha, usada na capa quando não há imagem. */
   trackColor: string | null;
@@ -73,6 +86,7 @@ export function LessonPlayer({
   title,
   video,
   locked,
+  upgrade,
   image,
   trackColor,
   watched,
@@ -178,8 +192,10 @@ export function LessonPlayer({
             Aula exclusiva para {locked.tierLabel} ou superior
           </p>
           <p className="mt-1 text-prime-light/60 text-sm">
-            Fale com a equipe do Prime Poker Team para liberar o seu acesso.
+            Peça o upgrade e a equipe do Prime Poker Team libera o seu acesso.
           </p>
+
+          {upgrade && <div className="mt-4 flex justify-center">{upgrade}</div>}
         </div>
       </Poster>
     );

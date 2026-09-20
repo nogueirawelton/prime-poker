@@ -7,10 +7,10 @@ import {
   CONTINUE_WATCHING,
   LESSON,
   LESSON_INSTRUCTORS,
-  LESSON_SUGGESTION,
   LESSON_TRACKS,
   LESSONS,
   PLAYER_TIERS,
+  RELATED_LESSON,
 } from "@/graphql/queries/player/LESSONS";
 import { LESSONS_CACHE_TAG, POSTS_CACHE_TAG } from "@/lib/cache-tags";
 import {
@@ -18,10 +18,10 @@ import {
   LEVELS,
   type Lesson,
   type LessonFilter,
-  type LessonSuggestion,
   type LessonsResult,
   type Level,
   PAGE_SIZE,
+  type RelatedLesson,
   type SortOrder,
   type Track,
   trackColor,
@@ -97,6 +97,8 @@ export type LessonDetailNode = LessonNode & {
       date: string;
       text: string;
       authorLabel: string;
+      /** URL da foto de quem escreveu; `null` sem foto. */
+      authorAvatar: string | null;
       isInstructor: boolean;
       isMine: boolean;
       likeCount: number;
@@ -303,49 +305,49 @@ export async function getInstructors(): Promise<Array<Instructor>> {
 }
 
 /* -------------------------------------------------------------------------- */
-/*                                  Sugestões                                 */
+/*                              Aula relacionada                              */
 /* -------------------------------------------------------------------------- */
 
 /**
  * A aula que um post do blog divulga.
  *
- * Quem decide é o plugin: primeiro a **Aula relacionada** escolhida no painel
- * do post; sem ela, a aula de título mais próximo do assunto. `null` quando
- * não há escolha nem palavra em comum.
+ * É a escolhida no campo **Aula relacionada** do post, e só ela: o palpite
+ * por palavras do título saiu do plugin na 1.19.0 porque acertava pouco e
+ * errava em público — um post de gestão de banca acabava anunciando a aula de
+ * teste por causa de uma palavra em comum. Sem escolha no painel, `null`, e o
+ * post fica sem chamada.
  *
  * O caminho passa pelo plugin porque a relação do ACF, lida direto, volta
  * vazia para visitante — a aula é privada, e quem lê o blog não está logado.
  */
-export async function getSuggestedLesson(
-  subject: string,
-  trackSlug?: string,
-  postId?: number,
-): Promise<LessonSuggestion | null> {
+export async function getRelatedLesson(
+  postId: number,
+): Promise<RelatedLesson | null> {
   // Um extra da lateral: se falhar (WP fora, plugin antigo sem o campo), o
   // post continua de pé com a chamada institucional no lugar.
   const data = await optionalQuery<{
-    lessonSuggestion: {
+    relatedLesson: {
       slug: string;
       title: string;
       instructor: string | null;
       duration: number | null;
     } | null;
-  }>(LESSON_SUGGESTION, {
-    variables: { subject, track: trackSlug, postId },
-    // `posts` também: agora a resposta depende do campo Aula relacionada, que
-    // vive no post. Sem esta tag, trocar a aula no painel só apareceria no
-    // site quando o cache expirasse sozinho.
+  }>(RELATED_LESSON, {
+    variables: { postId },
+    // `posts` também: a resposta depende do campo Aula relacionada, que vive
+    // no post. Sem esta tag, trocar a aula no painel só apareceria no site
+    // quando o cache expirasse sozinho.
     tags: [LESSONS_CACHE_TAG, POSTS_CACHE_TAG],
   });
 
-  const suggestion = data?.lessonSuggestion;
+  const lesson = data?.relatedLesson;
 
-  return suggestion
+  return lesson
     ? {
-        slug: suggestion.slug,
-        title: suggestion.title,
-        instructor: suggestion.instructor ?? "",
-        duration: suggestion.duration ?? 0,
+        slug: lesson.slug,
+        title: lesson.title,
+        instructor: lesson.instructor ?? "",
+        duration: lesson.duration ?? 0,
       }
     : null;
 }

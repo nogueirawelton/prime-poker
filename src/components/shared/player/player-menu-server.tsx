@@ -10,5 +10,11 @@ import { PlayerMenu } from "./player-menu";
 export async function PlayerMenuData() {
   const profile = await getProfile();
 
-  return <PlayerMenu name={profile.name} tier={profile.tier?.label ?? null} />;
+  return (
+    <PlayerMenu
+      name={profile.name}
+      tier={profile.tier?.label ?? null}
+      avatarUrl={profile.avatarUrl}
+    />
+  );
 }

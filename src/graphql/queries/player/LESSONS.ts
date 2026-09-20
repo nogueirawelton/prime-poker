@@ -110,6 +110,7 @@ export const LESSON = gql`
           date
           text
           authorLabel
+          authorAvatar
           isInstructor
           isMine
           likeCount
@@ -176,14 +177,15 @@ export const LESSON_INSTRUCTORS = gql`
 `;
 
 /**
- * A aula a divulgar num post. Pública e só com dados de card.
+ * A aula que um post do blog divulga.
  *
- * Com `postId`, o plugin devolve a **Aula relacionada** escolhida no painel;
- * sem ela, a aula de título mais próximo do assunto.
+ * Só a **Aula relacionada** escolhida no painel do post: o plugin deixou de
+ * palpitar por palavras do título na 1.19.0, porque o palpite errava em
+ * público. Post sem escolha não tem chamada.
  */
-export const LESSON_SUGGESTION = gql`
-  query LessonSuggestion($subject: String!, $track: String, $postId: Int) {
-    lessonSuggestion(subject: $subject, track: $track, postId: $postId) {
+export const RELATED_LESSON = gql`
+  query RelatedLesson($postId: Int!) {
+    relatedLesson(postId: $postId) {
       slug
       title
       instructor

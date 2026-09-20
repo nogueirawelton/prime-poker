@@ -135,8 +135,8 @@ export type Lesson = {
   minimumTier: { slug: string; label: string };
 };
 
-/** O que um post do blog mostra da aula sugerida — é público. */
-export type LessonSuggestion = {
+/** O que um post do blog mostra da aula relacionada — é público. */
+export type RelatedLesson = {
   slug: string;
   title: string;
   instructor: string;

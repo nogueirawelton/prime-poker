@@ -5,9 +5,11 @@
  * corpo: ancorar os `h2` (para o índice lateral), listar as seções e separar o
  * bloco de perguntas frequentes.
  *
- * O FAQ vem do próprio editor, sem campo novo no CMS: quem escreve cria um
- * `h2` "Perguntas frequentes" e, abaixo dele, um `h3` por pergunta. Sem esse
- * título, o post simplesmente não tem FAQ — nada quebra.
+ * O FAQ daqui é a convenção antiga, de escrever no próprio editor: um `h2`
+ * "Perguntas frequentes" e, abaixo dele, um `h3` por pergunta. Ela continua
+ * valendo para os posts já escritos assim, mas o campo do painel (ACF `faq`)
+ * ganha dela quando está preenchido. De qualquer forma o bloco SAI do corpo:
+ * senão ele apareceria duas vezes na página.
  *
  * A varredura é por expressão regular, e não por um parser de DOM: o HTML aqui
  * é o do editor do WordPress (previsível e bem formado), e trazer um parser
@@ -139,4 +141,24 @@ function extractFaq(block: string): Array<FaqItem> {
       };
     })
     .filter((item) => item.question && item.answer);
+}
+
+/**
+ * Linhas do campo **Perguntas frequentes** do painel, no formato do acordeão.
+ *
+ * O `id` sai da própria pergunta, e não do índice da linha: é ele que o Radix
+ * usa para saber qual item está aberto, e um id por posição mudaria de dono
+ * quando alguém reordenasse as perguntas no painel. O `Set` cuida do caso de
+ * duas perguntas iguais, que gerariam o mesmo slug e abririam as duas juntas.
+ */
+export function toFaqItems(
+  rows: Array<{ question: string; answer: string }>,
+): Array<FaqItem> {
+  const used = new Set<string>();
+
+  return rows.map((row) => ({
+    id: slug(row.question, used),
+    question: row.question,
+    answer: row.answer,
+  }));
 }

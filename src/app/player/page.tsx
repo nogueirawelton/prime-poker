@@ -51,8 +51,15 @@ async function Profile() {
     getContinueWatching(),
   ]);
 
+  // A coluna de 24rem só existe quando há o que retomar: sem aula em
+  // andamento, ela ficaria como um vão vazio à direita do perfil. Nesse caso
+  // o card do perfil toma a linha inteira.
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_24rem]">
+    <div
+      className={
+        continueWatching ? "grid gap-6 lg:grid-cols-[1fr_24rem]" : "grid gap-6"
+      }
+    >
       <ProfileCard profile={profile} />
 
       {continueWatching && (

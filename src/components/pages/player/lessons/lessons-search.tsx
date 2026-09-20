@@ -2,16 +2,15 @@
 
 import {
   ArrowsClockwiseIcon,
-  CaretDownIcon,
-  CheckIcon,
   MagnifyingGlassIcon,
   SlidersIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Collapsible, Select as SelectPrimitive } from "radix-ui";
+import { Collapsible } from "radix-ui";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { twMerge } from "tailwind-merge";
+import { DarkSelect } from "@/components/ui/form/dark-select";
 import {
   type Instructor,
   LEVEL_LABEL,
@@ -191,7 +190,7 @@ export function LessonsSearch({
         <div className="mt-3 rounded-xl border border-white/10 bg-white/3 p-5">
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <Field label="Trilha">
-              <Select
+              <DarkSelect
                 label="Trilha"
                 value={searchParams.get(PARAMS.track) ?? ""}
                 onChange={(nextValue) => applyFilter(PARAMS.track, nextValue)}
@@ -206,7 +205,7 @@ export function LessonsSearch({
             </Field>
 
             <Field label="Nível">
-              <Select
+              <DarkSelect
                 label="Nível"
                 value={searchParams.get(PARAMS.level) ?? ""}
                 onChange={(nextValue) => applyFilter(PARAMS.level, nextValue)}
@@ -221,7 +220,7 @@ export function LessonsSearch({
             </Field>
 
             <Field label="Instrutor">
-              <Select
+              <DarkSelect
                 label="Instrutor"
                 value={searchParams.get(PARAMS.instructor) ?? ""}
                 onChange={(nextValue) =>
@@ -241,7 +240,7 @@ export function LessonsSearch({
                   vez de virar um select vazio. */}
             {tiers.length > 0 && (
               <Field label="Tier">
-                <Select
+                <DarkSelect
                   label="Tier"
                   value={searchParams.get(PARAMS.tier) ?? ""}
                   onChange={(nextValue) => applyFilter(PARAMS.tier, nextValue)}
@@ -279,7 +278,7 @@ export function LessonsSearch({
             </Field>
 
             <Field label="Ordenar por">
-              <Select
+              <DarkSelect
                 label="Ordenar por"
                 value={searchParams.get(PARAMS.order) ?? "recentes"}
                 onChange={(nextValue) =>
@@ -331,87 +330,6 @@ function Field({
       </span>
       {children}
     </div>
-  );
-}
-
-const CONTROL =
-  "h-11 w-full rounded-md border border-white/10 bg-white/5 px-3 text-prime-light text-sm outline-none transition-colors duration-500 focus:border-prime-red/60";
-
-type Option = { value: string; label: string };
-
-/**
- * "Sem filtro" precisa de um valor de verdade: o Radix recusa `Item` com
- * valor vazio, porque é assim que ele representa "nada escolhido".
- */
-const ALL = "__todas";
-
-/**
- * Select do Radix no lugar do `<select>` nativo.
- *
- * O nativo abre uma lista desenhada pelo sistema, que ignora o tema escuro
- * do site (chegou a sair texto branco no branco). Este usa o mesmo visual do
- * painel que o envolve e do menu dos cards, e mantém teclado e leitor de
- * tela a cargo do Radix.
- */
-function Select({
-  value,
-  onChange,
-  options,
-  label,
-}: {
-  value: string;
-  onChange: (nextValue: string) => void;
-  options: Array<Option>;
-  /** Para leitor de tela: o campo não tem `<label>` associado. */
-  label: string;
-}) {
-  return (
-    <SelectPrimitive.Root
-      value={value || ALL}
-      onValueChange={(nextValue) =>
-        onChange(nextValue === ALL ? "" : nextValue)
-      }
-    >
-      <SelectPrimitive.Trigger
-        aria-label={label}
-        className={`${CONTROL} flex cursor-pointer items-center justify-between gap-2 text-left data-[state=open]:border-prime-red/60`}
-      >
-        <SelectPrimitive.Value />
-        <SelectPrimitive.Icon>
-          <CaretDownIcon
-            className="size-4 shrink-0 text-prime-light/50"
-            weight="bold"
-          />
-        </SelectPrimitive.Icon>
-      </SelectPrimitive.Trigger>
-
-      <SelectPrimitive.Portal>
-        {/* Acima do painel de filtros, que é quem o abriu. */}
-        <SelectPrimitive.Content
-          position="popper"
-          sideOffset={6}
-          className="z-60 max-h-64 min-w-(--radix-select-trigger-width) overflow-hidden rounded-xl border border-white/10 bg-zinc-800 shadow-2xl data-[state=closed]:animate-dialog-close data-[state=open]:animate-dialog-open"
-        >
-          <SelectPrimitive.Viewport className="p-1">
-            {options.map((option) => (
-              <SelectPrimitive.Item
-                key={option.value || ALL}
-                value={option.value || ALL}
-                className="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2 text-prime-light/80 text-sm outline-none transition-colors duration-300 data-highlighted:bg-prime-red/15 data-highlighted:text-prime-red"
-              >
-                <SelectPrimitive.ItemText>
-                  {option.label}
-                </SelectPrimitive.ItemText>
-
-                <SelectPrimitive.ItemIndicator>
-                  <CheckIcon className="size-4" weight="bold" />
-                </SelectPrimitive.ItemIndicator>
-              </SelectPrimitive.Item>
-            ))}
-          </SelectPrimitive.Viewport>
-        </SelectPrimitive.Content>
-      </SelectPrimitive.Portal>
-    </SelectPrimitive.Root>
   );
 }
 

@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace PrimePoker\Lessons;
 
+use PrimePoker\Players\Profile;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -201,6 +203,11 @@ final class Questions {
 					'type'        => array( 'non_null' => 'String' ),
 					'description' => __( 'Nome a exibir: o do instrutor da aula nas respostas da equipe, o do jogador nas perguntas.', 'prime-poker' ),
 					'resolve'     => static fn( $comment ): string => self::author_label( self::comment( $comment ) ),
+				),
+				'authorAvatar' => array(
+					'type'        => 'String',
+					'description' => __( 'Foto de quem escreveu: a do instrutor da aula nas respostas da equipe, a do jogador nas perguntas. Null quando não há foto — aí o front mostra as iniciais.', 'prime-poker' ),
+					'resolve'     => static fn( $comment ): ?string => self::author_avatar( self::comment( $comment ) ),
 				),
 				'isMine'       => array(
 					'type'        => array( 'non_null' => 'Boolean' ),
@@ -436,9 +443,13 @@ final class Questions {
 	 * 2. **Ter sido escrita por alguém com acesso ao painel** — é quem
 	 *    responde em nome do instrutor. Pela capability, não pela role.
 	 *
+	 * Pública porque o painel de acompanhamento precisa da MESMA regra para
+	 * separar dúvida de resposta; uma segunda definição de "veio da equipe"
+	 * contaria dúvidas em aberto que não existem.
+	 *
 	 * @param \WP_Comment|null $comment Comentário.
 	 */
-	private static function from_team( ?\WP_Comment $comment ): bool {
+	public static function from_team( ?\WP_Comment $comment ): bool {
 		if ( ! $comment instanceof \WP_Comment ) {
 			return false;
 		}
@@ -476,6 +487,38 @@ final class Questions {
 		return $instructor instanceof \WP_Post && '' !== $instructor->post_title
 			? $instructor->post_title
 			: (string) $comment->comment_author;
+	}
+
+	/**
+	 * Foto a exibir na conversa.
+	 *
+	 * Acompanha o `author_label`, e pelo mesmo motivo: a resposta da equipe
+	 * sai em nome do instrutor da aula, então a cara dela é a **imagem
+	 * destacada do instrutor**, e não a do membro da equipe que digitou. A
+	 * pergunta do jogador sai com a foto que ele mesmo enviou no perfil.
+	 *
+	 * `null` quando não há foto. É de propósito: o `get_avatar_url()` do
+	 * WordPress nunca volta vazio — sem Gravatar ele devolve a silhueta
+	 * cinza —, e quem responde não é necessariamente um usuário com foto. Com
+	 * `null`, o front cai nas iniciais, que ao menos dizem quem é.
+	 *
+	 * @param \WP_Comment|null $comment Comentário.
+	 */
+	private static function author_avatar( ?\WP_Comment $comment ): ?string {
+		if ( ! $comment instanceof \WP_Comment ) {
+			return null;
+		}
+
+		if ( ! self::from_team( $comment ) ) {
+			$url = Profile::avatar_url( (int) $comment->user_id );
+
+			return '' === $url ? null : $url;
+		}
+
+		$instructor_id = (int) get_post_meta( (int) $comment->comment_post_ID, 'instructor', true );
+		$url           = $instructor_id > 0 ? get_the_post_thumbnail_url( $instructor_id, 'thumbnail' ) : false;
+
+		return is_string( $url ) && '' !== $url ? $url : null;
 	}
 
 	/**

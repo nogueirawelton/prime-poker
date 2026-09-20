@@ -1,7 +1,7 @@
 import {
+  LEVELS,
   type LessonFilter,
   type Level,
-  LEVELS,
   SORT_ORDERS,
   type SortOrder,
 } from "@/lib/lessons";

@@ -1,8 +1,13 @@
 import "server-only";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
-import { authQuery } from "@/graphql/auth-client";
+import { authMutate, authQuery } from "@/graphql/auth-client";
+import {
+  UPDATE_PLAYER_PASSWORD,
+  UPDATE_PLAYER_PROFILE,
+} from "@/graphql/mutations/player/PROFILE";
 import { VIEWER } from "@/graphql/queries/player/VIEWER";
 import type { Track } from "@/lib/lessons";
 import { getCatalog, getTracks } from "./lessons";
@@ -33,6 +38,14 @@ export type Profile = {
   name: string;
   username: string;
   email: string;
+  /** WhatsApp só com dígitos (DDI + DDD + número), ou vazio. */
+  phone: string;
+  /** Onde o jogador mora, texto livre. */
+  city: string;
+  /** Apresentação curta que o jogador escreve sobre si. */
+  bio: string;
+  /** Foto enviada pelo jogador; `null` cai nas iniciais do nome. */
+  avatarUrl: string | null;
   /** `null` para quem não tem tier — membro da equipe logado, por exemplo. */
   tier: Tier | null;
   /** ISO, ou `null` para tier sem vencimento. */
@@ -70,10 +83,14 @@ type ViewerResponse = {
     name: string | null;
     username: string;
     email: string | null;
+    description: string | null;
     registeredDate: string | null;
     playerTier: string | null;
     playerTierLabel: string | null;
     playerTierExpiresAt: string | null;
+    playerPhone: string | null;
+    playerCity: string | null;
+    playerAvatarUrl: string | null;
     studyStreak: number;
   } | null;
 };
@@ -98,6 +115,10 @@ export const getProfile = cache(async (): Promise<Profile> => {
     name: viewer.name?.trim() || viewer.username,
     username: viewer.username,
     email: viewer.email ?? "",
+    phone: viewer.playerPhone ?? "",
+    city: viewer.playerCity ?? "",
+    bio: viewer.description ?? "",
+    avatarUrl: viewer.playerAvatarUrl,
     tier: isTier(slug)
       ? {
           slug,
@@ -174,4 +195,83 @@ export async function getProgress(): Promise<Progress> {
     streak: viewer.streak,
     tracks,
   };
+}
+
+/* -------------------------------------------------------------------------- */
+/*                              Edição do perfil                              */
+/* -------------------------------------------------------------------------- */
+
+/** O que a tela de perfil deixa o jogador mudar. */
+type ProfileInput = {
+  name: string;
+  email: string;
+  phone: string;
+  city: string;
+  bio: string;
+};
+
+/**
+ * Grava o perfil do jogador logado.
+ *
+ * O WordPress é quem valida: e-mail já usado por outra conta, nome vazio e
+ * afins voltam como erro da mutation, com a mensagem pronta para a tela.
+ */
+export async function updateProfile(input: ProfileInput) {
+  await authMutate(UPDATE_PLAYER_PROFILE, input);
+}
+
+/** Troca a senha. A atual é conferida no WordPress, nunca aqui. */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+) {
+  await authMutate(UPDATE_PLAYER_PASSWORD, { currentPassword, newPassword });
+}
+
+/**
+ * Rota REST da foto de perfil.
+ *
+ * A foto não vai pelo GraphQL porque o WPGraphQL não recebe arquivo: mandá-la
+ * em base64 dentro do JSON custaria um terço a mais de tráfego e memória. O
+ * plugin aceita o mesmo Bearer do GraphQL nesta rota.
+ */
+const AVATAR_ENDPOINT = `${process.env.NEXT_PUBLIC_ADMIN_URL}/wp-json/prime-poker/v1/avatar`;
+
+async function avatarRequest(init: RequestInit) {
+  const token = (await cookies()).get("access_token")?.value;
+
+  if (!token) redirect("/login");
+
+  const response = await fetch(AVATAR_ENDPOINT, {
+    ...init,
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+
+  // O WordPress responde erro em JSON com `message`; é a frase que o jogador
+  // precisa ler ("envie JPG, PNG ou WebP"), então ela sobe como está.
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as {
+      message?: string;
+    } | null;
+
+    throw new Error(
+      body?.message || "Não foi possível salvar a foto. Tente novamente.",
+    );
+  }
+
+  return response.json() as Promise<{ url: string | null }>;
+}
+
+/** Envia a foto de perfil. A anterior é apagada pelo plugin. */
+export async function uploadAvatar(file: File) {
+  const body = new FormData();
+  body.append("file", file);
+
+  return avatarRequest({ method: "POST", body });
+}
+
+/** Remove a foto e volta ao avatar padrão. */
+export async function removeAvatar() {
+  return avatarRequest({ method: "DELETE" });
 }

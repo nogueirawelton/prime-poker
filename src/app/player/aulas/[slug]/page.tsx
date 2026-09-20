@@ -8,6 +8,7 @@ import { LessonCard } from "@/components/pages/player/lessons/lesson-card";
 import { LessonPlayer } from "@/components/pages/player/lessons/lesson-player";
 import { Materials } from "@/components/pages/player/lessons/materials";
 import { Questions } from "@/components/pages/player/lessons/questions";
+import { UpgradeButton } from "@/components/shared/player/upgrade-button";
 import { formatDuration } from "@/lib/lessons";
 import { getLesson, getNextLessons } from "@/services/lesson-detail";
 
@@ -71,6 +72,15 @@ async function Content({ params }: Props) {
         video={lesson.video}
         locked={
           lesson.canWatch ? null : { tierLabel: lesson.minimumTier.label }
+        }
+        upgrade={
+          lesson.canWatch ? null : (
+            <UpgradeButton
+              label="Quero liberar esta aula"
+              suggestedTier={lesson.minimumTier.label}
+              lessonTitle={lesson.title}
+            />
+          )
         }
         image={lesson.image}
         trackColor={lesson.track?.color ?? null}

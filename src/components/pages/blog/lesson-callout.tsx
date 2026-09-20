@@ -4,7 +4,7 @@ import {
   PlayCircleIcon,
 } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
-import { formatDuration, type LessonSuggestion } from "@/lib/lessons";
+import { formatDuration, type RelatedLesson } from "@/lib/lessons";
 
 /**
  * Chamada para a aula que o post divulga, no fim do texto.
@@ -18,7 +18,7 @@ import { formatDuration, type LessonSuggestion } from "@/lib/lessons";
  * para quem entrou sem o plano. Decidir isso duas vezes só criaria duas
  * respostas para a mesma pergunta.
  */
-export function LessonCallout({ lesson }: { lesson: LessonSuggestion | null }) {
+export function LessonCallout({ lesson }: { lesson: RelatedLesson | null }) {
   if (!lesson) return null;
 
   return (

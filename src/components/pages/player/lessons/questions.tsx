@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { Question } from "@/services/lesson-detail";
 import { initials } from "@/utils/initials";
 import { QuestionActions } from "./question-actions";
@@ -104,15 +105,28 @@ export function Questions({
 function Message({ message }: { message: Question }) {
   return (
     <article className="flex items-start gap-3">
-      <span
-        className={
-          message.isInstructor
-            ? "flex size-9 shrink-0 items-center justify-center rounded-full bg-prime-red/20 font-bold text-[11px] text-prime-red"
-            : "flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 font-bold text-[11px] text-prime-light"
-        }
-      >
-        {initials(message.author)}
-      </span>
+      {/* A foto quando existe, as iniciais quando não. Nas respostas da
+          equipe a foto é a do instrutor da aula, que é de quem a resposta
+          leva o nome. */}
+      {message.avatarUrl ? (
+        <Image
+          src={message.avatarUrl}
+          alt=""
+          width={36}
+          height={36}
+          className="size-9 shrink-0 rounded-full object-cover"
+        />
+      ) : (
+        <span
+          className={
+            message.isInstructor
+              ? "flex size-9 shrink-0 items-center justify-center rounded-full bg-prime-red/20 font-bold text-[11px] text-prime-red"
+              : "flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 font-bold text-[11px] text-prime-light"
+          }
+        >
+          {initials(message.author)}
+        </span>
+      )}
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">

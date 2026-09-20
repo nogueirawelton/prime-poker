@@ -31,6 +31,13 @@ export type Material = {
 export type Question = {
   id: string;
   author: string;
+  /**
+   * Foto de quem escreveu; `null` cai nas iniciais do nome.
+   *
+   * Na resposta da equipe é a imagem destacada do instrutor da aula, e não a
+   * de quem digitou — a resposta sai em nome dele, como o nome exibido.
+   */
+  avatarUrl: string | null;
   /** Instrutor e aluno são apresentados de formas diferentes na conversa. */
   isInstructor: boolean;
   text: string;
@@ -116,6 +123,7 @@ function toThreads(
     date: string;
     text: string;
     authorLabel: string;
+    authorAvatar: string | null;
     isInstructor: boolean;
     isMine: boolean;
     likeCount: number;
@@ -128,6 +136,7 @@ function toThreads(
       {
         id: String(comment.databaseId),
         author: comment.authorLabel,
+        avatarUrl: comment.authorAvatar,
         isInstructor: comment.isInstructor,
         text: comment.text,
         data: comment.date,

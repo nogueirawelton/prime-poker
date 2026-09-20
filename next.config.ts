@@ -50,6 +50,12 @@ const nextConfig: NextConfig = {
   },
 
   experimental: {
+    // O padrão do Next são 1 MB, contando o corpo INTEIRO da Server Action —
+    // e um arquivo atravessa essa fronteira codificado, ocupando mais do que
+    // o tamanho em disco. A foto de perfil estourava o limite. 20 MB deixa
+    // folga; quem confere o tamanho de verdade é o plugin, que vê o arquivo.
+    serverActions: { bodySizeLimit: "20mb" },
+
     optimizePackageImports: [
       "@phosphor-icons/react",
       "radix-ui",
