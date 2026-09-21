@@ -22,29 +22,53 @@ async function ensureSession() {
 }
 
 /**
+ * Resposta das ações de clique.
+ *
+ * A tela já mudou antes de a action rodar (ver `useInstantToggle`): ela
+ * precisa saber o estado que ficou gravado, para acertar o botão, ou o
+ * motivo da falha, para desfazer e avisar. Por isso a falha volta como
+ * valor, e não como exceção — uma exceção derrubaria a página no error
+ * boundary por causa de um clique.
+ */
+export type ToggleResult = { value: boolean } | { error: string };
+
+/**
  * Salva a aula na lista do jogador, ou a tira de lá.
  *
- * Não devolve o novo estado: quem pinta o botão é a página recarregada pelo
- * `refresh()`, e assim a action serve tanto ao botão da aula quanto ao menu
- * do card, que não têm como guardar estado próprio.
+ * O `refresh()` continua aqui para o resto da tela acompanhar — a lista de
+ * salvas, os contadores do painel. O botão clicado não depende dele.
  */
-export async function saveLesson(lessonId: number) {
+export async function saveLesson(lessonId: number): Promise<ToggleResult> {
   await ensureSession();
 
-  await toggleSaved(lessonId);
+  try {
+    const saved = await toggleSaved(lessonId);
 
-  // Sem o `refresh`, o botão continuaria mostrando o estado anterior até a
-  // próxima navegação.
-  refresh();
+    refresh();
+
+    return { value: saved };
+  } catch (error) {
+    console.error("Falha ao salvar a aula", lessonId, error);
+
+    return { error: "Não foi possível salvar a aula. Tente de novo." };
+  }
 }
 
 /** Marca ou desmarca a aula como concluída. */
-export async function completeLesson(lessonId: number) {
+export async function completeLesson(lessonId: number): Promise<ToggleResult> {
   await ensureSession();
 
-  await toggleCompleted(lessonId);
+  try {
+    const completed = await toggleCompleted(lessonId);
 
-  refresh();
+    refresh();
+
+    return { value: completed };
+  } catch (error) {
+    console.error("Falha ao concluir a aula", lessonId, error);
+
+    return { error: "Não foi possível atualizar a aula. Tente de novo." };
+  }
 }
 
 /**
@@ -100,20 +124,21 @@ export type QuestionState = { error?: string };
  *
  * Com `parentId`, entra como resposta dentro daquela conversa; sem ele, abre
  * uma dúvida nova.
+ *
+ * Recebe o texto, e não um `FormData`: o formulário já se limpou e a
+ * mensagem já está na conversa quando isto roda (ver `QuestionsProvider`).
  */
 export async function sendQuestion(
   lessonId: number,
   parentId: number | undefined,
-  _state: QuestionState,
-  formData: FormData,
+  rawText: string,
 ): Promise<QuestionState> {
   await ensureSession();
 
-  const text = String(formData.get("text") ?? "").trim();
+  const text = String(rawText ?? "").trim();
 
-  // Validação mínima e no servidor: o cliente só desabilita o botão, e isso
-  // é conveniência, não garantia. O plugin confere de novo — quem publica a
-  // dúvida é ele.
+  // Validação no servidor: a do cliente é conveniência, não garantia. O
+  // plugin confere de novo — quem publica a dúvida é ele.
   if (!text) return { error: "Escreva sua dúvida antes de enviar." };
   if (text.length > 2000) {
     return { error: "Dúvida muito longa: use no máximo 2000 caracteres." };
@@ -132,17 +157,27 @@ export async function sendQuestion(
   return {};
 }
 
+export type LikeResult = { liked: boolean; likes: number } | { error: string };
+
 /** Curte ou descurte uma dúvida ou resposta. */
-export async function likeQuestion(commentId: number) {
+export async function likeQuestion(commentId: number): Promise<LikeResult> {
   await ensureSession();
 
-  if (!Number.isInteger(commentId) || commentId <= 0) return;
-
-  try {
-    await toggleQuestionLike(commentId);
-  } catch (error) {
-    console.error("Falha ao marcar a dúvida", commentId, error);
+  if (!Number.isInteger(commentId) || commentId <= 0) {
+    return { error: "Mensagem inválida." };
   }
 
-  refresh();
+  try {
+    const result = await toggleQuestionLike(commentId);
+
+    if (!result) throw new Error("toggleQuestionLike sem retorno");
+
+    refresh();
+
+    return result;
+  } catch (error) {
+    console.error("Falha ao marcar a dúvida", commentId, error);
+
+    return { error: "Não foi possível curtir. Tente de novo." };
+  }
 }

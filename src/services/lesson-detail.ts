@@ -281,7 +281,18 @@ export async function addQuestion(
   await authMutate(ASK_LESSON_QUESTION, { lessonId, text, parentId });
 }
 
-/** Curte ou descurte uma dúvida ou resposta. */
-export async function toggleQuestionLike(commentId: number) {
-  await authMutate(TOGGLE_QUESTION_LIKE, { commentId });
+/** Curte ou descurte uma dúvida ou resposta; devolve o estado gravado. */
+export async function toggleQuestionLike(
+  commentId: number,
+): Promise<{ liked: boolean; likes: number } | null> {
+  const data = await authMutate<{
+    toggleQuestionLike: { liked: boolean; likeCount: number } | null;
+  }>(TOGGLE_QUESTION_LIKE, { commentId });
+
+  if (!data.toggleQuestionLike) return null;
+
+  return {
+    liked: data.toggleQuestionLike.liked,
+    likes: data.toggleQuestionLike.likeCount,
+  };
 }

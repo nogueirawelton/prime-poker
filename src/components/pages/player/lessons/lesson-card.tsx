@@ -12,10 +12,10 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { DropdownMenu } from "radix-ui";
-import { useTransition } from "react";
 import { toast } from "react-toastify";
 import { twMerge } from "tailwind-merge";
 import { completeLesson, saveLesson } from "@/actions/lesson";
+import { useInstantToggle } from "@/hooks/use-instant-toggle";
 import {
   badgeStyle,
   coverStyle,
@@ -36,6 +36,14 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
   const href = `/player/aulas/${lesson.slug}`;
   const progress = watchedPercentage(lesson);
   const locked = !lesson.canWatch;
+
+  // Aqui, e não no menu: concluir também acende o selo e a barra da capa.
+  const [saved, toggleSaved] = useInstantToggle(lesson.saved, () =>
+    saveLesson(lesson.databaseId),
+  );
+  const [completed, toggleCompleted] = useInstantToggle(lesson.completed, () =>
+    completeLesson(lesson.databaseId),
+  );
 
   return (
     <article className="group relative flex flex-col overflow-hidden rounded-xl border border-white/10 bg-white/3 transition-all duration-500 hover:border-prime-red/50">
@@ -81,7 +89,7 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
           </span>
         )}
 
-        {lesson.completed && !locked && (
+        {completed && !locked && (
           <span className="absolute top-3 right-3 flex items-center gap-1 rounded bg-prime-dark/85 px-2 py-1 font-bold text-[10px] text-emerald-400 uppercase tracking-wide">
             <CheckCircleIcon
               className="size-3"
@@ -125,7 +133,7 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
 
         {/* Concluída na mão sem ter assistido tudo ainda mostra a barra
             cheia: é o estado que o jogador escolheu para a aula. */}
-        {(progress > 0 || lesson.completed) && (
+        {(progress > 0 || completed) && (
           <span className="absolute inset-x-0 bottom-0 h-1 bg-prime-light/15">
             <span
               className="block h-full bg-prime-red"
@@ -141,7 +149,14 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
             <Link href={href}>{lesson.title}</Link>
           </h3>
 
-          <Actions lesson={lesson} href={href} />
+          <Actions
+            lesson={lesson}
+            href={href}
+            saved={saved}
+            completed={completed}
+            onSave={toggleSaved}
+            onComplete={toggleCompleted}
+          />
         </div>
 
         {lesson.instructor && (
@@ -172,14 +187,24 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
 /**
  * Menu ⋮ do card.
  *
- * Salvar e concluir são Server Actions: elas gravam no WordPress e pedem um
- * `refresh()`, então o rótulo do item muda sozinho na volta. Enquanto isso
- * não chega, o menu fica desabilitado — clicar duas vezes seguidas
- * alternaria o estado de ida e volta sem o jogador perceber.
+ * Salvar e concluir chegam prontos do card: mudam na hora e gravam em
+ * segundo plano, então o menu nunca fica travado esperando o servidor.
  */
-function Actions({ lesson, href }: { lesson: Lesson; href: string }) {
-  const [pending, start] = useTransition();
-
+function Actions({
+  lesson,
+  href,
+  saved,
+  completed,
+  onSave,
+  onComplete,
+}: {
+  lesson: Lesson;
+  href: string;
+  saved: boolean;
+  completed: boolean;
+  onSave: () => void;
+  onComplete: () => void;
+}) {
   function url() {
     return new URL(href, window.location.origin).toString();
   }
@@ -216,23 +241,15 @@ function Actions({ lesson, href }: { lesson: Lesson; href: string }) {
           sideOffset={6}
           className="z-50 w-56 rounded-xl border border-white/10 bg-zinc-800 p-2 shadow-2xl data-[state=closed]:animate-dialog-close data-[state=open]:animate-dialog-open"
         >
-          <Item
-            icon={BookmarkSimpleIcon}
-            disabled={pending}
-            onSelect={() => start(() => saveLesson(lesson.databaseId))}
-          >
-            {lesson.saved ? "Remover das salvas" : "Salvar aula"}
+          <Item icon={BookmarkSimpleIcon} onSelect={onSave}>
+            {saved ? "Remover das salvas" : "Salvar aula"}
           </Item>
 
           {/* Só para quem pode assistir: marcar como assistida uma aula
               trancada não faria sentido nenhum. */}
           {lesson.canWatch && (
-            <Item
-              icon={CheckCircleIcon}
-              disabled={pending}
-              onSelect={() => start(() => completeLesson(lesson.databaseId))}
-            >
-              {lesson.completed ? "Marcar como não vista" : "Marcar assistida"}
+            <Item icon={CheckCircleIcon} onSelect={onComplete}>
+              {completed ? "Marcar como não vista" : "Marcar assistida"}
             </Item>
           )}
 
@@ -255,19 +272,16 @@ function Actions({ lesson, href }: { lesson: Lesson; href: string }) {
 function Item({
   icon: ItemIcon,
   onSelect,
-  disabled,
   children,
 }: {
   icon: typeof LinkSimpleIcon;
   onSelect: () => void;
-  disabled?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <DropdownMenu.Item
       onSelect={onSelect}
-      disabled={disabled}
-      className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-prime-light/80 text-sm outline-none transition-colors duration-300 data-disabled:cursor-default data-highlighted:bg-prime-red/15 data-highlighted:text-prime-red data-disabled:opacity-50"
+      className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-prime-light/80 text-sm outline-none transition-colors duration-300 data-highlighted:bg-prime-red/15 data-highlighted:text-prime-red"
     >
       <ItemIcon className="size-4" weight="bold" />
       {children}

@@ -11,6 +11,7 @@ import { Questions } from "@/components/pages/player/lessons/questions";
 import { UpgradeButton } from "@/components/shared/player/upgrade-button";
 import { formatDuration } from "@/lib/lessons";
 import { getLesson, getNextLessons } from "@/services/lesson-detail";
+import { getProfile } from "@/services/profile";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -47,7 +48,12 @@ async function Content({ params }: Props) {
 
   if (!lesson) notFound();
 
-  const nextLessons = await getNextLessons(lesson);
+  // O perfil assina a dúvida enquanto ela está a caminho. `getProfile` é
+  // deduplicado com o do menu do header: não custa outra ida ao WordPress.
+  const [nextLessons, profile] = await Promise.all([
+    getNextLessons(lesson),
+    getProfile(),
+  ]);
 
   return (
     <div className="mx-auto flex w-full max-w-screen-2xl flex-col gap-6 px-4 py-6 lg:px-8">
@@ -148,6 +154,7 @@ async function Content({ params }: Props) {
           questions={lesson.questions}
           instructor={lesson.instructor}
           canAsk={lesson.canWatch}
+          me={{ name: profile.name, avatarUrl: profile.avatarUrl }}
         />
       </Section>
 

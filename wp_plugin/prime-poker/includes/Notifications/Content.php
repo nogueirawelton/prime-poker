@@ -173,6 +173,21 @@ final class Content {
 			'meta_query'     => self::audience( $user_id ),
 		);
 
+		$since = self::registered_at( $user_id );
+
+		if ( '' !== $since ) {
+			// O que foi publicado antes da conta existir não é para ela: quem
+			// chega agora não herda o histórico de avisos. Inclusivo porque o
+			// boas-vindas pode sair no mesmo segundo do cadastro.
+			$args['date_query'] = array(
+				array(
+					'column'    => 'post_date_gmt',
+					'after'     => $since,
+					'inclusive' => true,
+				),
+			);
+		}
+
 		$read = self::read_ids( $user_id );
 
 		if ( 'nao-lidas' === $filter && array() !== $read ) {
@@ -186,6 +201,22 @@ final class Content {
 		}
 
 		return $args;
+	}
+
+	/**
+	 * Quando a conta foi criada, em GMT — como o WordPress grava
+	 * `user_registered`. Vazio se não houver data.
+	 *
+	 * @param int $user_id ID do jogador.
+	 */
+	private static function registered_at( int $user_id ): string {
+		$user = get_userdata( $user_id );
+
+		if ( ! $user instanceof \WP_User || '' === $user->user_registered || str_starts_with( $user->user_registered, '0000' ) ) {
+			return '';
+		}
+
+		return $user->user_registered;
 	}
 
 	/**

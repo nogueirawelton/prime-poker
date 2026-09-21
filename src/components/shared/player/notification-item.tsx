@@ -8,13 +8,12 @@ import {
   PlayCircleIcon,
 } from "@phosphor-icons/react";
 import Link from "next/link";
-import { useTransition } from "react";
 import { twMerge } from "tailwind-merge";
-import { toggleReadState } from "@/actions/notifications";
 import type {
   NotificationType,
   PlayerNotification,
 } from "@/services/notifications";
+import { useNotifications } from "./notifications-provider";
 
 const ICONS: Record<NotificationType, Icon> = {
   aula: PlayCircleIcon,
@@ -52,6 +51,9 @@ function when(data: string) {
  *
  * Ela é escrita, não um ✓ solto: sozinho, o ícone tanto pode dizer "isto
  * está lido" quanto "clique para marcar", e quem lê escolhe a errada.
+ *
+ * O estado de leitura vem do `NotificationsProvider`: muda no clique, aqui e
+ * no selo do sino, e a gravação corre em segundo plano.
  */
 export function NotificationItem({
   notification,
@@ -61,18 +63,12 @@ export function NotificationItem({
   /** Fecha o popover quando o item é aberto de dentro do sino. */
   onNavigate?: () => void;
 }) {
-  const [pending, startTransition] = useTransition();
+  const { isRead, toggle } = useNotifications();
+  const read = isRead(notification);
   const ItemIcon = ICONS[notification.type];
 
-  function toggleRead() {
-    startTransition(() => toggleReadState(notification.id, !notification.read));
-  }
-
   return (
-    <div
-      data-pending={pending || undefined}
-      className="group flex items-start gap-3 rounded-lg p-3 transition-colors duration-300 hover:bg-white/5 data-pending:opacity-60"
-    >
+    <div className="group flex items-start gap-3 rounded-lg p-3 transition-colors duration-300 hover:bg-white/5">
       <span
         className={twMerge(
           "flex size-9 shrink-0 items-center justify-center rounded-full",
@@ -89,22 +85,20 @@ export function NotificationItem({
           href={notification.href}
           onOpen={() => {
             onNavigate?.();
-            if (!notification.read) toggleRead();
+            if (!read) toggle(notification);
           }}
         >
           <span className="flex items-center gap-2">
             <span
               className={twMerge(
                 "text-sm leading-snug",
-                notification.read
-                  ? "text-prime-light/70"
-                  : "font-semibold text-prime-light",
+                read ? "text-prime-light/70" : "font-semibold text-prime-light",
               )}
             >
               {notification.title}
             </span>
 
-            {!notification.read && (
+            {!read && (
               <>
                 {/* O ponto é decorativo; quem usa leitor de tela recebe o
                   estado pelo texto, não pela cor. */}
@@ -131,17 +125,16 @@ export function NotificationItem({
 
         <button
           type="button"
-          onClick={toggleRead}
-          disabled={pending}
+          onClick={() => toggle(notification)}
           className={twMerge(
-            "mt-2 flex items-center gap-1.5 rounded text-xs transition-colors duration-300 disabled:opacity-60",
-            notification.read
+            "mt-2 flex items-center gap-1.5 rounded text-xs transition-colors duration-300",
+            read
               ? "text-prime-light/40 hover:text-prime-light/70"
               : "text-prime-light/60 hover:text-prime-red",
           )}
         >
           <CheckIcon className="size-3.5" weight="bold" aria-hidden="true" />
-          {notification.read ? "Marcar como não lida" : "Marcar como lida"}
+          {read ? "Marcar como não lida" : "Marcar como lida"}
         </button>
       </div>
     </div>

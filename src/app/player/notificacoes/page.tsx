@@ -1,8 +1,7 @@
-import { ChecksIcon } from "@phosphor-icons/react/dist/ssr";
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { markAllRead } from "@/actions/notifications";
 import { FilterNav } from "@/components/pages/player/notifications/filter-nav";
+import { MarkAllButton } from "@/components/pages/player/notifications/mark-all-button";
 import { NotificationItem } from "@/components/shared/player/notification-item";
 import { groupByPeriod } from "@/lib/notification-groups";
 import {
@@ -60,17 +59,7 @@ async function Content({ searchParams }: Props) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <FilterNav current={filter} />
 
-        {unreadCount > 0 && (
-          <form action={markAllRead}>
-            <button
-              type="submit"
-              className="flex h-10 items-center gap-2 rounded-md border border-white/20 px-4 font-semibold text-prime-light text-sm transition-all duration-500 hover:bg-prime-light hover:text-prime-dark"
-            >
-              <ChecksIcon className="size-4" weight="bold" />
-              Marcar todas como lidas
-            </button>
-          </form>
-        )}
+        <MarkAllButton unreadCount={unreadCount} />
       </div>
 
       {notifications.length === 0 ? (

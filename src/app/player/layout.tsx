@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { NotificationsProvider } from "@/components/shared/player/notifications-provider";
 import { PlayerHeader } from "@/components/shared/player/player-header";
 import { requireSession } from "@/lib/session";
 
@@ -37,11 +38,15 @@ export default function PlayerLayout({
   return (
     <Suspense fallback={null}>
       <Guard>
-        <div className="flex min-h-screen flex-col">
-          <PlayerHeader />
+        {/* Envolve header e página: o sino e a lista de notificações
+            precisam concordar sobre o que já foi lido. */}
+        <NotificationsProvider>
+          <div className="flex min-h-screen flex-col">
+            <PlayerHeader />
 
-          <main className="flex w-full flex-1 flex-col">{children}</main>
-        </div>
+            <main className="flex w-full flex-1 flex-col">{children}</main>
+          </div>
+        </NotificationsProvider>
       </Guard>
     </Suspense>
   );

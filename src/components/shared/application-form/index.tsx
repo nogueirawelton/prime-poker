@@ -8,9 +8,14 @@ import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { PhoneInput } from "@/components/ui/form/phone-input";
 import { TextInput } from "@/components/ui/form/text-input";
+import { gsheets } from "@/providers/gsheets";
 import { wp } from "@/providers/wp";
 import { getUtmParams } from "@/utils/utm";
-import { type FormData, primeApplicationSchema } from "./schema";
+import {
+  type ApplicationPayload,
+  type FormData,
+  primeApplicationSchema,
+} from "./schema";
 
 /** Formulário de inscrição no Contact Form 7. */
 const FORM_ID = "169";
@@ -80,13 +85,27 @@ export function Form() {
       try {
         // Os nomes dos campos do schema são os mesmos do Contact Form 7:
         // achatar os grupos já produz o payload esperado.
-        await wp(FORM_ID, {
+        const payload: ApplicationPayload = {
           ...data.personalData,
           ...data.currentSituation,
           ...data.onlineHistory,
           ...data.goalsCommitment,
           ...getUtmParams(),
-        });
+        };
+
+        // O CF7 manda o e-mail e é quem decide o resultado para o visitante; a
+        // planilha é registro paralelo. Em paralelo para não somar as duas
+        // esperas, e `allSettled` para uma falha no Sheets não abortar a outra.
+        const [mail, sheet] = await Promise.allSettled([
+          wp(FORM_ID, payload),
+          gsheets(payload),
+        ]);
+
+        if (mail.status === "rejected") throw mail.reason;
+
+        // Falhar a planilha não anula uma inscrição que já chegou por e-mail:
+        // só registra, para o erro não passar em silêncio.
+        if (sheet.status === "rejected") console.error(sheet.reason);
 
         toast.success("Formulário enviado com sucesso!");
         reset();
