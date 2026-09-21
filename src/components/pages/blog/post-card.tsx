@@ -9,7 +9,23 @@ const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   year: "numeric",
 });
 
-export function PostCard({ post }: { post: Post }) {
+/**
+ * O nível do título muda com o contexto.
+ *
+ * Nas listagens (`/blog`, `/blog/pagina/N`, `/blog/categoria/N`) os cards são
+ * a primeira subdivisão depois do `h1`, então precisam ser `h2` — usar `h3`
+ * ali pulava um nível e quebrava a navegação por cabeçalhos de leitores de
+ * tela. Já nos relacionados do fim de um artigo eles vivem sob o
+ * `h2` "Leia também", e aí `h3` é o certo — por isso é o padrão.
+ */
+export function PostCard({
+  post,
+  headingLevel = 3,
+}: {
+  post: Post;
+  headingLevel?: 2 | 3;
+}) {
+  const Heading = `h${headingLevel}` as const;
   return (
     <article className="group h-full">
       <Link
@@ -25,9 +41,9 @@ export function PostCard({ post }: { post: Post }) {
             </span>
           )}
 
-          <h3 className="font-bold text-lg text-prime-light leading-snug transition-colors duration-500 group-hover:text-prime-red">
+          <Heading className="font-bold text-lg text-prime-light leading-snug transition-colors duration-500 group-hover:text-prime-red">
             {post.title}
-          </h3>
+          </Heading>
 
           <p className="line-clamp-3 flex-1 text-prime-light/70 text-sm leading-relaxed">
             {post.excerpt}

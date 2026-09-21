@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Banner } from "@/@types/pages/Home";
@@ -11,6 +10,8 @@ import {
   CarouselTrack,
   CarouselViewport,
 } from "@/components/ui/carousel";
+import { HeroPicture } from "@/components/ui/hero-picture";
+import { NativeVideo } from "@/components/ui/native-video";
 import { ScaledVideo } from "@/components/ui/scaled-video";
 
 type MediaSwiperProps = {
@@ -19,44 +20,95 @@ type MediaSwiperProps = {
 
 type Media = Banner["medias"][number]["media"]["mobile"];
 
-/** Renderiza imagem ou vídeo conforme o tipo vindo do CMS. */
-function Slide({
+const videoSrc = (media: Media) =>
+  media.video.origin === "local"
+    ? media.video.file?.node?.mediaItemUrl
+    : media.video.url;
+
+/** Um vídeo, escolhido por breakpoint via CSS. */
+function VideoSlide({
   media,
-  priority,
+  hasPoster,
   className,
 }: {
   media: Media;
-  priority: boolean;
+  hasPoster: boolean;
   className: string;
 }) {
-  if (media.type === "image") {
-    return (
-      <Image
-        src={media.image?.node?.mediaItemUrl}
-        alt=""
-        fill
-        sizes="100vw"
-        priority={priority}
-        className={`object-cover ${className}`}
-      />
-    );
+  const src = videoSrc(media);
+  if (!src) return null;
+
+  if (media.video.origin === "local") {
+    return <NativeVideo src={src} fadeIn={hasPoster} className={className} />;
   }
 
+  // YouTube e afins: iframe com proporção fixa, precisa ser escalado.
   return (
     <div className={`absolute inset-0 overflow-hidden ${className}`}>
       <ScaledVideo
-        origin={media.video.origin === "local" ? "local" : "external"}
-        src={
-          media.video.origin === "local"
-            ? media.video.file?.node?.mediaItemUrl
-            : media.video.url
-        }
+        src={src}
         loop
         muted
         playing
         className="size-full! object-cover!"
       />
     </div>
+  );
+}
+
+/**
+ * Um slide do banner.
+ *
+ * A imagem e o vídeo não são alternativas: quando o slide é de vídeo e há uma
+ * imagem cadastrada, ela vira o **poster**. O poster é servido como
+ * `<picture>` otimizado e com art direction, pinta no primeiro frame e responde
+ * pelo LCP; o vídeo entra por cima depois do `load`. Como a imagem cadastrada é
+ * o primeiro frame do próprio vídeo, a troca não produz salto visual.
+ *
+ * Com `type: "image"` nos dois breakpoints o slide é só imagem, e nenhum vídeo
+ * é baixado — é o que o campo do CMS significa.
+ */
+function Slide({
+  media,
+  priority,
+}: {
+  media: Banner["medias"][number]["media"];
+  priority: boolean;
+}) {
+  const mobileImage = media.mobile.image?.node?.mediaItemUrl;
+  const desktopImage = media.desktop.image?.node?.mediaItemUrl;
+
+  // O `<picture>` exige os dois lados: é ele quem escolhe, antes de baixar,
+  // qual versão o navegador pega.
+  const poster = mobileImage && desktopImage;
+
+  return (
+    <>
+      {poster && (
+        <HeroPicture
+          mobileSrc={mobileImage}
+          desktopSrc={desktopImage}
+          alt=""
+          priority={priority}
+        />
+      )}
+
+      {media.mobile.type === "video" && (
+        <VideoSlide
+          media={media.mobile}
+          hasPoster={!!poster}
+          className="lg:hidden"
+        />
+      )}
+
+      {media.desktop.type === "video" && (
+        <VideoSlide
+          media={media.desktop}
+          hasPoster={!!poster}
+          className="hidden lg:block"
+        />
+      )}
+    </>
   );
 }
 
@@ -83,16 +135,7 @@ export function MediaSwiper({ content }: MediaSwiperProps) {
         <CarouselTrack className="h-full">
           {content.map(({ media }, key) => (
             <CarouselSlide key={key} className="relative min-w-full">
-              <Slide
-                media={media.mobile}
-                priority={key === 0}
-                className="lg:hidden"
-              />
-              <Slide
-                media={media.desktop}
-                priority={key === 0}
-                className="hidden lg:block"
-              />
+              <Slide media={media} priority={key === 0} />
             </CarouselSlide>
           ))}
         </CarouselTrack>

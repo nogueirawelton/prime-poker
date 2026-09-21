@@ -42,3 +42,28 @@ export const primeApplicationSchema = z.object({
 });
 
 export type FormData = z.infer<typeof primeApplicationSchema>;
+
+// --- PAYLOAD DE ENVIO ---
+
+const { personalData, currentSituation, onlineHistory, goalsCommitment } =
+  primeApplicationSchema.shape;
+
+/**
+ * O formulário agrupa os campos por etapa, mas o envio é achatado: os destinos
+ * externos (Contact Form 7 e Google Sheets) recebem uma linha só de campos.
+ *
+ * Derivar daqui em vez de redeclarar mantém a rota de API validando exatamente
+ * as mesmas regras do cliente — um campo novo no formulário não passa
+ * despercebido no servidor.
+ */
+export const applicationPayloadSchema = z.object({
+  ...personalData.shape,
+  ...currentSituation.shape,
+  ...onlineHistory.shape,
+  ...goalsCommitment.shape,
+  utm_source: z.string().max(200).optional(),
+  utm_medium: z.string().max(200).optional(),
+  utm_campaign: z.string().max(200).optional(),
+});
+
+export type ApplicationPayload = z.infer<typeof applicationPayloadSchema>;

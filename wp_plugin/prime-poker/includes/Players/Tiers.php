@@ -163,6 +163,21 @@ final class Tiers {
 	}
 
 	/**
+	 * A capability que libera o conteúdo DESTE tier (`view_content_gold`).
+	 *
+	 * É a própria do tier, não as acumuladas: como elas se somam na ordem da
+	 * hierarquia, quem tem `view_content_gold` é gold ou qualquer tier acima.
+	 * Devolve null para tier desconhecido — quem pergunta deve negar o acesso.
+	 *
+	 * @param string $tier Slug do tier.
+	 */
+	public static function content_capability( string $tier ): ?string {
+		$caps = self::definitions()[ $tier ]['caps'] ?? array();
+
+		return $caps[0] ?? null;
+	}
+
+	/**
 	 * Capabilities acumuladas de um tier, no formato que o `add_role` espera.
 	 *
 	 * @param string $tier Slug do tier.

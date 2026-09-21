@@ -37,6 +37,37 @@ final class GraphQL {
 	 * Declara os campos no tipo User.
 	 */
 	public static function register(): void {
+		register_graphql_object_type(
+			'PlayerTier',
+			array(
+				'description' => __( 'Um tier da área do jogador.', 'prime-poker' ),
+				'fields'      => array(
+					'slug'  => array( 'type' => array( 'non_null' => 'String' ) ),
+					'label' => array( 'type' => array( 'non_null' => 'String' ) ),
+				),
+			)
+		);
+
+		register_graphql_field(
+			'RootQuery',
+			'playerTiers',
+			array(
+				'type'        => array( 'list_of' => array( 'non_null' => 'PlayerTier' ) ),
+				'description' => __( 'Os tiers do site, do mais baixo para o mais alto. Serve ao filtro de aulas por nível de acesso.', 'prime-poker' ),
+				'resolve'     => static function (): array {
+					// Público: os nomes dos tiers já aparecem no selo de cada
+					// aula trancada. O que é privado é o tier DE ALGUÉM.
+					return array_map(
+						static fn( string $slug ): array => array(
+							'slug'  => $slug,
+							'label' => Tiers::label( $slug ),
+						),
+						Tiers::slugs()
+					);
+				},
+			)
+		);
+
 		register_graphql_field(
 			'User',
 			'playerTier',

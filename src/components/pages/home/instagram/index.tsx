@@ -40,7 +40,7 @@ export async function Instagram() {
                       key={key}
                       className="grid aspect-square basis-4/5 place-items-center rounded-md bg-white/5 sm:basis-1/2 md:basis-1/3 lg:basis-1/4"
                     >
-                      <CircleNotchIcon className="size-10 animate-spin text-prime-red/60" />
+                      <CircleNotchIcon className="size-10 animate-spin text-prime-red" />
                     </div>
                   ))}
               </div>

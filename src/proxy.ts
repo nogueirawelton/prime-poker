@@ -88,10 +88,47 @@ async function refreshAuthToken(refreshToken: string) {
 /** Rotas que exigem sessão. */
 const PROTECTED_ROUTES = ["/player"];
 
-function isProtected(pathname: string) {
-  return PROTECTED_ROUTES.some(
+/**
+ * Rotas que só fazem sentido para quem NÃO está logado.
+ *
+ * Quem já entrou e clica em "Entrar" quer a área do jogador, não um
+ * formulário de login. Mandar daqui, e não da página, é o que evita o
+ * pisca-pisca do formulário aparecendo antes do redirecionamento.
+ */
+const GUEST_ROUTES = ["/login"];
+
+function matches(pathname: string, routes: Array<string>) {
+  return routes.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`),
   );
+}
+
+function isProtected(pathname: string) {
+  return matches(pathname, PROTECTED_ROUTES);
+}
+
+function isGuestOnly(pathname: string) {
+  return matches(pathname, GUEST_ROUTES);
+}
+
+/**
+ * Para onde vai quem já está logado e pediu o login.
+ *
+ * O `?redirect=` é o mesmo que o `redirectToLogin` grava ao barrar alguém:
+ * respeitá-lo leva a pessoa ao lugar que ela tentou abrir, em vez de despejá-la
+ * no painel. Só caminhos do próprio site, começando com uma barra e nunca com
+ * duas — `//outro-site.com` é uma URL absoluta disfarçada, e obedecê-la
+ * transformaria o login num redirecionador aberto.
+ */
+function redirectToPlayer(req: NextRequest) {
+  const wanted = req.nextUrl.searchParams.get("redirect") ?? "";
+
+  const destination =
+    wanted.startsWith("/") && !wanted.startsWith("//") && !isGuestOnly(wanted)
+      ? wanted
+      : "/player";
+
+  return NextResponse.redirect(new URL(destination, req.url));
 }
 
 /**
@@ -125,12 +162,18 @@ async function isTokenValid(token: string | undefined) {
 
 export async function proxy(req: NextRequest) {
   const protectedRoute = isProtected(req.nextUrl.pathname);
+  const guestRoute = isGuestOnly(req.nextUrl.pathname);
 
   const access = req.cookies.get("access_token")?.value;
 
   if (access && !isExpired(access)) {
     if (protectedRoute && !(await isTokenValid(access)))
       return redirectToLogin(req);
+
+    // Cookie forjado não vale como sessão nem aqui: sem conferir a
+    // assinatura, qualquer um se trancaria fora do login.
+    if (guestRoute && (await isTokenValid(access)))
+      return redirectToPlayer(req);
 
     return NextResponse.next();
   }
@@ -150,7 +193,12 @@ export async function proxy(req: NextRequest) {
   const headers = new Headers(req.headers);
   headers.set("cookie", cookieHeaderWith(req, authToken));
 
-  const response = NextResponse.next({ request: { headers } });
+  // Sessão renovada em cima do login: segue para a área do jogador, mas
+  // levando os cookies novos — senão a próxima página pediria login de novo.
+  const response =
+    guestRoute && (await isTokenValid(authToken))
+      ? redirectToPlayer(req)
+      : NextResponse.next({ request: { headers } });
 
   response.cookies.set("access_token", authToken, ACCESS_OPTS);
 
@@ -166,7 +214,11 @@ export async function proxy(req: NextRequest) {
 }
 
 /**
- * Só as rotas protegidas.
+ * As rotas protegidas e o login.
+ *
+ * O login entra porque é aqui que se decide quem já está logado ANTES de
+ * qualquer renderização — é o que manda a pessoa direto para a área do
+ * jogador em vez de mostrar o formulário e corrigir depois.
  *
  * A forma de OBJETO do matcher (`{ source, missing }`) desativa o proxy por
  * inteiro neste projeto: o build continua imprimindo "ƒ Proxy", o
@@ -175,5 +227,5 @@ export async function proxy(req: NextRequest) {
  * páginas públicas.
  */
 export const config = {
-  matcher: ["/player", "/player/:path*"],
+  matcher: ["/player", "/player/:path*", "/login", "/login/:path*"],
 };

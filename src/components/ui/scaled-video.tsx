@@ -1,22 +1,21 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import {
-  type ComponentProps,
-  type Ref,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { type ComponentProps, useEffect, useRef, useState } from "react";
 
 const ReactPlayer = dynamic(() => import("react-player"), { ssr: false });
 
-type ScaledVideoProps = ComponentProps<typeof ReactPlayer> & {
-  origin: "local" | "external";
-  ref?: Ref<HTMLVideoElement>;
-};
+type ScaledVideoProps = ComponentProps<typeof ReactPlayer>;
 
-export function ScaledVideo({ origin, ...props }: ScaledVideoProps) {
+/**
+ * Player para mídia externa (YouTube e afins), onde o iframe vem com
+ * proporção fixa e precisa ser escalado para cobrir o container.
+ *
+ * Vídeo hospedado no WordPress não passa mais por aqui: virou `<video>`
+ * nativo em `NativeVideo`, que renderiza no servidor e não depende do
+ * react-player para aparecer.
+ */
+export function ScaledVideo(props: ScaledVideoProps) {
   const [scale, setScale] = useState(1);
   const container = useRef<HTMLDivElement>(null);
 
@@ -41,11 +40,7 @@ export function ScaledVideo({ origin, ...props }: ScaledVideoProps) {
 
   return (
     <div ref={container} className="size-full">
-      <ReactPlayer
-        {...props}
-        playsInline
-        style={{ scale: origin === "external" ? scale : 1 }}
-      />
+      <ReactPlayer {...props} playsInline style={{ scale }} />
     </div>
   );
 }

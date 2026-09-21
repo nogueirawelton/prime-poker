@@ -1,11 +1,11 @@
 "use server";
 
 import { redirect } from "next/navigation";
-
+import type { LessonsResult } from "@/lib/lessons";
 import type { LessonsSearchParams } from "@/lib/lessons-params";
 import { parseFilter } from "@/lib/lessons-params";
 import { getSession } from "@/lib/session";
-import { type LessonsResult, listLessons } from "@/services/lessons";
+import { listLessons } from "@/services/lessons";
 
 /**
  * Próximo lote da listagem, pedido pela rolagem infinita.

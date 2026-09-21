@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AuthorCard } from "@/components/pages/blog/author-card";
 import { Breadcrumbs } from "@/components/pages/blog/breadcrumbs";
+import { LessonCallout } from "@/components/pages/blog/lesson-callout";
 import { PostCard } from "@/components/pages/blog/post-card";
 import { PostComments } from "@/components/pages/blog/post-comments";
 import { PostCover } from "@/components/pages/blog/post-cover";
@@ -12,8 +13,8 @@ import { PostSidebar } from "@/components/pages/blog/post-sidebar";
 import { ReadingProgress } from "@/components/pages/blog/reading-progress";
 import { ShareButtons } from "@/components/pages/blog/share-buttons";
 import { getAllSlugs, getComments, getPost, getRelated } from "@/services/blog";
-import { getSuggestedLesson } from "@/services/lessons";
-import { prepareContent } from "@/utils/rich-content";
+import { getRelatedLesson } from "@/services/lessons";
+import { prepareContent, toFaqItems } from "@/utils/rich-content";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -61,15 +62,22 @@ export default async function PostPage({ params }: Props) {
 
   const [related, lesson, comments] = await Promise.all([
     getRelated(post),
-    // A chamada da lateral aponta para a aula do acervo que trata do mesmo
-    // assunto; o título do post é o que aproxima os dois.
-    getSuggestedLesson(post.title, post.category?.slug),
+    // A chamada da lateral aponta para a aula escolhida no painel, em
+    // *Aula relacionada*. Sem escolha não há chamada: o palpite por título
+    // saiu na 1.19.0 porque anunciava a aula errada.
+    getRelatedLesson(post.databaseId),
     getComments(post.databaseId),
   ]);
 
   // Uma passada só no HTML do editor: ancora os títulos, monta o índice
   // lateral e separa o bloco de perguntas frequentes do corpo.
   const { html, sections, faq } = prepareContent(post.content);
+
+  // O campo do painel ganha do texto. A convenção antiga — um `h2`
+  // "Perguntas frequentes" no corpo — continua valendo para os posts que já
+  // foram escritos assim; ela só perde quando o campo está preenchido. De
+  // qualquer forma o bloco sai do corpo, senão apareceria duas vezes.
+  const faqItems = post.faq.length > 0 ? toFaqItems(post.faq) : faq;
 
   return (
     <>
@@ -138,11 +146,16 @@ export default async function PostPage({ params }: Props) {
                 linha em ~75 caracteres, que é a medida confortável de
                 leitura. */}
             <div
-              className="rich-text max-w-3xl"
+              className="rich-text"
               dangerouslySetInnerHTML={{ __html: html }}
             />
 
-            <PostFaq faqItems={faq} />
+            <PostFaq faqItems={faqItems} />
+
+            {/* A aula do painel, no fim do texto: é o único lugar onde ela
+                aparece no celular, já que a coluna lateral some abaixo de
+                `lg`. */}
+            <LessonCallout lesson={lesson} />
 
             <AuthorCard post={post} />
 

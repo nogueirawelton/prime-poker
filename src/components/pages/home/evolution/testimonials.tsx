@@ -40,7 +40,7 @@ export function Testimonials({ content }: TestimonialsProps) {
 
                   <div className="text-prime-light">
                     <h4 className="font-bold text-lg">{item.title}</h4>
-                    <strong className="font-medium text-prime-red/85 text-sm">
+                    <strong className="font-medium text-prime-red text-sm">
                       {formatUsd(item.testimonialFields.earnings)}
                     </strong>
                   </div>

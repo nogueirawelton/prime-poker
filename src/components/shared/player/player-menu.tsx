@@ -1,14 +1,17 @@
 "use client";
 
 import {
+  ArrowSquareOutIcon,
   BellIcon,
   CaretDownIcon,
   CircleNotchIcon,
   type Icon,
   PlayCircleIcon,
   SignOutIcon,
+  SquaresFourIcon,
   UserIcon,
 } from "@phosphor-icons/react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { DropdownMenu } from "radix-ui";
@@ -18,9 +21,10 @@ import { logout } from "@/actions/auth";
 import { initials } from "@/utils/initials";
 
 const LINKS = [
+  { href: "/player", label: "Painel", icon: SquaresFourIcon },
   { href: "/player/aulas", label: "Aulas", icon: PlayCircleIcon },
   { href: "/player/notificacoes", label: "Notificações", icon: BellIcon },
-  { href: "/player", label: "Meu perfil", icon: UserIcon },
+  { href: "/player/perfil", label: "Meu perfil", icon: UserIcon },
 ] as const;
 
 /**
@@ -28,6 +32,10 @@ const LINKS = [
  *
  * A navegação mora aqui em vez de uma barra no header — são poucas rotas e o
  * header fica livre para o conteúdo da página.
+ *
+ * "Meu perfil" passou a ser a tela de edição (`/player/perfil`); `/player`
+ * virou "Painel", que é o que ele sempre foi: progresso, aulas salvas e
+ * notificações.
  *
  * `/player` só fica ativo em correspondência exata: sendo prefixo de todas as
  * outras rotas, ele acenderia junto com elas.
@@ -38,9 +46,11 @@ const LINKS = [
 export function PlayerMenu({
   name,
   tier,
+  avatarUrl,
 }: {
   name?: string;
   tier?: string | null;
+  avatarUrl?: string | null;
 }) {
   const pathname = usePathname();
   const [loggingOut, startLogout] = useTransition();
@@ -75,8 +85,16 @@ export function PlayerMenu({
           </span>
         </span>
 
-        <span className="flex size-10 items-center justify-center rounded-full bg-white/10 font-bold text-prime-light text-sm">
-          {name ? (
+        <span className="flex size-10 items-center justify-center overflow-hidden rounded-full bg-white/10 font-bold text-prime-light text-sm">
+          {avatarUrl ? (
+            <Image
+              src={avatarUrl}
+              alt=""
+              width={40}
+              height={40}
+              className="size-10 object-cover"
+            />
+          ) : name ? (
             initials(name)
           ) : (
             <UserIcon className="size-5" weight="bold" />
@@ -94,7 +112,7 @@ export function PlayerMenu({
         <DropdownMenu.Content
           align="end"
           sideOffset={8}
-          className="z-50 w-56 rounded-xl border border-white/10 bg-prime-darkgray p-2 shadow-2xl data-[state=closed]:animate-dialog-close data-[state=open]:animate-dialog-open"
+          className="z-50 w-56 rounded-xl border border-white/10 bg-zinc-800 p-2 shadow-2xl data-[state=closed]:animate-dialog-close data-[state=open]:animate-dialog-open"
         >
           {LINKS.map(({ href, label, icon }) => (
             <Item
@@ -110,6 +128,17 @@ export function PlayerMenu({
               {label}
             </Item>
           ))}
+
+          <DropdownMenu.Separator className="my-2 h-px bg-white/10" />
+
+          {/* Volta ao site institucional. Não é navegação da área — daí o
+              separador e o ícone de "sai daqui" — mas precisa existir: sem
+              ele, o único caminho de volta é apagar a URL na barra de
+              endereços. Quem voltar e clicar em "Entrar" cai aqui de novo,
+              sem passar pelo formulário: o proxy reconhece a sessão. */}
+          <Item href="/" icon={ArrowSquareOutIcon} active={false}>
+            Ir para o site
+          </Item>
 
           <DropdownMenu.Separator className="my-2 h-px bg-white/10" />
 

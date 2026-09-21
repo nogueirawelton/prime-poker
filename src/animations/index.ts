@@ -1,8 +1,6 @@
 import { home } from "./home";
-import { misc } from "./misc";
 
 const animations = {
-  misc,
   home,
 };
 

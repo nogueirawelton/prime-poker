@@ -14,21 +14,43 @@ async function ensureSession() {
   if (!session) redirect("/login");
 }
 
+/** Falha volta como valor: a tela já mudou e só precisa saber se desfaz. */
+export type NotificationResult = { error?: string };
+
 /** Alterna o estado de leitura de uma notificação. */
-export async function toggleReadState(id: string, read: boolean) {
+export async function toggleReadState(
+  id: string,
+  read: boolean,
+): Promise<NotificationResult> {
   await ensureSession();
 
-  await markAsRead(id, read);
+  try {
+    await markAsRead(id, read);
+  } catch (error) {
+    console.error("Falha ao marcar a notificação", id, error);
 
-  // Sem o `refresh`, o selo do sino e a lista continuariam mostrando o estado
-  // anterior até a próxima navegação.
+    return { error: "Não foi possível atualizar a notificação." };
+  }
+
+  // Sem o `refresh`, o selo do sino e a lista voltariam ao estado anterior
+  // assim que a mudança otimista expirasse.
   refresh();
+
+  return {};
 }
 
-export async function markAllRead() {
+export async function markAllRead(): Promise<NotificationResult> {
   await ensureSession();
 
-  await markAllAsRead();
+  try {
+    await markAllAsRead();
+  } catch (error) {
+    console.error("Falha ao marcar todas as notificações", error);
+
+    return { error: "Não foi possível marcar as notificações como lidas." };
+  }
 
   refresh();
+
+  return {};
 }

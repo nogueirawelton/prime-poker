@@ -1,17 +1,23 @@
 import "server-only";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
-import { authQuery } from "@/graphql/auth-client";
+import { authMutate, authQuery } from "@/graphql/auth-client";
+import {
+  UPDATE_PLAYER_PASSWORD,
+  UPDATE_PLAYER_PROFILE,
+} from "@/graphql/mutations/player/PROFILE";
 import { VIEWER } from "@/graphql/queries/player/VIEWER";
-import { getCompletedSlugs } from "./lesson-detail";
-import { getCatalog, TRACKS, type Track } from "./lessons";
+import type { Track } from "@/lib/lessons";
+import { getCatalog, getTracks } from "./lessons";
 
 /**
  * Perfil e progresso do jogador.
  *
- * O perfil vem do WordPress (`viewer`, com os campos de tier do plugin). O
- * progresso continua mock até as aulas existirem no CMS.
+ * Tudo vem do WordPress: o perfil e a sequência de estudo do `viewer` (com os
+ * campos do plugin), o acervo e as trilhas das aulas. O progresso é soma do
+ * que cada aula já traz para o jogador logado.
  */
 
 export type TierSlug =
@@ -32,11 +38,26 @@ export type Profile = {
   name: string;
   username: string;
   email: string;
+  /** WhatsApp só com dígitos (DDI + DDD + número), ou vazio. */
+  phone: string;
+  /** Onde o jogador mora, texto livre. */
+  city: string;
+  /** Apresentação curta que o jogador escreve sobre si. */
+  bio: string;
+  /** Foto enviada pelo jogador; `null` cai nas iniciais do nome. */
+  avatarUrl: string | null;
   /** `null` para quem não tem tier — membro da equipe logado, por exemplo. */
   tier: Tier | null;
   /** ISO, ou `null` para tier sem vencimento. */
   expiresAt: string | null;
   memberSince: string;
+  /**
+   * Dias seguidos de estudo.
+   *
+   * Mora aqui, e não no progresso, porque vem do mesmo `viewer`: buscar em
+   * separado seria uma segunda ida ao WordPress pelo mesmo dado.
+   */
+  streak: number;
 };
 
 /**
@@ -62,10 +83,15 @@ type ViewerResponse = {
     name: string | null;
     username: string;
     email: string | null;
+    description: string | null;
     registeredDate: string | null;
     playerTier: string | null;
     playerTierLabel: string | null;
     playerTierExpiresAt: string | null;
+    playerPhone: string | null;
+    playerCity: string | null;
+    playerAvatarUrl: string | null;
+    studyStreak: number;
   } | null;
 };
 
@@ -89,6 +115,10 @@ export const getProfile = cache(async (): Promise<Profile> => {
     name: viewer.name?.trim() || viewer.username,
     username: viewer.username,
     email: viewer.email ?? "",
+    phone: viewer.playerPhone ?? "",
+    city: viewer.playerCity ?? "",
+    bio: viewer.description ?? "",
+    avatarUrl: viewer.playerAvatarUrl,
     tier: isTier(slug)
       ? {
           slug,
@@ -98,6 +128,7 @@ export const getProfile = cache(async (): Promise<Profile> => {
       : null,
     expiresAt: viewer.playerTierExpiresAt,
     memberSince: viewer.registeredDate ?? new Date().toISOString(),
+    streak: viewer.studyStreak,
   };
 });
 
@@ -124,38 +155,33 @@ export type Progress = {
 /**
  * Números do painel.
  *
- * Uma aula conta como concluída quando o jogador a marcou como tal ou quando
- * passou de 95% dela — assistir aos créditos não deveria ser requisito.
+ * Quem decide o que está concluído é o WordPress: o jogador marcou na mão ou
+ * passou de 90% da aula. Aqui é só soma.
  */
 export async function getProgress(): Promise<Progress> {
-  const [catalog, markedCompleted] = await Promise.all([
+  const [catalog, trackList, viewer] = await Promise.all([
     getCatalog(),
-    getCompletedSlugs(),
+    getTracks(),
+    getProfile(),
   ]);
 
-  const completed = (slug: string, watched: number, duration: number) =>
-    markedCompleted.has(slug) || watched / duration >= 0.95;
-
-  const tracks = TRACKS.map((track) => {
+  const tracks = trackList.map((track) => {
     const trackLessons = catalog.filter(
-      (lesson) => lesson.track.slug === track.slug,
+      (lesson) => lesson.track?.slug === track.slug,
     );
 
     return {
       track,
-      completedCount: trackLessons.filter((lesson) =>
-        completed(lesson.slug, lesson.watched, lesson.duration),
-      ).length,
+      completedCount: trackLessons.filter((lesson) => lesson.completed).length,
       total: trackLessons.length,
     };
   });
 
+  // Aula concluída conta cheia: quem marcou na mão sem chegar ao fim do
+  // vídeo ainda assistiu a aula.
   const seconds = catalog.reduce(
     (total, lesson) =>
-      total +
-      (completed(lesson.slug, lesson.watched, lesson.duration)
-        ? lesson.duration
-        : lesson.watched),
+      total + (lesson.completed ? lesson.duration : lesson.watched),
     0,
   );
 
@@ -166,8 +192,86 @@ export async function getProgress(): Promise<Progress> {
     ),
     total: catalog.length,
     hours: Math.round(seconds / 3600),
-    // TODO: sequência real depende de um histórico de sessões no CMS.
-    streak: 7,
+    streak: viewer.streak,
     tracks,
   };
+}
+
+/* -------------------------------------------------------------------------- */
+/*                              Edição do perfil                              */
+/* -------------------------------------------------------------------------- */
+
+/** O que a tela de perfil deixa o jogador mudar. */
+type ProfileInput = {
+  name: string;
+  email: string;
+  phone: string;
+  city: string;
+  bio: string;
+};
+
+/**
+ * Grava o perfil do jogador logado.
+ *
+ * O WordPress é quem valida: e-mail já usado por outra conta, nome vazio e
+ * afins voltam como erro da mutation, com a mensagem pronta para a tela.
+ */
+export async function updateProfile(input: ProfileInput) {
+  await authMutate(UPDATE_PLAYER_PROFILE, input);
+}
+
+/** Troca a senha. A atual é conferida no WordPress, nunca aqui. */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+) {
+  await authMutate(UPDATE_PLAYER_PASSWORD, { currentPassword, newPassword });
+}
+
+/**
+ * Rota REST da foto de perfil.
+ *
+ * A foto não vai pelo GraphQL porque o WPGraphQL não recebe arquivo: mandá-la
+ * em base64 dentro do JSON custaria um terço a mais de tráfego e memória. O
+ * plugin aceita o mesmo Bearer do GraphQL nesta rota.
+ */
+const AVATAR_ENDPOINT = `${process.env.NEXT_PUBLIC_ADMIN_URL}/wp-json/prime-poker/v1/avatar`;
+
+async function avatarRequest(init: RequestInit) {
+  const token = (await cookies()).get("access_token")?.value;
+
+  if (!token) redirect("/login");
+
+  const response = await fetch(AVATAR_ENDPOINT, {
+    ...init,
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+
+  // O WordPress responde erro em JSON com `message`; é a frase que o jogador
+  // precisa ler ("envie JPG, PNG ou WebP"), então ela sobe como está.
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as {
+      message?: string;
+    } | null;
+
+    throw new Error(
+      body?.message || "Não foi possível salvar a foto. Tente novamente.",
+    );
+  }
+
+  return response.json() as Promise<{ url: string | null }>;
+}
+
+/** Envia a foto de perfil. A anterior é apagada pelo plugin. */
+export async function uploadAvatar(file: File) {
+  const body = new FormData();
+  body.append("file", file);
+
+  return avatarRequest({ method: "POST", body });
+}
+
+/** Remove a foto e volta ao avatar padrão. */
+export async function removeAvatar() {
+  return avatarRequest({ method: "DELETE" });
 }

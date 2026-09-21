@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { LessonsSidebar } from "@/components/shared/player/lessons-sidebar";
+import { trackLinks } from "@/components/shared/player/track-links";
 import { getContinueWatching } from "@/services/lessons";
 
 /**
@@ -29,7 +30,10 @@ export default function LessonsLayout({
 }
 
 async function Sidebar() {
-  const continueWatching = await getContinueWatching();
+  const [tracks, continueWatching] = await Promise.all([
+    trackLinks(),
+    getContinueWatching(),
+  ]);
 
-  return <LessonsSidebar continueWatching={continueWatching} />;
+  return <LessonsSidebar tracks={tracks} continueWatching={continueWatching} />;
 }

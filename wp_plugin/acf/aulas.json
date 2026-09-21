@@ -1,0 +1,380 @@
+[
+    {
+        "key": "post_type_prime_aula",
+        "title": "Aulas",
+        "menu_order": 0,
+        "active": true,
+        "post_type": "aula",
+        "advanced_configuration": true,
+        "import_source": "",
+        "import_date": "",
+        "labels": {
+            "name": "Aulas",
+            "singular_name": "Aula",
+            "menu_name": "Aulas",
+            "all_items": "Todas as aulas",
+            "add_new": "Adicionar aula",
+            "add_new_item": "Adicionar aula",
+            "edit_item": "Editar aula",
+            "new_item": "Nova aula",
+            "view_item": "Ver aula",
+            "view_items": "Ver aulas",
+            "search_items": "Buscar aulas",
+            "not_found": "Nenhuma aula encontrada.",
+            "not_found_in_trash": "Nenhuma aula na lixeira.",
+            "featured_image": "Capa da aula",
+            "set_featured_image": "Definir capa",
+            "remove_featured_image": "Remover capa",
+            "use_featured_image": "Usar como capa",
+            "item_published": "Aula publicada.",
+            "item_updated": "Aula atualizada."
+        },
+        "description": "Aulas da área do jogador. O acesso é controlado pelo plugin Prime Poker.",
+        "public": true,
+        "hierarchical": false,
+        "exclude_from_search": true,
+        "publicly_queryable": false,
+        "show_ui": true,
+        "show_in_menu": true,
+        "admin_menu_parent": "",
+        "show_in_admin_bar": true,
+        "show_in_nav_menus": false,
+        "show_in_rest": false,
+        "rest_base": "",
+        "rest_namespace": "wp/v2",
+        "rest_controller_class": "WP_REST_Posts_Controller",
+        "menu_position": 6,
+        "menu_icon": {
+            "type": "dashicons",
+            "value": "dashicons-video-alt3"
+        },
+        "rename_capabilities": false,
+        "singular_capability_name": "post",
+        "plural_capability_name": "posts",
+        "supports": [
+            "title",
+            "editor",
+            "thumbnail",
+            "excerpt",
+            "comments",
+            "revisions"
+        ],
+        "taxonomies": [
+            "trilha"
+        ],
+        "has_archive": false,
+        "has_archive_slug": "",
+        "rewrite": {
+            "permalink_rewrite": "no_permalink"
+        },
+        "query_var": "none",
+        "query_var_name": "",
+        "can_export": true,
+        "delete_with_user": false,
+        "register_meta_box_cb": "",
+        "enter_title_here": "Título da aula",
+        "show_in_graphql": 1,
+        "graphql_single_name": "aula",
+        "graphql_plural_name": "aulas",
+        "modified": 1789837415
+    },
+    {
+        "key": "taxonomy_prime_trilha",
+        "title": "Trilhas",
+        "menu_order": 0,
+        "active": true,
+        "taxonomy": "trilha",
+        "object_type": [
+            "aula"
+        ],
+        "advanced_configuration": 1,
+        "import_source": "",
+        "import_date": "",
+        "labels": {
+            "name": "Trilhas",
+            "singular_name": "Trilha",
+            "menu_name": "Trilhas",
+            "all_items": "Todas as trilhas",
+            "edit_item": "Editar trilha",
+            "view_item": "Ver trilha",
+            "update_item": "Atualizar trilha",
+            "add_new_item": "Adicionar trilha",
+            "new_item_name": "Nome da nova trilha",
+            "search_items": "Buscar trilhas",
+            "not_found": "Nenhuma trilha encontrada.",
+            "no_terms": "Sem trilha",
+            "back_to_items": "← Voltar para as trilhas"
+        },
+        "description": "Trilhas das aulas. Selo, cor e ordem ficam em \"Aparência da trilha\".",
+        "capabilities": {
+            "manage_terms": "manage_categories",
+            "edit_terms": "manage_categories",
+            "delete_terms": "manage_categories",
+            "assign_terms": "edit_posts"
+        },
+        "public": true,
+        "publicly_queryable": false,
+        "hierarchical": true,
+        "show_ui": true,
+        "show_in_menu": true,
+        "show_in_nav_menus": false,
+        "show_in_rest": false,
+        "rest_base": "",
+        "rest_namespace": "wp/v2",
+        "rest_controller_class": "WP_REST_Terms_Controller",
+        "show_tagcloud": false,
+        "show_in_quick_edit": true,
+        "show_admin_column": true,
+        "rewrite": {
+            "permalink_rewrite": "no_permalink"
+        },
+        "query_var": "none",
+        "query_var_name": "",
+        "default_term": {
+            "default_term_enabled": false
+        },
+        "sort": false,
+        "meta_box": "default",
+        "meta_box_cb": "",
+        "meta_box_sanitize_cb": "",
+        "show_in_graphql": 1,
+        "graphql_single_name": "trilha",
+        "graphql_plural_name": "trilhas",
+        "modified": 1789837415
+    },
+    {
+        "key": "group_prime_lesson_fields",
+        "title": "Dados da aula",
+        "position": "acf_after_title",
+        "style": "default",
+        "active": true,
+        "location": [
+            [
+                {
+                    "param": "post_type",
+                    "operator": "==",
+                    "value": "aula"
+                }
+            ]
+        ],
+        "show_in_graphql": 1,
+        "graphql_field_name": "lessonFields",
+        "graphql_types": [
+            "Aula"
+        ],
+        "fields": [
+            {
+                "key": "field_prime_lesson_instructor",
+                "name": "instructor",
+                "label": "Instrutor",
+                "type": "post_object",
+                "post_type": [
+                    "instructor"
+                ],
+                "return_format": "id",
+                "required": 1,
+                "allow_null": 0,
+                "multiple": 0,
+                "ui": 1,
+                "wrapper": {
+                    "width": "50"
+                },
+                "show_in_graphql": 1,
+                "graphql_field_name": "instructor"
+            },
+            {
+                "key": "field_prime_lesson_level",
+                "name": "level",
+                "label": "Nível",
+                "type": "select",
+                "choices": {
+                    "iniciante": "Iniciante",
+                    "intermediario": "Intermediário",
+                    "avancado": "Avançado"
+                },
+                "default_value": "iniciante",
+                "return_format": "value",
+                "required": 1,
+                "wrapper": {
+                    "width": "25"
+                },
+                "show_in_graphql": 1,
+                "graphql_field_name": "level"
+            },
+            {
+                "key": "field_prime_lesson_duration",
+                "name": "duration",
+                "label": "Duração",
+                "instructions": "Minutos (25), minutos e segundos (25:30) ou horas, minutos e segundos (1:05:00).",
+                "type": "text",
+                "placeholder": "25:30",
+                "required": 1,
+                "wrapper": {
+                    "width": "25"
+                },
+                "show_in_graphql": 0
+            },
+            {
+                "key": "field_prime_lesson_minimum_tier",
+                "name": "minimum_tier",
+                "label": "Tier mínimo",
+                "instructions": "Quem estiver abaixo vê a aula com cadeado e o convite para fazer upgrade.",
+                "type": "select",
+                "choices": {
+                    "player_free": "Player Free",
+                    "player_basic": "Player Basic",
+                    "player_gold": "Player Gold",
+                    "player_platinum": "Player Platinum"
+                },
+                "default_value": "player_free",
+                "return_format": "value",
+                "required": 1,
+                "wrapper": {
+                    "width": "50"
+                },
+                "show_in_graphql": 0
+            },
+            {
+                "key": "field_prime_lesson_video_provider",
+                "name": "video_provider",
+                "label": "Hospedagem do vídeo",
+                "type": "select",
+                "choices": {
+                    "bunny": "Bunny Stream"
+                },
+                "default_value": "bunny",
+                "return_format": "value",
+                "required": 1,
+                "wrapper": {
+                    "width": "50"
+                },
+                "show_in_graphql": 0
+            },
+            {
+                "key": "field_prime_lesson_video_id",
+                "name": "video_id",
+                "label": "Vídeo",
+                "instructions": "No Bunny Stream, abra o vídeo e copie o Video ID (ou o link do player).",
+                "type": "text",
+                "placeholder": "32d140e2-e4f4-4eec-9d53-20371e9be607",
+                "required": 0,
+                "show_in_graphql": 0
+            },
+            {
+                "key": "field_prime_lesson_materials",
+                "name": "materials",
+                "label": "Material de apoio",
+                "type": "repeater",
+                "layout": "table",
+                "button_label": "Adicionar arquivo",
+                "show_in_graphql": 0,
+                "sub_fields": [
+                    {
+                        "key": "field_prime_lesson_material_name",
+                        "name": "name",
+                        "label": "Nome",
+                        "instructions": "Opcional. Vazio usa o nome do arquivo.",
+                        "type": "text",
+                        "parent_repeater": "field_prime_lesson_materials"
+                    },
+                    {
+                        "key": "field_prime_lesson_material_file",
+                        "name": "file",
+                        "label": "Arquivo",
+                        "type": "file",
+                        "return_format": "id",
+                        "required": 1,
+                        "parent_repeater": "field_prime_lesson_materials"
+                    }
+                ]
+            }
+        ],
+        "menu_order": 0,
+        "label_placement": "top",
+        "instruction_placement": "label",
+        "hide_on_screen": [
+            "custom_fields",
+            "discussion",
+            "slug",
+            "author",
+            "format",
+            "send-trackbacks"
+        ],
+        "description": "",
+        "map_graphql_types_from_location_rules": 0,
+        "modified": 1789837415
+    },
+    {
+        "key": "group_prime_track_fields",
+        "title": "Aparência da trilha",
+        "active": true,
+        "location": [
+            [
+                {
+                    "param": "taxonomy",
+                    "operator": "==",
+                    "value": "trilha"
+                }
+            ]
+        ],
+        "show_in_graphql": 1,
+        "graphql_field_name": "trackFields",
+        "graphql_types": [
+            "Trilha"
+        ],
+        "fields": [
+            {
+                "key": "field_prime_track_badge",
+                "name": "badge",
+                "label": "Selo",
+                "instructions": "Nome curto no selo sobre a capa da aula. Vazio usa o nome da trilha.",
+                "type": "text",
+                "maxlength": 16,
+                "show_in_graphql": 1,
+                "graphql_field_name": "badge"
+            },
+            {
+                "key": "field_prime_track_icon",
+                "name": "icon",
+                "label": "Ícone",
+                "instructions": "Nome do ícone no Phosphor (phosphoricons.com), como strategy, brain, trophy, chart-line-up. Vazio mostra só a bolinha da cor. Nome errado aparece como interrogação vermelha.",
+                "type": "text",
+                "placeholder": "strategy",
+                "maxlength": 60,
+                "show_in_graphql": 1,
+                "graphql_field_name": "icon"
+            },
+            {
+                "key": "field_prime_track_color",
+                "name": "color",
+                "label": "Cor",
+                "instructions": "Cor da trilha: selo sobre a capa das aulas, bolinha na barra lateral e o degradê da capa quando a aula não tem imagem.",
+                "type": "color_picker",
+                "default_value": "#ff1820",
+                "enable_opacity": 0,
+                "return_format": "string",
+                "required": 1,
+                "show_in_graphql": 1,
+                "graphql_field_name": "color"
+            },
+            {
+                "key": "field_prime_track_order",
+                "name": "order",
+                "label": "Ordem",
+                "instructions": "Posição no filtro de trilhas. Menor aparece primeiro.",
+                "type": "number",
+                "default_value": 0,
+                "step": 1,
+                "show_in_graphql": 1,
+                "graphql_field_name": "order"
+            }
+        ],
+        "menu_order": 0,
+        "label_placement": "top",
+        "instruction_placement": "label",
+        "hide_on_screen": "",
+        "description": "",
+        "map_graphql_types_from_location_rules": 0,
+        "modified": 1789837415
+    }
+]

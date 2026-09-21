@@ -37,6 +37,9 @@ type PostNode = {
   featuredImage?: { node?: { mediaItemUrl: string; altText?: string } } | null;
   author?: { node?: { name?: string; description?: string } } | null;
   categories?: { nodes?: Array<{ name: string; slug: string }> } | null;
+  postFields?: {
+    faq?: Array<{ question?: string | null; answer?: string | null }> | null;
+  } | null;
   seo?: {
     title?: string | null;
     metaDesc?: string | null;
@@ -45,6 +48,13 @@ type PostNode = {
 
 export type PostDetail = Post & {
   content: string;
+  /**
+   * Perguntas frequentes escritas no campo do painel (ACF `faq`).
+   *
+   * Vazio quando o post não usa o campo — aí vale a convenção antiga, de
+   * escrever a FAQ no próprio corpo do texto.
+   */
+  faq: Array<{ question: string; answer: string }>;
   /** Id numérico do WordPress — é o que a mutation de comentário exige. */
   databaseId: number;
   /** Bio do autor no WordPress; vazia quando ninguém preencheu. */
@@ -295,6 +305,14 @@ export async function getPost(slug: string): Promise<PostDetail | null> {
   return {
     ...toPost(node, node.content),
     content: node.content ?? "",
+    // Linha sem pergunta é linha em branco que alguém deixou no repetidor:
+    // ela viraria um acordeão sem rótulo, impossível de abrir com sentido.
+    faq: (node.postFields?.faq ?? [])
+      .map((row) => ({
+        question: (row?.question ?? "").trim(),
+        answer: (row?.answer ?? "").trim(),
+      }))
+      .filter((row) => "" !== row.question),
     databaseId: node.databaseId ?? 0,
     authorBio: stripHtml(node.author?.node?.description) || null,
     seoTitle: node.seo?.title || null,

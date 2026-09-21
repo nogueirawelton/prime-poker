@@ -7,15 +7,19 @@ import {
   XIcon,
 } from "@phosphor-icons/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Popover } from "radix-ui";
+import { Collapsible } from "radix-ui";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
-import { PARAMS } from "@/lib/lessons-params";
+import { twMerge } from "tailwind-merge";
+import { DarkSelect } from "@/components/ui/form/dark-select";
 import {
-  INSTRUCTORS,
+  type Instructor,
+  LEVEL_LABEL,
+  LEVELS,
   ORDER_LABEL,
   SORT_ORDERS,
-  TRACKS,
-} from "@/services/lessons";
+  type Track,
+} from "@/lib/lessons";
+import { PARAMS } from "@/lib/lessons-params";
 
 /** Espera de digitação antes de ir ao servidor. */
 const DEBOUNCE_MS = 350;
@@ -38,10 +42,21 @@ const FILTERABLE = [
  * ativos sem precisar abrir.
  *
  * Como no blog, o estado vive na URL — o servidor devolve o primeiro lote já
- * filtrado e o link continua compartilhável. A partição é o mesmo `?cat=` que
+ * filtrado e o link continua compartilhável. A trilha é o mesmo `?cat=` que
  * a sidebar controla, então escolher aqui acende a trilha lá.
  */
-export function LessonsSearch({ activeFilters }: { activeFilters: number }) {
+export function LessonsSearch({
+  activeFilters,
+  tracks,
+  instructors,
+  tiers,
+}: {
+  activeFilters: number;
+  tracks: Array<Pick<Track, "slug" | "name">>;
+  instructors: Array<Instructor>;
+  /** Tiers do site, para filtrar as aulas pelo nível de acesso exigido. */
+  tiers: Array<{ slug: string; label: string }>;
+}) {
   const searchId = useId();
   const router = useRouter();
   const pathname = usePathname();
@@ -116,43 +131,46 @@ export function LessonsSearch({ activeFilters }: { activeFilters: number }) {
   const to = searchParams.get(PARAMS.to) ?? "";
 
   return (
-    <div className="flex items-center gap-3">
-      <search className="flex-1">
-        <label htmlFor={searchId} className="sr-only">
-          Buscar aulas
-        </label>
+    // O painel abre ABAIXO da busca, em largura cheia, e não num popover de
+    // 20rem: com seis filtros, a coluna estreita virava uma tira alta que não
+    // cabia na tela. Aqui eles se espalham em grade.
+    <Collapsible.Root className="flex flex-col">
+      <div className="flex items-center gap-3">
+        <search className="flex-1">
+          <label htmlFor={searchId} className="sr-only">
+            Buscar aulas
+          </label>
 
-        <div className="relative">
-          <MagnifyingGlassIcon
-            className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-prime-light/40"
-            aria-hidden="true"
-          />
+          <div className="relative">
+            <MagnifyingGlassIcon
+              className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-prime-light/40"
+              aria-hidden="true"
+            />
 
-          <input
-            id={searchId}
-            type="search"
-            value={term}
-            onChange={(event) => setTerm(event.target.value)}
-            placeholder="Buscar por título, tema, palavra-chave, instrutor..."
-            data-pending={pending || undefined}
-            className="h-14 w-full rounded-xl border border-white/10 bg-white/3 pr-12 pl-12 text-prime-light text-sm outline-none transition-colors duration-500 placeholder:text-prime-light/40 focus:border-prime-red/60 data-pending:opacity-70"
-          />
+            <input
+              id={searchId}
+              type="search"
+              value={term}
+              onChange={(event) => setTerm(event.target.value)}
+              placeholder="Buscar por título, tema ou palavra-chave..."
+              data-pending={pending || undefined}
+              className="h-14 w-full rounded-xl border border-white/10 bg-white/3 pr-12 pl-12 text-prime-light text-sm outline-none transition-colors duration-500 placeholder:text-prime-light/40 focus:border-prime-red/60 data-pending:opacity-70"
+            />
 
-          {term && (
-            <button
-              type="button"
-              onClick={() => setTerm("")}
-              aria-label="Limpar busca"
-              className="absolute top-1/2 right-4 -translate-y-1/2 text-prime-light/40 transition-colors duration-500 hover:text-prime-light"
-            >
-              <XIcon className="size-5" />
-            </button>
-          )}
-        </div>
-      </search>
+            {term && (
+              <button
+                type="button"
+                onClick={() => setTerm("")}
+                aria-label="Limpar busca"
+                className="absolute top-1/2 right-4 -translate-y-1/2 text-prime-light/40 transition-colors duration-500 hover:text-prime-light"
+              >
+                <XIcon className="size-5" />
+              </button>
+            )}
+          </div>
+        </search>
 
-      <Popover.Root>
-        <Popover.Trigger
+        <Collapsible.Trigger
           aria-label="Filtros da listagem"
           className="relative flex size-14 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/3 text-prime-light/70 transition-all duration-500 hover:border-white/30 hover:text-prime-light data-[state=open]:border-prime-red/60 data-[state=open]:text-prime-light"
         >
@@ -163,33 +181,86 @@ export function LessonsSearch({ activeFilters }: { activeFilters: number }) {
               {activeFilters}
             </span>
           )}
-        </Popover.Trigger>
+        </Collapsible.Trigger>
+      </div>
 
-        <Popover.Portal>
-          <Popover.Content
-            align="end"
-            sideOffset={8}
-            className="z-50 flex w-80 flex-col gap-5 rounded-xl border border-white/10 bg-prime-darkgray p-5 shadow-2xl data-[state=closed]:animate-dialog-close data-[state=open]:animate-dialog-open"
-          >
-            <Field label="Partição">
-              <Select
+      {/* `overflow-hidden` é o que permite animar a altura: sem ele o
+          conteúdo vaza durante a transição. */}
+      <Collapsible.Content className="overflow-hidden data-[state=closed]:animate-collapsible-close data-[state=open]:animate-collapsible-open">
+        <div className="mt-3 rounded-xl border border-white/10 bg-white/3 p-5">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <Field label="Trilha">
+              <DarkSelect
+                label="Trilha"
                 value={searchParams.get(PARAMS.track) ?? ""}
                 onChange={(nextValue) => applyFilter(PARAMS.track, nextValue)}
-              >
-                <option value="">Todas as partições</option>
-                {TRACKS.map((track) => (
-                  <option key={track.slug} value={track.slug}>
-                    {track.name}
-                  </option>
-                ))}
-              </Select>
+                options={[
+                  { value: "", label: "Todas as trilhas" },
+                  ...tracks.map((track) => ({
+                    value: track.slug,
+                    label: track.name,
+                  })),
+                ]}
+              />
             </Field>
 
-            <Field label="Data">
-              {/* Empilhados, não lado a lado: o `input[type=date]` tem largura
-                  intrínseca do calendário nativo e dois deles não cabem na
-                  largura do painel — quebravam em cima do traço. */}
-              <div className="flex flex-col gap-2">
+            <Field label="Nível">
+              <DarkSelect
+                label="Nível"
+                value={searchParams.get(PARAMS.level) ?? ""}
+                onChange={(nextValue) => applyFilter(PARAMS.level, nextValue)}
+                options={[
+                  { value: "", label: "Todos os níveis" },
+                  ...LEVELS.map((level) => ({
+                    value: level,
+                    label: LEVEL_LABEL[level],
+                  })),
+                ]}
+              />
+            </Field>
+
+            <Field label="Instrutor">
+              <DarkSelect
+                label="Instrutor"
+                value={searchParams.get(PARAMS.instructor) ?? ""}
+                onChange={(nextValue) =>
+                  applyFilter(PARAMS.instructor, nextValue)
+                }
+                options={[
+                  { value: "", label: "Todos os instrutores" },
+                  ...instructors.map((instructor) => ({
+                    value: String(instructor.id),
+                    label: instructor.name,
+                  })),
+                ]}
+              />
+            </Field>
+
+            {/* Sem a lista de tiers (plugin antigo no ar), o filtro some em
+                  vez de virar um select vazio. */}
+            {tiers.length > 0 && (
+              <Field label="Tier">
+                <DarkSelect
+                  label="Tier"
+                  value={searchParams.get(PARAMS.tier) ?? ""}
+                  onChange={(nextValue) => applyFilter(PARAMS.tier, nextValue)}
+                  options={[
+                    { value: "", label: "Todos os tiers" },
+                    ...tiers.map((tier) => ({
+                      value: tier.slug,
+                      label: tier.label,
+                    })),
+                  ]}
+                />
+              </Field>
+            )}
+
+            <Field label="Data" className="sm:col-span-2">
+              {/* Lado a lado a partir do tablet, onde a Data ocupa duas
+                  colunas. No celular ficam empilhados: o `input[type=date]`
+                  tem a largura intrínseca do calendário nativo, e dois deles
+                  quebravam em cima do traço. */}
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <DateField
                   label="De"
                   value={from}
@@ -206,24 +277,9 @@ export function LessonsSearch({ activeFilters }: { activeFilters: number }) {
               </div>
             </Field>
 
-            <Field label="Instrutor">
-              <Select
-                value={searchParams.get(PARAMS.instructor) ?? ""}
-                onChange={(nextValue) =>
-                  applyFilter(PARAMS.instructor, nextValue)
-                }
-              >
-                <option value="">Todos os instrutores</option>
-                {INSTRUCTORS.map((name) => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-
             <Field label="Ordenar por">
-              <Select
+              <DarkSelect
+                label="Ordenar por"
                 value={searchParams.get(PARAMS.order) ?? "recentes"}
                 onChange={(nextValue) =>
                   applyFilter(
@@ -231,69 +287,49 @@ export function LessonsSearch({ activeFilters }: { activeFilters: number }) {
                     nextValue === "recentes" ? "" : nextValue,
                   )
                 }
-              >
-                {SORT_ORDERS.map((nextValue) => (
-                  <option key={nextValue} value={nextValue}>
-                    {ORDER_LABEL[nextValue]}
-                  </option>
-                ))}
-              </Select>
+                options={SORT_ORDERS.map((order) => ({
+                  value: order,
+                  label: ORDER_LABEL[order],
+                }))}
+              />
             </Field>
+          </div>
 
+          {/* Fora da grade: é ação, não filtro. À direita e separada por um
+              traço, não disputa a leitura dos campos. */}
+          <div className="mt-5 flex justify-end border-white/10 border-t pt-5">
             <button
               type="button"
               onClick={clear}
-              className="flex h-11 items-center justify-center gap-2 rounded-md border border-white/20 font-semibold text-prime-light text-sm uppercase transition-all duration-500 hover:bg-prime-light hover:text-prime-dark"
+              className="flex h-11 items-center justify-center gap-2 rounded-md border border-white/20 px-5 font-semibold text-prime-light text-sm uppercase transition-all duration-500 hover:bg-prime-light hover:text-prime-dark"
             >
               <ArrowsClockwiseIcon className="size-4" weight="bold" />
               Limpar filtros
             </button>
-          </Popover.Content>
-        </Popover.Portal>
-      </Popover.Root>
-    </div>
+          </div>
+        </div>
+      </Collapsible.Content>
+    </Collapsible.Root>
   );
 }
 
 function Field({
   label,
+  className,
   children,
 }: {
   label: string;
+  /** Para o campo ocupar mais de uma coluna da grade. */
+  className?: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-2">
+    <div className={twMerge("flex flex-col gap-2", className)}>
       <span className="font-semibold text-[11px] text-prime-light/50 uppercase tracking-wide">
         {label}
       </span>
       {children}
     </div>
-  );
-}
-
-const CONTROL =
-  "h-11 w-full rounded-md border border-white/10 bg-white/5 px-3 text-prime-light text-sm outline-none transition-colors duration-500 focus:border-prime-red/60";
-
-function Select({
-  value,
-  onChange,
-  children,
-}: {
-  value: string;
-  onChange: (nextValue: string) => void;
-  children: React.ReactNode;
-}) {
-  return (
-    // `<select>` nativo: o menu do sistema já resolve teclado, toque e listas
-    // longas melhor do que um dropdown desenhado à mão.
-    <select
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      className={`${CONTROL} cursor-pointer`}
-    >
-      {children}
-    </select>
   );
 }
 
@@ -313,7 +349,7 @@ function DateField({
   const id = useId();
 
   return (
-    <div className="flex items-center gap-3 rounded-md border border-white/10 bg-white/5 px-3 focus-within:border-prime-red/60">
+    <div className="flex flex-1 items-center gap-3 rounded-md border border-white/10 bg-white/5 px-3 focus-within:border-prime-red/60">
       <label
         htmlFor={id}
         className="w-8 shrink-0 font-semibold text-[11px] text-prime-light/50 uppercase"

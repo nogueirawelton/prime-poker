@@ -8,8 +8,10 @@ import { LessonCard } from "@/components/pages/player/lessons/lesson-card";
 import { LessonPlayer } from "@/components/pages/player/lessons/lesson-player";
 import { Materials } from "@/components/pages/player/lessons/materials";
 import { Questions } from "@/components/pages/player/lessons/questions";
+import { UpgradeButton } from "@/components/shared/player/upgrade-button";
+import { formatDuration } from "@/lib/lessons";
 import { getLesson, getNextLessons } from "@/services/lesson-detail";
-import { formatDuration } from "@/services/lessons";
+import { getProfile } from "@/services/profile";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -46,22 +48,51 @@ async function Content({ params }: Props) {
 
   if (!lesson) notFound();
 
-  const nextLessons = await getNextLessons(lesson);
+  // O perfil assina a dúvida enquanto ela está a caminho. `getProfile` é
+  // deduplicado com o do menu do header: não custa outra ida ao WordPress.
+  const [nextLessons, profile] = await Promise.all([
+    getNextLessons(lesson),
+    getProfile(),
+  ]);
 
   return (
     <div className="mx-auto flex w-full max-w-screen-2xl flex-col gap-6 px-4 py-6 lg:px-8">
       <Breadcrumbs
         items={[
           { label: "Aulas", href: "/player/aulas" },
-          {
-            label: lesson.track.name,
-            href: `/player/aulas?cat=${lesson.track.slug}`,
-          },
+          ...(lesson.track
+            ? [
+                {
+                  label: lesson.track.name,
+                  href: `/player/aulas?cat=${lesson.track.slug}`,
+                },
+              ]
+            : []),
           { label: lesson.title },
         ]}
       />
 
-      <LessonPlayer cover={lesson.track.cover} title={lesson.title} />
+      <LessonPlayer
+        lessonId={lesson.databaseId}
+        title={lesson.title}
+        video={lesson.video}
+        locked={
+          lesson.canWatch ? null : { tierLabel: lesson.minimumTier.label }
+        }
+        upgrade={
+          lesson.canWatch ? null : (
+            <UpgradeButton
+              label="Quero liberar esta aula"
+              suggestedTier={lesson.minimumTier.label}
+              lessonTitle={lesson.title}
+            />
+          )
+        }
+        image={lesson.image}
+        trackColor={lesson.track?.color ?? null}
+        // Rever uma aula concluída começa do início.
+        watched={lesson.completed ? 0 : lesson.watched}
+      />
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
@@ -70,13 +101,17 @@ async function Content({ params }: Props) {
           </h1>
 
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-prime-light/60 text-sm">
-            <span className="font-medium text-prime-light/80">
-              {lesson.instructor}
-            </span>
+            {lesson.instructor && (
+              <span className="font-medium text-prime-light/80">
+                {lesson.instructor}
+              </span>
+            )}
             <time dateTime={lesson.data}>
               {dateFormatter.format(new Date(lesson.data))}
             </time>
-            <span>{formatDuration(lesson.duration)}</span>
+            {lesson.duration > 0 && (
+              <span>{formatDuration(lesson.duration)}</span>
+            )}
             <span className="flex items-center gap-1.5">
               <EyeIcon className="size-4" aria-hidden="true" />
               {numberFormatter.format(lesson.views)} visualizações
@@ -85,9 +120,10 @@ async function Content({ params }: Props) {
         </div>
 
         <LessonActions
-          slug={lesson.slug}
+          lessonId={lesson.databaseId}
           saved={lesson.saved}
           completed={lesson.completed}
+          canComplete={lesson.canWatch}
         />
       </div>
 
@@ -95,10 +131,16 @@ async function Content({ params }: Props) {
         <Section title="Descrição">
           {/* `rich-text` é a tipografia do conteúdo vindo do editor, a mesma
               usada nos posts do blog. */}
-          <div
-            className="rich-text"
-            dangerouslySetInnerHTML={{ __html: lesson.description }}
-          />
+          {lesson.description ? (
+            <div
+              className="rich-text"
+              dangerouslySetInnerHTML={{ __html: lesson.description }}
+            />
+          ) : (
+            <p className="text-prime-light/50 text-sm">
+              Esta aula ainda não tem descrição.
+            </p>
+          )}
         </Section>
 
         <Section title="Material de apoio">
@@ -108,13 +150,15 @@ async function Content({ params }: Props) {
 
       <Section title="Dúvidas com o instrutor">
         <Questions
-          slug={lesson.slug}
+          lessonId={lesson.databaseId}
           questions={lesson.questions}
           instructor={lesson.instructor}
+          canAsk={lesson.canWatch}
+          me={{ name: profile.name, avatarUrl: profile.avatarUrl }}
         />
       </Section>
 
-      {nextLessons.length > 0 && (
+      {lesson.track && nextLessons.length > 0 && (
         <section className="flex flex-col gap-4">
           <h2 className="font-bold text-lg text-prime-light uppercase">
             Continue na trilha {lesson.track.name}

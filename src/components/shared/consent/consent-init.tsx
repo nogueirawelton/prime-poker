@@ -12,6 +12,12 @@ import { CONSENT_STORAGE_KEY, CONSENT_VERSION } from "./config";
  *
  * Se o visitante já tiver decidido em uma visita anterior, restauramos a
  * escolha aqui mesmo (síncrono), então tags autorizadas já sobem sem flicker.
+ *
+ * O script também marca `data-consent="decided"` no <html>. Isso existe por
+ * causa do LCP: a barra de cookies é o maior elemento com conteúdo da tela e,
+ * enquanto só renderizava no cliente, entrava ~3,3s depois do resto. Agora ela
+ * vem no HTML e é o CSS — que lê esta marca antes da primeira pintura — quem
+ * some com ela para quem já decidiu.
  */
 export function ConsentInit() {
   const inline = `
@@ -38,6 +44,11 @@ export function ConsentInit() {
     if (raw) {
       var c = JSON.parse(raw);
       if (c && c.version === ${CONSENT_VERSION}) {
+        // Marca no <html> que já existe decisão. O CSS usa isso para esconder
+        // a barra de cookies antes da primeira pintura, o que permite
+        // renderizá-la no servidor sem piscar para quem já decidiu.
+        document.documentElement.setAttribute('data-consent', 'decided');
+
         gtag('consent', 'update', {
           analytics_storage: c.analytics ? 'granted' : 'denied',
           ad_storage: c.marketing ? 'granted' : 'denied',

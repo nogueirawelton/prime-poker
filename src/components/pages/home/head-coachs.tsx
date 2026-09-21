@@ -69,7 +69,7 @@ export function HeadCoachs({ content }: HeadCoachsProps) {
                   {coach.title}
                 </h3>
 
-                <strong className="mt-1 block font-medium text-prime-red/85">
+                <strong className="mt-1 block font-medium text-prime-red">
                   {formatUsd(coach.instructorFields.earnings)} em ganhos
                 </strong>
 

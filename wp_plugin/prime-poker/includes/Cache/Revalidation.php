@@ -101,10 +101,16 @@ final class Revalidation {
 				return 'home' === $post->post_name ? array( 'home', 'seo' ) : array( 'seo' );
 
 			// Slugs do WordPress; no GraphQL eles aparecem como Instrutor e
-			// Depoimento. Hoje só aparecem na home.
+			// Depoimento. O depoimento só aparece na home; o instrutor também
+			// assina as aulas.
 			case 'instructor':
+				return array( 'home', 'lessons' );
+
 			case 'testimonial':
 				return array( 'home' );
+
+			case \PrimePoker\Lessons\Content::POST_TYPE:
+				return array( 'lessons' );
 		}
 
 		$type = get_post_type_object( $post->post_type );
@@ -180,6 +186,11 @@ final class Revalidation {
 		if ( 'post_tag' === $taxonomy ) {
 			// As tags dos instrutores são as especialidades exibidas na home.
 			self::queue( array( 'home' ) );
+		}
+
+		if ( \PrimePoker\Lessons\Content::TAXONOMY === $taxonomy ) {
+			// Nome, selo e cor da trilha aparecem no filtro e em cada card.
+			self::queue( array( 'lessons' ) );
 		}
 	}
 

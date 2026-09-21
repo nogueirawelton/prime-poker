@@ -1,17 +1,18 @@
 import {
-  INSTRUCTORS,
+  LEVELS,
   type LessonFilter,
+  type Level,
   SORT_ORDERS,
   type SortOrder,
-  TRACKS,
-  type TrackSlug,
-} from "@/services/lessons";
+} from "@/lib/lessons";
 
 /** Nomes dos parâmetros na URL — a mesma tabela serve leitura e escrita. */
 export const PARAMS = {
   search: "q",
   track: "cat",
   instructor: "instrutor",
+  tier: "plano",
+  level: "nivel",
   from: "de",
   to: "ate",
   order: "ordem",
@@ -42,7 +43,29 @@ function data(value: string | Array<string> | undefined) {
   return text && /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : undefined;
 }
 
-const SLUGS = TRACKS.map((track) => track.slug);
+/**
+ * Slug de trilha: só o formato. Uma trilha inexistente não é erro — o
+ * WordPress devolve a lista vazia e a página diz que não achou nada.
+ */
+function slug(value: string | Array<string> | undefined) {
+  const text = first(value);
+  return text && /^[a-z0-9-]{1,200}$/.test(text) ? text : undefined;
+}
+
+/**
+ * Slug de tier. Só o formato — um tier inexistente devolve lista vazia, como
+ * acontece com uma trilha que não existe.
+ */
+function tier(value: string | Array<string> | undefined) {
+  const text = first(value);
+  return text && /^[a-z_]{1,40}$/.test(text) ? text : undefined;
+}
+
+/** ID do instrutor no WordPress. */
+function id(value: string | Array<string> | undefined) {
+  const text = first(value);
+  return text && /^\d{1,10}$/.test(text) ? Number(text) : undefined;
+}
 
 /**
  * Converte a URL no filtro do serviço.
@@ -56,8 +79,11 @@ export function parseFilter(params: LessonsSearchParams): LessonFilter {
 
   return {
     search: first(params[PARAMS.search]),
-    track: oneOf<TrackSlug>(params[PARAMS.track], SLUGS),
-    instructor: oneOf(params[PARAMS.instructor], INSTRUCTORS),
+    track: slug(params[PARAMS.track]),
+    instructor: id(params[PARAMS.instructor]),
+    // Slug de tier (`player_gold`): o sublinhado não passa no `slug()`.
+    tier: tier(params[PARAMS.tier]),
+    level: oneOf<Level>(params[PARAMS.level], LEVELS),
     // Intervalo invertido é entrada em construção, não filtro: ignorado até
     // o segundo campo fazer sentido.
     from: !from || !to || from <= to ? from : undefined,
@@ -73,7 +99,11 @@ export function parseFilter(params: LessonsSearchParams): LessonFilter {
  * diria nada. O intervalo de datas conta como um só.
  */
 export function countFilters(filter: LessonFilter) {
-  return [filter.track, filter.instructor, filter.from || filter.to].filter(
-    Boolean,
-  ).length;
+  return [
+    filter.track,
+    filter.instructor,
+    filter.tier,
+    filter.level,
+    filter.from || filter.to,
+  ].filter(Boolean).length;
 }

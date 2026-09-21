@@ -24,6 +24,12 @@ export const POST = gql`
           description
         }
       }
+      postFields {
+        faq {
+          question
+          answer
+        }
+      }
       categories(first: 1) {
         nodes {
           name

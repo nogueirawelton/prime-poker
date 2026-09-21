@@ -54,7 +54,7 @@ export default async function BlogPagePaginated({ params }: Props) {
 
       <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {posts.map((post) => (
-          <PostCard key={post.id} post={post} />
+          <PostCard key={post.id} post={post} headingLevel={2} />
         ))}
       </div>
 

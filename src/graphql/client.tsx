@@ -31,6 +31,32 @@ export async function query<T>(
   return client.request<T>(document, variables);
 }
 
+/**
+ * Como `query()`, para dado dispensável: uma falha vira `null` em vez de erro.
+ *
+ * O erro precisa ser capturado aqui dentro. Lançado de uma função com
+ * `"use cache"`, ele derruba o prerender da página mesmo que quem chamou o
+ * capture. A falha fica em cache só por minutos, e não pelo perfil pedido:
+ * o WordPress fora do ar por um instante não pode sumir com o dado por horas.
+ */
+export async function optionalQuery<T>(
+  document: RequestDocument,
+  { variables, profile = "hours", tags }: QueryOptions = {},
+): Promise<T | null> {
+  "use cache";
+  cacheTag(CMS_CACHE_TAG, ...(tags ?? []));
+
+  try {
+    const data = await client.request<T>(document, variables);
+    cacheLife(PROFILES[profile]);
+    return data;
+  } catch (error) {
+    console.error("Consulta opcional ao WordPress falhou", error);
+    cacheLife(PROFILES.minutes);
+    return null;
+  }
+}
+
 /** Mutations não passam pelo cache: cada chamada vai direto pro WP. */
 export async function mutate<T>(
   document: RequestDocument,

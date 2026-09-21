@@ -1,0 +1,171 @@
+[
+    {
+        "key": "post_type_prime_notificacao",
+        "title": "Notificações",
+        "menu_order": 0,
+        "active": true,
+        "post_type": "notificacao",
+        "advanced_configuration": true,
+        "import_source": "",
+        "import_date": "",
+        "labels": {
+            "name": "Notificações",
+            "singular_name": "Notificação",
+            "menu_name": "Notificações",
+            "all_items": "Todas as notificações",
+            "add_new": "Novo aviso",
+            "add_new_item": "Novo aviso",
+            "edit_item": "Editar notificação",
+            "new_item": "Nova notificação",
+            "view_item": "Ver notificação",
+            "view_items": "Ver notificações",
+            "search_items": "Buscar notificações",
+            "not_found": "Nenhuma notificação.",
+            "not_found_in_trash": "Nenhuma notificação na lixeira.",
+            "item_published": "Aviso publicado.",
+            "item_updated": "Aviso atualizado."
+        },
+        "description": "Avisos da equipe e notificações automáticas da área do jogador.",
+        "public": true,
+        "hierarchical": false,
+        "exclude_from_search": true,
+        "publicly_queryable": false,
+        "show_ui": true,
+        "show_in_menu": true,
+        "admin_menu_parent": "",
+        "show_in_admin_bar": true,
+        "show_in_nav_menus": false,
+        "show_in_rest": false,
+        "rest_base": "",
+        "rest_namespace": "wp/v2",
+        "rest_controller_class": "WP_REST_Posts_Controller",
+        "menu_position": 7,
+        "menu_icon": {
+            "type": "dashicons",
+            "value": "dashicons-bell"
+        },
+        "rename_capabilities": false,
+        "singular_capability_name": "post",
+        "plural_capability_name": "posts",
+        "supports": [
+            "title"
+        ],
+        "taxonomies": [],
+        "has_archive": false,
+        "has_archive_slug": "",
+        "rewrite": {
+            "permalink_rewrite": "no_permalink"
+        },
+        "query_var": "none",
+        "query_var_name": "",
+        "can_export": true,
+        "delete_with_user": false,
+        "register_meta_box_cb": "",
+        "enter_title_here": "Título do aviso",
+        "show_in_graphql": 0,
+        "graphql_single_name": "notificacao",
+        "graphql_plural_name": "notificacoes"
+    },
+    {
+        "key": "group_prime_notification_fields",
+        "title": "Dados do aviso",
+        "active": true,
+        "location": [
+            [
+                {
+                    "param": "post_type",
+                    "operator": "==",
+                    "value": "notificacao"
+                }
+            ]
+        ],
+        "show_in_graphql": 0,
+        "graphql_field_name": "notificationFields",
+        "graphql_types": [
+            "Notificacao"
+        ],
+        "fields": [
+            {
+                "key": "field_prime_notification_type",
+                "name": "type",
+                "label": "Tipo",
+                "instructions": "Aviso da equipe é o que você escreve aqui. Os outros tipos são criados sozinhos pelo site e não devem ser usados à mão.",
+                "type": "select",
+                "choices": {
+                    "aviso": "Aviso da equipe",
+                    "aula": "Nova aula (automático)",
+                    "suporte": "Resposta de dúvida (automático)"
+                },
+                "default_value": "aviso",
+                "return_format": "value",
+                "multiple": 0,
+                "allow_null": 0,
+                "ui": 0,
+                "required": 1,
+                "show_in_graphql": 0
+            },
+            {
+                "key": "field_prime_notification_description",
+                "name": "description",
+                "label": "Mensagem",
+                "instructions": "O texto que o jogador lê na caixa de notificações. Uma ou duas linhas.",
+                "type": "textarea",
+                "rows": 3,
+                "maxlength": 300,
+                "new_lines": "",
+                "required": 1,
+                "show_in_graphql": 0
+            },
+            {
+                "key": "field_prime_notification_link",
+                "name": "link",
+                "label": "Destino",
+                "instructions": "Para onde o aviso leva ao ser clicado, começando com barra: /player/aulas/. Vazio deixa o aviso sem link — use quando o texto se esgota em si.",
+                "type": "text",
+                "placeholder": "/player/aulas/",
+                "maxlength": 200,
+                "show_in_graphql": 0
+            },
+            {
+                "key": "field_prime_notification_minimum_tier",
+                "name": "minimum_tier",
+                "label": "Tier mínimo",
+                "instructions": "Quem recebe: deixe vazio para todos os jogadores, ou escolha o tier mínimo. Ignorado quando um jogador específico é escolhido abaixo.",
+                "type": "select",
+                "choices": {
+                    "": "Todos os jogadores",
+                    "player_free": "Player Free ou superior",
+                    "player_basic": "Player Basic ou superior",
+                    "player_gold": "Player Gold ou superior",
+                    "player_platinum": "Player Platinum"
+                },
+                "default_value": "",
+                "return_format": "value",
+                "multiple": 0,
+                "allow_null": 0,
+                "ui": 0,
+                "show_in_graphql": 0
+            },
+            {
+                "key": "field_prime_notification_user",
+                "name": "user",
+                "label": "Jogador",
+                "instructions": "Para mandar o aviso a uma pessoa só. Vazio envia a todos que atendem ao tier acima.",
+                "type": "user",
+                "role": "",
+                "return_format": "id",
+                "multiple": 0,
+                "allow_null": 1,
+                "show_in_graphql": 0
+            }
+        ],
+        "menu_order": 0,
+        "position": "acf_after_title",
+        "style": "default",
+        "label_placement": "top",
+        "instruction_placement": "label",
+        "hide_on_screen": "",
+        "description": "",
+        "map_graphql_types_from_location_rules": 0
+    }
+]

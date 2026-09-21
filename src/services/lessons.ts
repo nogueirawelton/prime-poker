@@ -1,393 +1,367 @@
+import "server-only";
+
+import { cache } from "react";
+import { authQuery } from "@/graphql/auth-client";
+import { optionalQuery, query } from "@/graphql/client";
+import {
+  CONTINUE_WATCHING,
+  LESSON,
+  LESSON_INSTRUCTORS,
+  LESSON_TRACKS,
+  LESSONS,
+  PLAYER_TIERS,
+  RELATED_LESSON,
+} from "@/graphql/queries/player/LESSONS";
+import { LESSONS_CACHE_TAG, POSTS_CACHE_TAG } from "@/lib/cache-tags";
+import {
+  type Instructor,
+  LEVELS,
+  type Lesson,
+  type LessonFilter,
+  type LessonsResult,
+  type Level,
+  PAGE_SIZE,
+  type RelatedLesson,
+  type SortOrder,
+  type Track,
+  trackColor,
+} from "@/lib/lessons";
+
 /**
- * Acervo de aulas da área do jogador.
+ * Acervo de aulas, vindo do WordPress (plugin `prime-poker`, módulo `Lessons`).
  *
- * O WordPress ainda não expõe um CPT de aulas, então o catálogo aqui é um
- * mock determinístico: mesma entrada, mesma saída em qualquer processo. Toda a
- * UI conversa só com `listLessons` / `getContinueWatching`, então trocar
- * este arquivo por consultas ao WPGraphQL (nos moldes de `services/blog.ts`)
- * não toca em nenhum componente.
+ * Tudo que é por jogador — a listagem, a aula, o `canWatch` — vai pelo
+ * `authQuery`, sem cache: a mesma aula chega com vídeo para um e trancada
+ * para outro. Só o que é igual para todos (trilhas, instrutores, a sugestão
+ * do blog) passa pelo `query()` cacheado, sob a tag `lessons`.
  */
 
-export type TrackSlug =
-  | "estrategia"
-  | "mental-game"
-  | "torneios"
-  | "analise-de-maos"
-  | "fundamentos"
-  | "ferramentas"
-  | "profissional";
+/* -------------------------------------------------------------------------- */
+/*                               Respostas do WP                              */
+/* -------------------------------------------------------------------------- */
 
-export type Track = {
-  slug: TrackSlug;
-  /** Nome completo, usado na sidebar. */
-  name: string;
-  /** Nome curto para o selo sobre a capa. */
-  badge: string;
-  /** Classes do selo — cores fora da paleta base identificam a trilha. */
-  color: string;
-  /** Gradiente da capa enquanto não há thumbnail real. */
-  cover: string;
-};
-
-export const TRACKS: Array<Track> = [
-  {
-    slug: "estrategia",
-    name: "Estratégia",
-    badge: "Estratégia",
-    color: "bg-prime-red text-prime-light",
-    cover: "from-prime-red/40 via-prime-darkgray to-prime-dark",
-  },
-  {
-    slug: "mental-game",
-    name: "Mental Game",
-    badge: "Mental Game",
-    color: "bg-emerald-600 text-prime-light",
-    cover: "from-emerald-500/35 via-prime-darkgray to-prime-dark",
-  },
-  {
-    slug: "torneios",
-    name: "Torneios",
-    badge: "Torneios",
-    color: "bg-violet-600 text-prime-light",
-    cover: "from-violet-500/35 via-prime-darkgray to-prime-dark",
-  },
-  {
-    slug: "analise-de-maos",
-    name: "Análise de Mãos",
-    badge: "Análise",
-    color: "bg-orange-500 text-prime-dark",
-    cover: "from-orange-500/35 via-prime-darkgray to-prime-dark",
-  },
-  {
-    slug: "fundamentos",
-    name: "Fundamentos",
-    badge: "Fundamentos",
-    color: "bg-blue-600 text-prime-light",
-    cover: "from-blue-500/35 via-prime-darkgray to-prime-dark",
-  },
-  {
-    slug: "ferramentas",
-    name: "Ferramentas",
-    badge: "Ferramentas",
-    color: "bg-indigo-600 text-prime-light",
-    cover: "from-indigo-500/35 via-prime-darkgray to-prime-dark",
-  },
-  {
-    slug: "profissional",
-    name: "Profissional",
-    badge: "Profissional",
-    color: "bg-amber-500 text-prime-dark",
-    cover: "from-amber-500/35 via-prime-darkgray to-prime-dark",
-  },
-];
-
-export const LEVELS = ["iniciante", "intermediario", "avancado"] as const;
-export type Level = (typeof LEVELS)[number];
-
-export const LEVEL_LABEL: Record<Level, string> = {
-  iniciante: "Iniciante",
-  intermediario: "Intermediário",
-  avancado: "Avançado",
-};
-
-export const INSTRUCTORS = [
-  "Felipe Martins",
-  "Carla Mendes",
-  "Rafael Moraes",
-  "Lucas Rocha",
-] as const;
-
-export type Lesson = {
-  id: string;
+type TrackNode = {
   slug: string;
-  title: string;
-  track: Track;
-  instructor: string;
-  level: Level;
-  /** Duração em segundos. */
-  duration: number;
-  /** Segundos já assistidos pelo jogador. */
-  watched: number;
-  /** Publicação, em ISO — a ordenação por data usa este campo. */
-  data: string;
-  views: number;
+  name: string;
+  trackFields: {
+    badge: string | null;
+    // `select` do ACF chega como lista, mesmo sendo de escolha única.
+    // O seletor de cor do ACF devolve o hex direto; o `select` que havia
+    // antes vinha em lista. Os dois formatos são aceitos para o site não
+    // depender do momento em que o `aulas.json` for reimportado.
+    color: string | Array<string> | null;
+    order?: number | null;
+    icon?: string | null;
+  } | null;
 };
 
-/** Quantas aulas cada rolagem traz. */
-export const PAGE_SIZE = 12;
+type LessonNode = {
+  databaseId: number;
+  slug: string;
+  title: string | null;
+  date: string;
+  canWatch: boolean;
+  minimumTier: string;
+  minimumTierLabel: string;
+  duration: number | null;
+  viewCount: number;
+  watchedSeconds: number;
+  saved: boolean;
+  completed: boolean;
+  featuredImage: { node: { sourceUrl: string | null } } | null;
+  lessonFields: {
+    level: Array<string> | null;
+    instructor: {
+      nodes: Array<{
+        title?: string | null;
+        featuredImage?: { node: { sourceUrl: string | null } } | null;
+      }>;
+    } | null;
+  } | null;
+  trilhas: { nodes: Array<TrackNode> } | null;
+};
+
+export type LessonDetailNode = LessonNode & {
+  content: string | null;
+  video: { provider: string; url: string | null } | null;
+  materials: Array<{
+    name: string;
+    url: string;
+    fileSize: number | null;
+  }> | null;
+  comments: {
+    nodes: Array<{
+      databaseId: number;
+      /** 0 quando é uma pergunta; o ID da pergunta quando é resposta. */
+      parentDatabaseId: number;
+      date: string;
+      text: string;
+      authorLabel: string;
+      /** URL da foto de quem escreveu; `null` sem foto. */
+      authorAvatar: string | null;
+      isInstructor: boolean;
+      isMine: boolean;
+      likeCount: number;
+      liked: boolean;
+    }>;
+  } | null;
+};
 
 /* -------------------------------------------------------------------------- */
-/*                                  Catálogo                                  */
+/*                                  Conversão                                 */
 /* -------------------------------------------------------------------------- */
 
-/**
- * Gerador congruente linear.
- *
- * `Math.random()` daria um catálogo diferente a cada render — e, com o servidor
- * paginando, a página 2 não seria a continuação da 1.
- */
-function seededRandom(seed: number) {
-  let state = seed;
-
-  return () => {
-    state = (state * 1664525 + 1013904223) % 4294967296;
-    return state / 4294967296;
+function toTrack(node: TrackNode): Track {
+  return {
+    slug: node.slug,
+    name: node.name,
+    badge: node.trackFields?.badge?.trim() || node.name,
+    icon: node.trackFields?.icon?.trim() || null,
+    color: trackColor(
+      Array.isArray(node.trackFields?.color)
+        ? node.trackFields?.color[0]
+        : node.trackFields?.color,
+    ),
   };
 }
 
-const TITLES: Record<TrackSlug, Array<string>> = {
-  estrategia: [
-    "Como Explorar Range Advantage no Flop",
-    "Barrel de Continuação: Quando e Como Usar",
-    "Blefes Polarizados no River",
-    "Defesa de Big Blind Contra Open Raise",
-    "Squeeze Play em Mesas Agressivas",
-    "Check-Raise como Arma de Pressão",
-  ],
-  "mental-game": [
-    "Controle Emocional em Situações de Tilt",
-    "Disciplina e Rotina para Jogadores de Poker",
-    "Como Lidar com Downswings Longos",
-    "Foco e Atenção em Sessões Longas",
-    "Confiança sem Arrogância na Mesa",
-  ],
-  torneios: [
-    "ICM na Prática: Fases Finais de Torneios",
-    "Push or Fold com Stack Curto",
-    "Bubble Factor e Decisões de Risco",
-    "Ajustes de Range em Mesa Final",
-    "Gestão de Stack Médio no Middle Game",
-  ],
-  "analise-de-maos": [
-    "Analisando Jogadas com Solver: Parte 1",
-    "Analisando Jogadas com Solver: Parte 2",
-    "Revisão de Mãos Marcadas da Semana",
-    "Leitura de Linhas Passivas do Vilão",
-    "Erros Comuns em Spots de 3-Bet Pot",
-  ],
-  fundamentos: [
-    "Princípios Básicos que Todo Jogador Precisa Saber",
-    "Posição: o Fundamento que Mais Rende",
-    "Odds e Equity sem Complicação",
-    "Construindo Ranges de Abertura",
-    "Value Bet: Extraindo o Máximo",
-  ],
-  ferramentas: [
-    "Como Usar o Tracker para Evoluir Mais Rápido",
-    "Configurando seu HUD do Zero",
-    "Primeiros Passos no Solver",
-    "Organizando sua Base de Mãos",
-    "Relatórios que Realmente Importam",
-  ],
-  profissional: [
-    "Gestão de Banca para Virar Profissional",
-    "Rotina e Volume de um Jogador Profissional",
-    "Planejamento Financeiro e Impostos",
-    "Metas de Carreira e Progressão de Limites",
-    "Staking: Como Funciona na Prática",
-  ],
-};
-
-/** Tamanho do acervo simulado. */
-const CATALOG_SIZE = 128;
-
-const CATALOG: Array<Lesson> = (() => {
-  const random = seededRandom(20260830);
-  const now = Date.UTC(2026, 7, 30);
-  const lessons: Array<Lesson> = [];
-
-  for (let i = 0; i < CATALOG_SIZE; i++) {
-    const track = TRACKS[i % TRACKS.length];
-    const titles = TITLES[track.slug];
-    const title = titles[Math.floor(random() * titles.length)];
-    const duration = Math.floor(600 + random() * 1200);
-    const progressRatio = random();
-
-    lessons.push({
-      id: `aula-${i + 1}`,
-      slug: `${track.slug}-${i + 1}`,
-      // O acervo real terá títulos únicos; aqui o índice evita repetição.
-      title: i < titles.length ? title : `${title} #${i + 1}`,
-      track,
-      instructor: INSTRUCTORS[Math.floor(random() * INSTRUCTORS.length)],
-      level: LEVELS[Math.floor(random() * LEVELS.length)],
-      duration,
-      // Só parte do acervo tem progresso: a maioria nunca foi aberta.
-      watched:
-        progressRatio > 0.75 ? Math.floor(duration * (progressRatio - 0.7)) : 0,
-      data: new Date(now - i * 86400000 * 2).toISOString(),
-      views: Math.floor(random() * 4000),
-    });
-  }
-
-  return lessons;
-})();
-
-/* -------------------------------------------------------------------------- */
-/*                            Filtros e ordenação                             */
-/* -------------------------------------------------------------------------- */
-
-export const SORT_ORDERS = [
-  "recentes",
-  "antigas",
-  "populares",
-  "curtas",
-  "longas",
-] as const;
-export type SortOrder = (typeof SORT_ORDERS)[number];
-
-export const ORDER_LABEL: Record<SortOrder, string> = {
-  recentes: "Mais recentes",
-  antigas: "Mais antigas",
-  populares: "Mais assistidas",
-  curtas: "Menor duração",
-  longas: "Maior duração",
-};
-
-/** Estado completo da listagem — espelha os parâmetros da URL. */
-export type LessonFilter = {
-  search?: string;
-  /** Trilha: o mesmo parâmetro que a sidebar controla. */
-  track?: TrackSlug;
-  instructor?: string;
-  /** Intervalo de publicação, em `AAAA-MM-DD`. Os dois lados são opcionais. */
-  from?: string;
-  to?: string;
-  order?: SortOrder;
-};
-
-/** Acima de 95% a aula conta como concluída: ninguém assiste os créditos. */
-const COMPLETION_THRESHOLD = 0.95;
-
-function normalize(text: string) {
-  // Sem acentos: "estrategia" precisa encontrar "Estratégia".
-  return text
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
+function isLevel(value: string | undefined): value is Level {
+  return LEVELS.includes(value as Level);
 }
 
-function matches(lesson: Lesson, filter: LessonFilter) {
-  if (filter.track && lesson.track.slug !== filter.track) return false;
-  if (filter.instructor && lesson.instructor !== filter.instructor)
-    return false;
+export function toLesson(node: LessonNode): Lesson {
+  const track = node.trilhas?.nodes[0];
+  const level = node.lessonFields?.level?.[0];
+  const instructor = node.lessonFields?.instructor?.nodes[0];
 
-  // Compara só a parte da data: o intervalo é inclusivo nas duas pontas, e
-  // uma aula publicada às 14h do dia "até" não pode ficar de fora.
-  const day = lesson.data.slice(0, 10);
-  if (filter.from && day < filter.from) return false;
-  if (filter.to && day > filter.to) return false;
-
-  if (filter.search) {
-    const term = normalize(filter.search);
-    const target = normalize(
-      `${lesson.title} ${lesson.instructor} ${lesson.track.name}`,
-    );
-    if (!target.includes(term)) return false;
-  }
-
-  return true;
+  return {
+    id: String(node.databaseId),
+    databaseId: node.databaseId,
+    slug: node.slug,
+    title: node.title ?? "",
+    track: track ? toTrack(track) : null,
+    instructor: instructor?.title ?? "",
+    instructorImage: instructor?.featuredImage?.node.sourceUrl ?? null,
+    level: isLevel(level) ? level : null,
+    duration: node.duration ?? 0,
+    watched: node.watchedSeconds,
+    saved: node.saved,
+    completed: node.completed,
+    // Hora do site, sem fuso: lida e formatada no mesmo fuso, sai igual.
+    data: node.date,
+    views: node.viewCount,
+    image: node.featuredImage?.node.sourceUrl ?? null,
+    canWatch: node.canWatch,
+    minimumTier: { slug: node.minimumTier, label: node.minimumTierLabel },
+  };
 }
 
-const COMPARATORS: Record<SortOrder, (a: Lesson, b: Lesson) => number> = {
-  recentes: (a, b) => b.data.localeCompare(a.data),
-  antigas: (a, b) => a.data.localeCompare(b.data),
-  populares: (a, b) => b.views - a.views,
-  curtas: (a, b) => a.duration - b.duration,
-  longas: (a, b) => b.duration - a.duration,
+/* -------------------------------------------------------------------------- */
+/*                                  Listagem                                  */
+/* -------------------------------------------------------------------------- */
+
+/** Ordens da URL → `LessonSortEnum` do plugin. */
+const SORTS: Record<SortOrder, string> = {
+  recentes: "NEWEST",
+  antigas: "OLDEST",
+  populares: "MOST_VIEWED",
+  curtas: "SHORTEST",
+  longas: "LONGEST",
 };
 
-export type LessonsResult = {
-  lessons: Array<Lesson>;
-  /** Total de resultados do filtro, não do acervo. */
-  total: number;
-  /** Se existe página seguinte — é o que destrava a rolagem infinita. */
-  hasMore: boolean;
+type LessonsResponse = {
+  aulas: { nodes: Array<LessonNode> };
+  lessonsTotal: number | null;
 };
 
 /**
  * Uma página da listagem.
  *
- * A paginação é do servidor, e não um `slice` no cliente: o acervo tem 128
- * aulas hoje e não faz sentido baixá-lo inteiro para mostrar 12.
+ * O WordPress filtra, ordena e pagina (`offset`); o total vem na mesma ida,
+ * e é ele que diz se há próxima página.
  */
 export async function listLessons(
   filter: LessonFilter = {},
   page = 1,
 ): Promise<LessonsResult> {
-  const result = CATALOG.filter((lesson) => matches(lesson, filter)).sort(
-    COMPARATORS[filter.order ?? "recentes"],
-  );
+  const offset = (Math.max(1, page) - 1) * PAGE_SIZE;
+  const filters = {
+    search: filter.search,
+    track: filter.track,
+    instructor: filter.instructor,
+    tier: filter.tier,
+    level: filter.level,
+    from: filter.from,
+    to: filter.to,
+  };
 
-  const start = (Math.max(1, page) - 1) * PAGE_SIZE;
-  const lessons = result.slice(start, start + PAGE_SIZE);
+  const data = await authQuery<LessonsResponse>(LESSONS, {
+    first: PAGE_SIZE,
+    where: { ...filters, offset, sort: SORTS[filter.order ?? "recentes"] },
+    ...filters,
+  });
+
+  const lessons = data.aulas.nodes.map(toLesson);
+  const total = data.lessonsTotal ?? 0;
 
   return {
     lessons,
-    total: result.length,
-    hasMore: start + lessons.length < result.length,
+    total,
+    hasMore: offset + lessons.length < total,
   };
 }
 
 /**
- * A aula mais próxima de um assunto — usada para ligar um post do blog à
- * aula correspondente.
+ * O acervo inteiro, de 100 em 100 (o máximo do WPGraphQL por página).
  *
- * Pontua por palavra do título em comum e dá um empurrão para a trilha de
- * mesmo slug da categoria do post. Sem nenhuma palavra em comum devolve
- * `null`: uma sugestão aleatória é pior do que nenhuma.
+ * Serve às estatísticas do painel e às aulas salvas, não à listagem.
  */
-export async function getSuggestedLesson(
-  subject: string,
-  trackSlug?: string,
-): Promise<Lesson | null> {
-  const words = normalize(subject)
-    .split(/[^a-z0-9]+/)
-    .filter((word) => word.length > 3);
-
-  if (words.length === 0 && !trackSlug) return null;
-
-  let best: { lesson: Lesson; score: number } | null = null;
-
-  for (const lesson of CATALOG) {
-    const target = normalize(lesson.title);
-    let score = words.filter((word) => target.includes(word)).length;
-
-    if (trackSlug && lesson.track.slug === trackSlug) score += 1;
-
-    if (score > 0 && (!best || score > best.score)) {
-      best = { lesson, score };
-    }
-  }
-
-  return best?.lesson ?? null;
-}
-
-/** O acervo inteiro. Serve às estatísticas do painel, não à listagem. */
 export async function getCatalog(): Promise<Array<Lesson>> {
-  return CATALOG;
+  const lessons: Array<Lesson> = [];
+
+  for (let offset = 0; ; offset += 100) {
+    const data = await authQuery<LessonsResponse>(LESSONS, {
+      first: 100,
+      where: { offset, sort: SORTS.recentes },
+    });
+
+    lessons.push(...data.aulas.nodes.map(toLesson));
+
+    if (data.aulas.nodes.length < 100) return lessons;
+  }
 }
 
-/** Uma aula pelo slug; `null` quando não existe. */
-export async function getLessonBySlug(slug: string): Promise<Lesson | null> {
-  return CATALOG.find((lesson) => lesson.slug === slug) ?? null;
+/**
+ * Uma aula pelo slug, com descrição, vídeo e materiais; `null` quando não
+ * existe (ou quando quem pede não é jogador).
+ *
+ * `cache` do React: os metadados e o corpo da página pedem a mesma aula, e
+ * isso vira uma ida só ao WordPress.
+ */
+export const getLessonNode = cache(
+  async (slug: string): Promise<LessonDetailNode | null> => {
+    const data = await authQuery<{ aula: LessonDetailNode | null }>(LESSON, {
+      slug,
+    });
+
+    return data.aula;
+  },
+);
+
+/* -------------------------------------------------------------------------- */
+/*                          Trilhas e instrutores                             */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Trilhas com ao menos uma aula publicada, na ordem do campo `order`.
+ *
+ * Iguais para todos os jogadores, então cacheadas: o plugin limpa a tag
+ * `lessons` ao salvar aula ou trilha.
+ */
+export async function getTracks(): Promise<Array<Track>> {
+  const data = await query<{ trilhas: { nodes: Array<TrackNode> } }>(
+    LESSON_TRACKS,
+    { tags: [LESSONS_CACHE_TAG] },
+  );
+
+  return [...data.trilhas.nodes]
+    .sort(
+      (a, b) =>
+        (a.trackFields?.order ?? 0) - (b.trackFields?.order ?? 0) ||
+        a.name.localeCompare(b.name, "pt-BR"),
+    )
+    .map(toTrack);
 }
 
-/** A aula mais recente ainda em andamento — o card fixo da sidebar. */
-export async function getContinueWatching(): Promise<Lesson | null> {
-  const inProgress = CATALOG.filter(
-    (lesson) =>
-      lesson.watched > 0 &&
-      lesson.watched / lesson.duration < COMPLETION_THRESHOLD,
-  ).sort(COMPARATORS.recentes);
+/**
+ * Tiers do site, do mais baixo para o mais alto.
+ *
+ * Público e igual para todos, então cacheado como as trilhas: os nomes já
+ * aparecem no selo de cada aula trancada.
+ *
+ * Pelo `optionalQuery`: é um filtro a mais, e com um plugin antigo no ar ele
+ * some do painel em vez de derrubar a listagem inteira.
+ */
+export async function getTiers(): Promise<
+  Array<{ slug: string; label: string }>
+> {
+  const data = await optionalQuery<{
+    playerTiers: Array<{ slug: string; label: string }> | null;
+  }>(PLAYER_TIERS, { tags: [LESSONS_CACHE_TAG] });
 
-  return inProgress[0] ?? null;
+  return data?.playerTiers ?? [];
 }
 
-/** `1125` → `18:45`. */
-export function formatDuration(seconds: number) {
-  const minutes = Math.floor(seconds / 60);
-  const remainder = Math.floor(seconds % 60);
+/** Instrutores do filtro, em ordem alfabética. */
+export async function getInstructors(): Promise<Array<Instructor>> {
+  const data = await query<{
+    instrutores: { nodes: Array<{ databaseId: number; title: string }> };
+  }>(LESSON_INSTRUCTORS, { tags: [LESSONS_CACHE_TAG] });
 
-  return `${minutes}:${String(remainder).padStart(2, "0")}`;
+  return data.instrutores.nodes.map((node) => ({
+    id: node.databaseId,
+    name: node.title,
+  }));
 }
+
+/* -------------------------------------------------------------------------- */
+/*                              Aula relacionada                              */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A aula que um post do blog divulga.
+ *
+ * É a escolhida no campo **Aula relacionada** do post, e só ela: o palpite
+ * por palavras do título saiu do plugin na 1.19.0 porque acertava pouco e
+ * errava em público — um post de gestão de banca acabava anunciando a aula de
+ * teste por causa de uma palavra em comum. Sem escolha no painel, `null`, e o
+ * post fica sem chamada.
+ *
+ * O caminho passa pelo plugin porque a relação do ACF, lida direto, volta
+ * vazia para visitante — a aula é privada, e quem lê o blog não está logado.
+ */
+export async function getRelatedLesson(
+  postId: number,
+): Promise<RelatedLesson | null> {
+  // Um extra da lateral: se falhar (WP fora, plugin antigo sem o campo), o
+  // post continua de pé com a chamada institucional no lugar.
+  const data = await optionalQuery<{
+    relatedLesson: {
+      slug: string;
+      title: string;
+      instructor: string | null;
+      duration: number | null;
+    } | null;
+  }>(RELATED_LESSON, {
+    variables: { postId },
+    // `posts` também: a resposta depende do campo Aula relacionada, que vive
+    // no post. Sem esta tag, trocar a aula no painel só apareceria no site
+    // quando o cache expirasse sozinho.
+    tags: [LESSONS_CACHE_TAG, POSTS_CACHE_TAG],
+  });
+
+  const lesson = data?.relatedLesson;
+
+  return lesson
+    ? {
+        slug: lesson.slug,
+        title: lesson.title,
+        instructor: lesson.instructor ?? "",
+        duration: lesson.duration ?? 0,
+      }
+    : null;
+}
+
+/**
+ * A aula mais recente ainda em andamento — o card fixo da sidebar.
+ *
+ * `null` quando o jogador não começou nada, terminou tudo que começou, ou a
+ * aula em andamento saiu do ar.
+ */
+export const getContinueWatching = cache(async (): Promise<Lesson | null> => {
+  const data = await authQuery<{ continueWatching: LessonNode | null }>(
+    CONTINUE_WATCHING,
+  );
+
+  return data.continueWatching ? toLesson(data.continueWatching) : null;
+});

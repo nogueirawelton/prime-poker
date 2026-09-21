@@ -47,9 +47,11 @@ export function ProgressCard({
 
         <ul className="flex flex-col gap-4">
           {progress.tracks.map((track) => {
-            const percentage = Math.round(
-              (track.completedCount / track.total) * 100,
-            );
+            // Trilha sem aula visível (todas em rascunho, por exemplo) não
+            // pode virar NaN% na barra.
+            const percentage = track.total
+              ? Math.round((track.completedCount / track.total) * 100)
+              : 0;
 
             return (
               <li key={track.track.slug} className="flex flex-col gap-1.5">

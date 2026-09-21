@@ -5,10 +5,13 @@ import type { FaqItem } from "@/utils/rich-content";
 /**
  * Perguntas frequentes do artigo.
  *
- * O conteúdo vem do próprio corpo do post (um `h2` "Perguntas frequentes" e um
- * `h3` por pergunta), então quem escreve no WordPress não precisa de campo
- * novo. Além do acordeão, a seção emite `FAQPage` em JSON-LD — é o formato que
- * o Google usa para exibir as perguntas direto no resultado de busca.
+ * O conteúdo sai do campo **Perguntas frequentes** do painel (ACF `faq`), e na
+ * falta dele da convenção antiga: um `h2` "Perguntas frequentes" no corpo do
+ * texto, com um `h3` por pergunta. As duas formas chegam aqui iguais, porque a
+ * escolha entre elas é de quem busca os dados, não de quem desenha.
+ *
+ * Além do acordeão, a seção emite `FAQPage` em JSON-LD — é o formato que o
+ * Google usa para exibir as perguntas direto no resultado de busca.
  */
 export function PostFaq({ faqItems }: { faqItems: Array<FaqItem> }) {
   if (faqItems.length === 0) return null;

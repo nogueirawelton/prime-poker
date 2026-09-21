@@ -13,10 +13,15 @@ export const VIEWER = gql`
       name
       username
       email
+      description
       registeredDate
       playerTier
       playerTierLabel
       playerTierExpiresAt
+      playerPhone
+      playerCity
+      playerAvatarUrl
+      studyStreak
     }
   }
 `;

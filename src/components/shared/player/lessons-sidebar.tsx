@@ -1,31 +1,22 @@
 "use client";
 
-import {
-  BookOpenIcon,
-  BrainIcon,
-  BriefcaseIcon,
-  ChartLineUpIcon,
-  type Icon,
-  PlayCircleIcon,
-  StrategyIcon,
-  ToolboxIcon,
-  TrophyIcon,
-} from "@phosphor-icons/react";
+import { PlayCircleIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { twMerge } from "tailwind-merge";
+import { dotStyle, type Lesson, type Track } from "@/lib/lessons";
 import { PARAMS } from "@/lib/lessons-params";
-import { type Lesson, TRACKS, type TrackSlug } from "@/services/lessons";
 import { ContinueWatching } from "./continue-watching";
 
-const ICONS: Record<TrackSlug, Icon> = {
-  estrategia: StrategyIcon,
-  "mental-game": BrainIcon,
-  torneios: TrophyIcon,
-  "analise-de-maos": ChartLineUpIcon,
-  fundamentos: BookOpenIcon,
-  ferramentas: ToolboxIcon,
-  profissional: BriefcaseIcon,
+/**
+ * O que a navegação precisa de cada trilha.
+ *
+ * O ícone chega **pronto**, montado no servidor: o componente que resolve o
+ * nome do ícone (`DynamicIcon`) importa o catálogo inteiro do Phosphor, e
+ * aqui, num componente cliente, isso iria inteiro para o navegador.
+ */
+export type TrackLink = Pick<Track, "slug" | "name" | "color"> & {
+  icon: React.ReactNode;
 };
 
 /**
@@ -42,7 +33,7 @@ function useTracks() {
   const current = searchParams.get(PARAMS.track);
   const search = searchParams.get(PARAMS.search);
 
-  function href(slug?: TrackSlug) {
+  function href(slug?: string) {
     const params = new URLSearchParams();
     if (slug) params.set(PARAMS.track, slug);
     if (search) params.set(PARAMS.search, search);
@@ -55,8 +46,10 @@ function useTracks() {
 }
 
 export function LessonsSidebar({
+  tracks,
   continueWatching,
 }: {
+  tracks: Array<TrackLink>;
   continueWatching: Lesson | null;
 }) {
   const { current, href } = useTracks();
@@ -71,15 +64,25 @@ export function LessonsSidebar({
         aria-label="Trilhas"
         className="flex flex-1 flex-col gap-1 overflow-y-auto p-4"
       >
-        <Item href={href()} icon={PlayCircleIcon} active={!current}>
+        <Item
+          href={href()}
+          icon={
+            <PlayCircleIcon
+              className="size-5"
+              weight={!current ? "fill" : "regular"}
+            />
+          }
+          active={!current}
+        >
           Todas as Aulas
         </Item>
 
-        {TRACKS.map((track) => (
+        {tracks.map((track) => (
           <Item
             key={track.slug}
             href={href(track.slug)}
-            icon={ICONS[track.slug]}
+            icon={track.icon}
+            color={track.color}
             active={current === track.slug}
           >
             {track.name}
@@ -98,14 +101,22 @@ export function LessonsSidebar({
   );
 }
 
+/**
+ * Item da sidebar.
+ *
+ * Com ícone cadastrado na trilha, ele; sem ícone, a bolinha na cor dela — a
+ * mesma do selo nos cards, que liga a lista à trilha.
+ */
 function Item({
   href,
-  icon: ItemIcon,
+  icon,
+  color,
   active,
   children,
 }: {
   href: string;
-  icon: Icon;
+  icon?: React.ReactNode;
+  color?: string;
   active: boolean;
   children: React.ReactNode;
 }) {
@@ -120,7 +131,14 @@ function Item({
           : "text-prime-light/70 hover:bg-white/5 hover:text-prime-light",
       )}
     >
-      <ItemIcon className="size-5" weight={active ? "fill" : "regular"} />
+      {icon ?? (
+        <span className="flex size-5 items-center justify-center">
+          <span
+            style={color ? dotStyle(color) : undefined}
+            className="size-2.5 rounded-full"
+          />
+        </span>
+      )}
       {children}
     </Link>
   );
@@ -132,7 +150,7 @@ function Item({
  * Sem isso, o mobile perderia o único acesso às categorias — elas não estão
  * no painel de configurações, que trata de ordenação e filtros.
  */
-export function MobileTracks() {
+export function MobileTracks({ tracks }: { tracks: Array<TrackLink> }) {
   const { current, href } = useTracks();
 
   return (
@@ -144,7 +162,7 @@ export function MobileTracks() {
         Todas
       </Chip>
 
-      {TRACKS.map((track) => (
+      {tracks.map((track) => (
         <Chip
           key={track.slug}
           href={href(track.slug)}

@@ -3,8 +3,8 @@
 import { SpinnerGapIcon } from "@phosphor-icons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { loadLessons } from "@/actions/lessons";
+import type { Lesson } from "@/lib/lessons";
 import type { LessonsSearchParams } from "@/lib/lessons-params";
-import type { Lesson } from "@/services/lessons";
 import { GRID } from "./grid";
 import { LessonCard } from "./lesson-card";
 

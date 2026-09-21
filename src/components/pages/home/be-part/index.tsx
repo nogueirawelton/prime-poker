@@ -1,5 +1,5 @@
 import type { BePart as BePartType } from "@/@types/pages/Home";
-import { Form } from "@/components/shared/application-form";
+import { LazyForm } from "@/components/shared/application-form/lazy-form";
 import { AnimationContainer } from "@/hooks/use-animation";
 import { Cards } from "@/icons/cards";
 
@@ -65,7 +65,7 @@ export function BePart({ content }: BePartProps) {
           data-el="form"
           className="mt-8 rounded-md border border-prime-red/75 bg-white/3 px-6 py-8"
         >
-          <Form />
+          <LazyForm />
         </div>
       </AnimationContainer>
     </section>
