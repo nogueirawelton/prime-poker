@@ -25,15 +25,19 @@ export function FeaturedCarousel({ posts }: { posts: Array<Post> }) {
     <Carousel autoplay={7000} className="mt-8">
       <CarouselViewport>
         <CarouselTrack className="-ml-4 lg:-ml-6">
-          {posts.map((post) => (
+          {posts.map((post, index) => (
             <CarouselSlide key={post.id} className="pl-4 lg:pl-6">
               <Link
                 href={`/blog/${post.slug}`}
                 className="group relative flex min-h-[340px] flex-col justify-end overflow-hidden rounded-xl border border-white/10 p-6 lg:min-h-[440px] lg:p-10"
               >
+                {/* O primeiro destaque é o candidato a LCP do blog. Sem
+                    `priority` ele nascia `loading="lazy"` e só era pedido
+                    depois do layout — o maior elemento da página esperando. */}
                 <PostCover
                   post={post}
                   variant="hero"
+                  priority={index === 0}
                   className="absolute inset-0"
                 />
 

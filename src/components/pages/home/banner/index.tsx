@@ -2,7 +2,7 @@ import { CaretRightIcon } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
 import type { Banner as BannerType } from "@/@types/pages/Home";
 import { FormDialog } from "@/components/shared/form-dialog";
-import { AnimationContainer } from "@/hooks/use-animation";
+import { HeroPreload } from "@/components/ui/hero-picture";
 import { MediaSwiper } from "./media-swiper";
 
 type BannerProps = {
@@ -10,15 +10,32 @@ type BannerProps = {
 };
 
 export function Banner({ content }: BannerProps) {
+  // O primeiro slide é o candidato a LCP. O preload sai daqui, do servidor,
+  // para o navegador começar a baixar a imagem junto com o HTML — o carrossel
+  // é client component e só pediria a imagem depois de hidratar.
+  const first = content.medias[0]?.media;
+
+  const preloadable =
+    first?.mobile.type === "image" && first?.desktop.type === "image";
+
   return (
     <section data-banner className="relative h-screen w-full">
+      {preloadable && (
+        <HeroPreload
+          mobileSrc={first.mobile.image?.node?.mediaItemUrl}
+          desktopSrc={first.desktop.image?.node?.mediaItemUrl}
+        />
+      )}
+
       <MediaSwiper content={content.medias} />
 
       <div className="relative z-10 h-full bg-[radial-gradient(transparent,black)]">
-        <AnimationContainer
-          animation="home/banner"
-          className="relative z-20 mx-auto grid h-full max-w-screen-2xl items-center px-4 text-prime-light lg:px-8"
-        >
+        {/* Era um `AnimationContainer`: a entrada do banner vinha do GSAP, com
+            `delay: 2.9` no h1 — ou seja, o maior elemento da tela ficava
+            invisível por quase 3s e o LCP ia junto. O título agora pinta no
+            primeiro frame e só o que é decorativo (descrição e CTA) tem
+            entrada, feita em CSS. */}
+        <div className="relative z-20 mx-auto grid h-full max-w-screen-2xl items-center px-4 text-prime-light lg:px-8">
           <div className="lg:pb-16">
             <h1
               className="break break font-bold text-4xl uppercase lg:text-5xl [&_strong]:text-prime-red"
@@ -28,11 +45,11 @@ export function Banner({ content }: BannerProps) {
             />
 
             <div
-              className="break mt-4 lg:text-lg"
+              className="break mt-4 animate-banner-in lg:text-lg"
               dangerouslySetInnerHTML={{ __html: content.description }}
             />
 
-            <div data-el="cta">
+            <div data-el="cta" className="animate-banner-in-late">
               <FormDialog>
                 <button className="mt-8 flex h-14 w-fit items-center gap-2 rounded-md bg-prime-red px-4 font-medium text-prime-light text-sm transition-all duration-500 hover:bg-prime-light hover:text-prime-red lg:text-base">
                   Faça Parte do Prime Poker Team{" "}
@@ -46,7 +63,7 @@ export function Banner({ content }: BannerProps) {
             data-pagination="banner"
             className="absolute bottom-32 left-8 z-20 flex items-center justify-center gap-3"
           ></div>
-        </AnimationContainer>
+        </div>
       </div>
 
       <Link

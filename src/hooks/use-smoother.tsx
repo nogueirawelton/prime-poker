@@ -1,8 +1,6 @@
 "use client";
 
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import Lenis from "lenis";
+import type LenisType from "lenis";
 import { usePathname } from "next/navigation";
 import {
   createContext,
@@ -13,16 +11,25 @@ import {
   useRef,
 } from "react";
 
-gsap.registerPlugin(ScrollTrigger);
-
 interface SmootherContextProps {
   scrollTo: (target: string | null) => void;
 }
 
 const SmootherContext = createContext({} as SmootherContextProps);
 
+/** Agenda para quando o navegador estiver ocioso, com teto de espera. */
+function whenIdle(callback: () => void) {
+  if (typeof window.requestIdleCallback === "function") {
+    const handle = window.requestIdleCallback(callback, { timeout: 2000 });
+    return () => window.cancelIdleCallback(handle);
+  }
+
+  const handle = window.setTimeout(callback, 200);
+  return () => window.clearTimeout(handle);
+}
+
 export function SmootherProvider({ children }: { children: ReactNode }) {
-  const lenisRef = useRef<Lenis | null>(null);
+  const lenisRef = useRef<LenisType | null>(null);
 
   const pathname = usePathname();
   const isFirstRender = useRef(true);
@@ -40,7 +47,7 @@ export function SmootherProvider({ children }: { children: ReactNode }) {
     // Lenis quanto o scrollIntoView nativo respeitam scroll-padding-top, então
     // ela fica definida num lugar só.
     if (!lenisRef.current) {
-      // Reduced motion (ou antes da montagem): scroll nativo, sem animação.
+      // Reduced motion, ou o Lenis ainda não chegou: scroll nativo.
       element.scrollIntoView();
       return;
     }
@@ -48,48 +55,74 @@ export function SmootherProvider({ children }: { children: ReactNode }) {
     lenisRef.current.scrollTo(element as HTMLElement);
   }, []);
 
+  // Lenis e GSAP só entram depois que a página está de pé e o navegador
+  // ocioso. Antes eram importados no topo do módulo, o que colocava ~165 KB
+  // no bundle inicial de toda rota institucional — scroll inercial é enfeite
+  // e não pode competir com a imagem do banner pela banda.
   useEffect(() => {
     // Respeita quem pediu menos animação no sistema: mantém o scroll nativo.
-    const prefersReducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    if (prefersReducedMotion) return;
+    let cancelled = false;
+    let teardown: (() => void) | undefined;
 
-    const lenis = new Lenis({
-      duration: 1.05,
-      easing: (t) => Math.min(1, 1.001 - 2 ** (-10 * t)),
-      smoothWheel: true,
-      anchors: true,
-      // Ao clicar num link para outro pathname o Lenis chama `reset()`,
-      // matando a inércia. Sem isso ela continua decaindo e sobrescreve o
-      // scroll-para-o-topo do router no frame seguinte.
-      stopInertiaOnNavigate: true,
-      // Em touch o scroll nativo já é suave: interceptar prejudica a resposta.
-      syncTouch: false,
-    });
+    async function start() {
+      const [{ default: Lenis }, { default: gsap }, { ScrollTrigger }] =
+        await Promise.all([
+          import("lenis"),
+          import("gsap"),
+          import("gsap/ScrollTrigger"),
+        ]);
 
-    lenisRef.current = lenis;
+      if (cancelled) return;
 
-    // O ScrollTrigger precisa recalcular a cada frame do Lenis.
-    lenis.on("scroll", ScrollTrigger.update);
+      gsap.registerPlugin(ScrollTrigger);
 
-    // Uma única fonte de tempo (o ticker do GSAP) evita dois RAF concorrentes.
-    function raf(time: number) {
-      lenis.raf(time * 1000);
+      const lenis = new Lenis({
+        duration: 1.05,
+        easing: (t) => Math.min(1, 1.001 - 2 ** (-10 * t)),
+        smoothWheel: true,
+        anchors: true,
+        // Ao clicar num link para outro pathname o Lenis chama `reset()`,
+        // matando a inércia. Sem isso ela continua decaindo e sobrescreve o
+        // scroll-para-o-topo do router no frame seguinte.
+        stopInertiaOnNavigate: true,
+        // Em touch o scroll nativo já é suave: interceptar prejudica a resposta.
+        syncTouch: false,
+      });
+
+      lenisRef.current = lenis;
+
+      // O ScrollTrigger precisa recalcular a cada frame do Lenis.
+      lenis.on("scroll", ScrollTrigger.update);
+
+      // Uma única fonte de tempo (o ticker do GSAP) evita dois RAF concorrentes.
+      function raf(time: number) {
+        lenis.raf(time * 1000);
+      }
+
+      gsap.ticker.add(raf);
+      gsap.ticker.lagSmoothing(0);
+
+      ScrollTrigger.refresh();
+
+      teardown = () => {
+        gsap.ticker.remove(raf);
+        gsap.ticker.lagSmoothing(500, 33);
+        lenis.off("scroll", ScrollTrigger.update);
+        lenis.destroy();
+        lenisRef.current = null;
+      };
     }
 
-    gsap.ticker.add(raf);
-    gsap.ticker.lagSmoothing(0);
-
-    ScrollTrigger.refresh();
+    const cancelIdle = whenIdle(() => {
+      start();
+    });
 
     return () => {
-      gsap.ticker.remove(raf);
-      gsap.ticker.lagSmoothing(500, 33);
-      lenis.off("scroll", ScrollTrigger.update);
-      lenis.destroy();
-      lenisRef.current = null;
+      cancelled = true;
+      cancelIdle();
+      teardown?.();
     };
   }, []);
 
@@ -129,7 +162,7 @@ export function SmootherProvider({ children }: { children: ReactNode }) {
     const lenis = lenisRef.current;
 
     if (!lenis) {
-      // Reduced motion: o Lenis nunca foi criado.
+      // Reduced motion, ou o Lenis ainda não chegou.
       window.scrollTo(0, 0);
       return;
     }

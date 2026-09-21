@@ -1,10 +1,10 @@
-import { GoogleTagManager } from "@next/third-parties/google";
 import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
 import { Suspense } from "react";
-import { ToastContainer } from "react-toastify";
+import { Analytics } from "@/components/shared/analytics";
 import { ConsentProvider, CookieConsent } from "@/components/shared/consent";
 import { ConsentInit } from "@/components/shared/consent/consent-init";
+import { Toaster } from "@/components/shared/toaster";
 import { UtmCapture } from "@/components/shared/utm-capture";
 import { WebVitals } from "@/components/shared/web-vitals";
 import "./globals.css";
@@ -62,11 +62,11 @@ export default function RootLayout({
 
           {children}
 
-          <ToastContainer />
+          <Toaster />
           <CookieConsent />
         </ConsentProvider>
 
-        <GoogleTagManager gtmId="GTM-PZQP6GVH" />
+        <Analytics />
       </body>
     </html>
   );

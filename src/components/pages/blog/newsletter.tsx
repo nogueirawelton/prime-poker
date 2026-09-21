@@ -2,7 +2,6 @@
 
 import { PaperPlaneTiltIcon } from "@phosphor-icons/react";
 import { useId, useState } from "react";
-import { toast } from "react-toastify";
 import { Chip } from "@/icons/chip";
 import { wp } from "@/providers/wp";
 import { getUtmParams } from "@/utils/utm";
@@ -20,6 +19,11 @@ export function Newsletter() {
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus("loading");
+
+    // A newsletter fecha toda página do blog, então tudo que ela importa
+    // entra no bundle de todas elas. O react-toastify (~42 KB) só é baixado
+    // aqui, no envio — quem apenas lê o artigo nunca paga por ele.
+    const { toast } = await import("react-toastify");
 
     try {
       // O `wp()` já lança quando o Contact Form 7 recusa o envio.

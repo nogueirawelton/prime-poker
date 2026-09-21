@@ -1,10 +1,10 @@
 /**
- * Estado inicial da animação de entrada, aplicado no HTML.
+ * A entrada do logo é 100% CSS (`animate-intro-*`, em globals.css).
  *
- * O GSAP só roda depois da hidratação: sem isto o logo pinta 100% visível e
- * some quando a timeline assume — o "pisca" que se via no carregamento.
+ * Antes cada parte nascia com `opacity: 0` e era revelada pelo GSAP — o que
+ * amarrava a abertura ao download da biblioteca. Com keyframes o desenho
+ * aparece no primeiro frame pintado, sem depender de JS nenhum.
  */
-const HIDDEN = { opacity: 0, visibility: "hidden" } as const;
 
 export function Icon() {
   return (
@@ -39,15 +39,30 @@ export function Icon() {
         </defs>
 
         <foreignObject x="0" y="0" width="201" height="181">
-          <div id="icon" className="mx-auto h-[118px] w-[117px]" style={HIDDEN}>
+          <div
+            id="icon"
+            className="mx-auto h-[118px] w-[117px] animate-intro-icon"
+          >
             <svg width="118" height="128">
               <use href="#img1" x="0" y="0" />
             </svg>
           </div>
         </foreignObject>
 
-        <use id="name" href="#img2" x="0" y="139" style={HIDDEN} />
-        <use id="team" href="#img3" x="145" y="167" style={HIDDEN} />
+        <use
+          id="name"
+          href="#img2"
+          x="0"
+          y="139"
+          className="animate-intro-name"
+        />
+        <use
+          id="team"
+          href="#img3"
+          x="145"
+          y="167"
+          className="animate-intro-team"
+        />
       </svg>
     </div>
   );

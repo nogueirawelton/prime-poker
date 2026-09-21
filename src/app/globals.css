@@ -32,6 +32,22 @@
      mudasse de conteúdo. */
   --animate-collapsible-open: collapsibleOpen 0.25s ease-out;
   --animate-collapsible-close: collapsibleClose 0.2s ease-in forwards;
+
+  /* Abertura de marca da home (componente `Loading`).
+     Tudo aqui é CSS de propósito: o overlay cobre o banner e, enquanto ele
+     dependia do GSAP para sair, o LCP ficava preso ao download da biblioteca.
+     Os tempos somam ~600ms e terminam em `display: none`, então o overlay se
+     remove sozinho mesmo que nenhum JS execute. */
+  --animate-intro-overlay: introOverlay 0.65s ease-in forwards;
+  --animate-intro-icon: introIcon 0.3s ease-out both;
+  --animate-intro-name: introPart 0.3s ease-out 0.12s both;
+  --animate-intro-team: introPart 0.3s ease-out 0.22s both;
+
+  /* Entrada do banner. Só descrição e CTA: o h1 é o candidato a LCP e pinta
+     no primeiro frame, sem animação nenhuma. Os atrasos começam onde a
+     abertura de marca termina (~0.65s). */
+  --animate-banner-in: bannerIn 0.45s ease-out 0.6s both;
+  --animate-banner-in-late: bannerIn 0.45s ease-out 0.78s both;
 }
 
 @layer utilities {
@@ -299,5 +315,66 @@
 
   .rich-text .wp-block-separator {
     @apply my-4 h-px border-0 bg-white/15;
+  }
+}
+
+@keyframes introOverlay {
+  0%,
+  55% {
+    opacity: 1;
+  }
+  99% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+    display: none;
+  }
+}
+
+@keyframes introIcon {
+  from {
+    opacity: 0;
+    translate: 0 16px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes introPart {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Sem animação de abertura para quem pediu menos movimento: o overlay
+   simplesmente não existe, e o banner pinta direto. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-intro-overlay {
+    display: none;
+  }
+
+  .animate-intro-icon,
+  .animate-intro-name,
+  .animate-intro-team,
+  .animate-banner-in,
+  .animate-banner-in-late {
+    animation: none;
+  }
+}
+
+@keyframes bannerIn {
+  from {
+    opacity: 0;
+    translate: 0 16px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
   }
 }
