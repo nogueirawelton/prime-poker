@@ -51,7 +51,7 @@ export function Banner({ content }: BannerProps) {
 
             <div data-el="cta" className="animate-banner-in-late">
               <FormDialog>
-                <button className="mt-8 flex h-14 w-fit items-center gap-2 rounded-md bg-prime-red px-4 font-medium text-prime-light text-sm transition-all duration-500 hover:bg-prime-light hover:text-prime-red lg:text-base">
+                <button type="button" className="mt-8 flex h-14 w-fit items-center gap-2 rounded-md bg-prime-red px-4 font-medium text-prime-light text-sm transition-all duration-500 hover:bg-prime-light hover:text-prime-red lg:text-base">
                   Faça Parte do Prime Poker Team{" "}
                   <CaretRightIcon className="size-6" />
                 </button>
@@ -68,9 +68,11 @@ export function Banner({ content }: BannerProps) {
 
       <Link
         href="#quem-somos"
+        aria-label="Ir para a seção Quem Somos"
         className="absolute bottom-4 left-1/2 z-20 -translate-x-1/2 animate-bounce"
       >
         <svg
+          aria-hidden="true"
           width="32"
           height="32"
           viewBox="0 0 173 173"

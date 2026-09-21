@@ -69,8 +69,8 @@ export function MenuMobileDialog({ children }: { children: ReactNode }) {
               </Link>
             </Dialog.Close>
 
-            <Dialog.Close>
-              <XIcon className="size-7 text-prime-light" />
+            <Dialog.Close aria-label="Fechar menu">
+              <XIcon aria-hidden="true" className="size-7 text-prime-light" />
             </Dialog.Close>
           </div>
 

@@ -7,12 +7,21 @@ export function CookieBanner() {
   const { consent, ready, acceptAll, rejectAll, openPreferences } =
     useConsent();
 
-  // Não renderiza no servidor nem antes de lermos a escolha (evita flicker),
-  // e some assim que o usuário já decidiu.
-  if (!ready || consent) return null;
+  // Renderiza no servidor de propósito. Enquanto esta barra só aparecia depois
+  // da hidratação, ela era o elemento de LCP da home — e entrava com ~3,3s de
+  // atraso de renderização, arrastando junto o Speed Index, porque é uma caixa
+  // grande surgindo tarde no meio da tela.
+  //
+  // Quem já decidiu não chega a vê-la: o <ConsentInit> marca
+  // `data-consent="decided"` no <html> antes da primeira pintura e o CSS a
+  // esconde. Aqui o React só confirma isso depois que o estado carrega.
+  if (ready && consent) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 p-3 lg:inset-x-auto lg:bottom-4 lg:left-4 lg:max-w-md">
+    <div
+      data-cookie-banner
+      className="fixed inset-x-0 bottom-0 z-50 p-3 lg:inset-x-auto lg:bottom-4 lg:left-4 lg:max-w-md"
+    >
       <div className="flex flex-col gap-4 rounded-xl border border-white/10 bg-zinc-800 p-5 shadow-2xl">
         <div className="space-y-1">
           <strong className="font-bold text-base text-prime-light">

@@ -184,7 +184,7 @@ export function Header() {
         </div>
 
         <MenuMobileTrigger>
-          <button type="button" className="lg:hidden">
+          <button type="button" aria-label="Abrir menu" className="lg:hidden">
             <ListIcon className="size-7 text-prime-light" />
           </button>
         </MenuMobileTrigger>

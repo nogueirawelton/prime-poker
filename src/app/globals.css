@@ -378,3 +378,12 @@
     translate: 0 0;
   }
 }
+
+/* Barra de cookies: renderizada no servidor para não entrar depois da
+   hidratação (era o elemento de LCP da home, com ~3,3s de atraso). Quem já
+   decidiu tem `data-consent="decided"` gravado no <html> pelo <ConsentInit>,
+   que roda no <head> antes da primeira pintura — então a barra é escondida
+   sem nunca chegar a piscar. */
+html[data-consent="decided"] [data-cookie-banner] {
+  display: none;
+}

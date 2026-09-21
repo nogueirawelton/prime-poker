@@ -64,8 +64,11 @@ export function PreferencesDialog() {
                 mudar isso quando quiser.
               </Dialog.Description>
             </div>
-            <Dialog.Close className="shrink-0 text-prime-light/70 transition-colors duration-500 hover:text-prime-light">
-              <XIcon className="size-5" />
+            <Dialog.Close
+              aria-label="Fechar preferências de cookies"
+              className="shrink-0 text-prime-light/70 transition-colors duration-500 hover:text-prime-light"
+            >
+              <XIcon aria-hidden="true" className="size-5" />
             </Dialog.Close>
           </div>
 

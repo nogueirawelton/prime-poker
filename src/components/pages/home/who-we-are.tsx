@@ -46,7 +46,7 @@ export function WhoWeAre({ content }: WhoWeAreProps) {
 
               <div data-el="cta">
                 <FormDialog>
-                  <button className="mt-8 flex h-14 w-fit items-center gap-2 rounded-md bg-prime-red px-4 font-medium text-prime-light text-sm transition-all duration-500 hover:bg-prime-light hover:text-prime-red lg:text-base">
+                  <button type="button" className="mt-8 flex h-14 w-fit items-center gap-2 rounded-md bg-prime-red px-4 font-medium text-prime-light text-sm transition-all duration-500 hover:bg-prime-light hover:text-prime-red lg:text-base">
                     Evolua com a Prime Poker
                     <CaretRightIcon className="size-6" />
                   </button>
@@ -90,7 +90,7 @@ export function WhoWeAre({ content }: WhoWeAreProps) {
                   <p className="text-gray-400 text-sm uppercase tracking-wider">
                     Em ganhos acumulados
                   </p>
-                  <p className="mt-1 text-gray-500 text-xs">
+                  <p className="mt-1 text-gray-400 text-xs">
                     Somatório de todos os jogadores do time
                   </p>
                 </div>

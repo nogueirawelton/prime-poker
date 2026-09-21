@@ -44,7 +44,7 @@ export function Instructors({ content }: InstructorsProps) {
 
         <div data-el="cta">
           <FormDialog>
-            <button className="mx-auto mt-8 flex h-14 w-fit items-center gap-2 rounded-md bg-prime-red px-4 font-medium text-prime-light text-sm transition-all duration-500 hover:bg-prime-light hover:text-prime-red lg:text-base">
+            <button type="button" className="mx-auto mt-8 flex h-14 w-fit items-center gap-2 rounded-md bg-prime-red px-4 font-medium text-prime-light text-sm transition-all duration-500 hover:bg-prime-light hover:text-prime-red lg:text-base">
               Aprenda com quem entende do jogo
               <CaretRightIcon className="size-6" />
             </button>

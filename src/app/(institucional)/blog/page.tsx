@@ -119,7 +119,7 @@ async function Results({ searchParams }: Props) {
 
       <div className={GRID}>
         {posts.map((post) => (
-          <PostCard key={post.id} post={post} />
+          <PostCard key={post.id} post={post} headingLevel={2} />
         ))}
       </div>
 
