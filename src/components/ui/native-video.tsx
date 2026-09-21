@@ -1,40 +1,42 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * Vídeo de fundo hospedado no próprio WordPress.
  *
- * Um `<video muted loop>` faz o que o react-player fazia aqui, sem os ~110 KB
- * dele e — o que importa para o LCP — sem depender de JavaScript para
- * aparecer: o elemento já vem no HTML do servidor.
+ * Nunca é ele quem pinta primeiro. Por baixo fica o poster — o primeiro frame
+ * do próprio vídeo, servido como imagem otimizada e com art direction — que é
+ * quem responde pelo LCP. O vídeo só começa a baixar depois do `load` da
+ * página, e aparece quando já está rodando.
  *
- * Duas decisões sustentam o resto:
+ * Isso existe porque o arquivo passa de 3 MB: em `autoplay`, esse download
+ * disputava banda com o CSS, a fonte e a imagem justamente na janela em que o
+ * LCP é medido. Adiar não custa nada visualmente, porque o primeiro frame do
+ * vídeo é exatamente a imagem que já está na tela.
  *
- * `preload="none"` evita o download duplo. O banner renderiza a versão mobile
- * e a desktop e esconde uma com `lg:hidden`, mas `display: none` não impede o
- * navegador de buscar metadados. Sem preload, nada começa sozinho.
- *
- * A reprodução só começa depois do `load` da página. O vídeo do banner passa
- * de 3 MB: deixá-lo em `autoplay` fazia esse download disputar banda com o
- * CSS, a fonte e as imagens justamente na janela em que o LCP é medido. Como
- * ele é decorativo e fica atrás de um gradiente, atrasar alguns instantes não
- * custa nada visualmente e libera a rede para o conteúdo.
+ * `preload="none"` também evita o download duplo: o banner renderiza a versão
+ * mobile e a desktop escondendo uma com `lg:hidden`, e `display: none` não
+ * impede o navegador de buscar metadados.
  */
 export function NativeVideo({
   src,
+  fadeIn = false,
   className = "",
 }: {
   src: string;
+  /** Há um poster por baixo: nasce invisível e entra quando começa a rodar. */
+  fadeIn?: boolean;
   className?: string;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
+  const [playing, setPlaying] = useState(false);
 
   useEffect(() => {
     const video = ref.current;
     if (!video) return;
 
-    // Quem pediu menos movimento não recebe vídeo de fundo — nem o download.
+    // Quem pediu menos movimento fica com o poster — e não baixa o vídeo.
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     let cancelled = false;
@@ -42,10 +44,8 @@ export function NativeVideo({
     function start() {
       if (cancelled || !video) return;
 
-      // O elemento escondido pelo breakpoint não tem caixa de layout: não
-      // faz sentido baixar o vídeo que ninguém vai ver. `offsetParent` é o
-      // teste de `display: none` que funciona em qualquer navegador aqui —
-      // o elemento é `absolute` dentro de um ancestral posicionado.
+      // O elemento escondido pelo breakpoint não tem caixa de layout: não faz
+      // sentido baixar o vídeo que ninguém vai ver.
       const visible =
         typeof video.checkVisibility === "function"
           ? video.checkVisibility()
@@ -55,7 +55,7 @@ export function NativeVideo({
 
       video.load();
       // Autoplay mudo é permitido, mas a promise ainda pode ser rejeitada
-      // (economia de bateria, por exemplo). É decorativo: seguimos sem ele.
+      // (economia de bateria, por exemplo). Aí o poster simplesmente fica.
       video.play().catch(() => {});
     }
 
@@ -90,7 +90,13 @@ export function NativeVideo({
       preload="none"
       aria-hidden="true"
       tabIndex={-1}
-      className={`absolute inset-0 size-full bg-prime-dark object-cover ${className}`}
+      onPlaying={() => setPlaying(true)}
+      // Sem transição de propósito. O primeiro frame do vídeo é o poster que
+      // já está na tela, então a troca é invisível — um fade só criaria uma
+      // mudança visual onde não havia nenhuma.
+      className={`absolute inset-0 size-full object-cover ${
+        fadeIn && !playing ? "opacity-0" : ""
+      } ${className}`}
     />
   );
 }

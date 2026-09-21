@@ -25,14 +25,24 @@ const videoSrc = (media: Media) =>
     ? media.video.file?.node?.mediaItemUrl
     : media.video.url;
 
-/** Uma mídia de vídeo, escolhida por breakpoint via CSS. */
-function VideoSlide({ media, className }: { media: Media; className: string }) {
+/** Um vídeo, escolhido por breakpoint via CSS. */
+function VideoSlide({
+  media,
+  hasPoster,
+  className,
+}: {
+  media: Media;
+  hasPoster: boolean;
+  className: string;
+}) {
   const src = videoSrc(media);
+  if (!src) return null;
 
   if (media.video.origin === "local") {
-    return <NativeVideo src={src} className={className} />;
+    return <NativeVideo src={src} fadeIn={hasPoster} className={className} />;
   }
 
+  // YouTube e afins: iframe com proporção fixa, precisa ser escalado.
   return (
     <div className={`absolute inset-0 overflow-hidden ${className}`}>
       <ScaledVideo
@@ -49,10 +59,14 @@ function VideoSlide({ media, className }: { media: Media; className: string }) {
 /**
  * Um slide do banner.
  *
- * Quando mobile e desktop são imagens — o caso normal — vira um único
- * `<picture>` e o navegador baixa só a versão que vai mostrar. Se os tipos
- * divergirem (imagem num breakpoint, vídeo no outro) caímos no esquema antigo
- * de renderizar os dois e esconder um com CSS; aí não há como evitar.
+ * A imagem e o vídeo não são alternativas: quando o slide é de vídeo e há uma
+ * imagem cadastrada, ela vira o **poster**. O poster é servido como
+ * `<picture>` otimizado e com art direction, pinta no primeiro frame e responde
+ * pelo LCP; o vídeo entra por cima depois do `load`. Como a imagem cadastrada é
+ * o primeiro frame do próprio vídeo, a troca não produz salto visual.
+ *
+ * Com `type: "image"` nos dois breakpoints o slide é só imagem, e nenhum vídeo
+ * é baixado — é o que o campo do CMS significa.
  */
 function Slide({
   media,
@@ -61,44 +75,38 @@ function Slide({
   media: Banner["medias"][number]["media"];
   priority: boolean;
 }) {
-  const bothImages =
-    media.mobile.type === "image" && media.desktop.type === "image";
+  const mobileImage = media.mobile.image?.node?.mediaItemUrl;
+  const desktopImage = media.desktop.image?.node?.mediaItemUrl;
 
-  if (bothImages) {
-    return (
-      <HeroPicture
-        mobileSrc={media.mobile.image?.node?.mediaItemUrl}
-        desktopSrc={media.desktop.image?.node?.mediaItemUrl}
-        alt=""
-        priority={priority}
-      />
-    );
-  }
+  // O `<picture>` exige os dois lados: é ele quem escolhe, antes de baixar,
+  // qual versão o navegador pega.
+  const poster = mobileImage && desktopImage;
 
   return (
     <>
-      {media.mobile.type === "image" ? (
+      {poster && (
         <HeroPicture
-          mobileSrc={media.mobile.image?.node?.mediaItemUrl}
-          desktopSrc={media.mobile.image?.node?.mediaItemUrl}
+          mobileSrc={mobileImage}
+          desktopSrc={desktopImage}
           alt=""
           priority={priority}
-          className="lg:hidden"
         />
-      ) : (
-        <VideoSlide media={media.mobile} className="lg:hidden" />
       )}
 
-      {media.desktop.type === "image" ? (
-        <HeroPicture
-          mobileSrc={media.desktop.image?.node?.mediaItemUrl}
-          desktopSrc={media.desktop.image?.node?.mediaItemUrl}
-          alt=""
-          priority={priority}
+      {media.mobile.type === "video" && (
+        <VideoSlide
+          media={media.mobile}
+          hasPoster={!!poster}
+          className="lg:hidden"
+        />
+      )}
+
+      {media.desktop.type === "video" && (
+        <VideoSlide
+          media={media.desktop}
+          hasPoster={!!poster}
           className="hidden lg:block"
         />
-      ) : (
-        <VideoSlide media={media.desktop} className="hidden lg:block" />
       )}
     </>
   );

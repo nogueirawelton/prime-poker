@@ -15,8 +15,11 @@ export function Banner({ content }: BannerProps) {
   // é client component e só pediria a imagem depois de hidratar.
   const first = content.medias[0]?.media;
 
+  // Vale tanto para um slide de imagem quanto para o poster de um slide de
+  // vídeo: nos dois casos é essa imagem que pinta primeiro.
   const preloadable =
-    first?.mobile.type === "image" && first?.desktop.type === "image";
+    !!first?.mobile.image?.node?.mediaItemUrl &&
+    !!first?.desktop.image?.node?.mediaItemUrl;
 
   return (
     <section data-banner className="relative h-screen w-full">
@@ -51,7 +54,10 @@ export function Banner({ content }: BannerProps) {
 
             <div data-el="cta" className="animate-banner-in-late">
               <FormDialog>
-                <button type="button" className="mt-8 flex h-14 w-fit items-center gap-2 rounded-md bg-prime-red px-4 font-medium text-prime-light text-sm transition-all duration-500 hover:bg-prime-light hover:text-prime-red lg:text-base">
+                <button
+                  type="button"
+                  className="mt-8 flex h-14 w-fit items-center gap-2 rounded-md bg-prime-red px-4 font-medium text-prime-light text-sm transition-all duration-500 hover:bg-prime-light hover:text-prime-red lg:text-base"
+                >
                   Faça Parte do Prime Poker Team{" "}
                   <CaretRightIcon className="size-6" />
                 </button>
