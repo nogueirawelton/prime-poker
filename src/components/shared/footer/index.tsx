@@ -18,9 +18,13 @@ const SOCIALS = [
     href: "https://instagram.com/primepokerteam",
     Icon: InstagramLogoIcon,
   },
-  { label: "Facebook", href: "#", Icon: FacebookLogoIcon },
-  { label: "X", href: "#", Icon: XLogoIcon },
-  { label: "YouTube", href: "#", Icon: YoutubeLogoIcon },
+  // { label: "Facebook", href: "#", Icon: FacebookLogoIcon },
+  // { label: "X", href: "#", Icon: XLogoIcon },
+  {
+    label: "YouTube",
+    href: "https://youtube.com/@primepokerteam",
+    Icon: YoutubeLogoIcon,
+  },
 ];
 
 const LINK = "transition-colors duration-500 hover:text-prime-red";
