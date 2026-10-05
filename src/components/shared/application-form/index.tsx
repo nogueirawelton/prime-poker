@@ -10,6 +10,7 @@ import { PhoneInput } from "@/components/ui/form/phone-input";
 import { TextInput } from "@/components/ui/form/text-input";
 import { gsheets } from "@/providers/gsheets";
 import { wp } from "@/providers/wp";
+import { trackEvent } from "@/utils/track";
 import { getUtmParams } from "@/utils/utm";
 import {
   type ApplicationPayload,
@@ -108,6 +109,10 @@ export function Form() {
         if (sheet.status === "rejected") console.error(sheet.reason);
 
         toast.success("Formulário enviado com sucesso!");
+        trackEvent("generate_lead", {
+          form_name: "aplicacao",
+          ...getUtmParams(),
+        });
         reset();
         setValue("0");
       } catch (err) {
