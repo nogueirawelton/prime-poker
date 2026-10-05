@@ -4,6 +4,7 @@ import { PaperPlaneTiltIcon } from "@phosphor-icons/react";
 import { useId, useState } from "react";
 import { Chip } from "@/icons/chip";
 import { wp } from "@/providers/wp";
+import { trackEvent } from "@/utils/track";
 import { getUtmParams } from "@/utils/utm";
 
 /** Formulário de newsletter no Contact Form 7. */
@@ -30,6 +31,7 @@ export function Newsletter() {
       await wp(FORM_ID, { email, ...getUtmParams() });
 
       toast.success("Inscrição confirmada. Boa sorte nas mesas!");
+      trackEvent("newsletter_signup", { form_name: "newsletter" });
       setEmail("");
     } catch (error) {
       console.error(error);

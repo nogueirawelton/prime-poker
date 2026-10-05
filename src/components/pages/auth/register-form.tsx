@@ -13,6 +13,7 @@ import { useActionState, useEffect, useId, useState } from "react";
 import { toast } from "react-toastify";
 import { type RegisterState, registerUser } from "@/actions/auth";
 import { IconInput } from "@/components/ui/form/icon-input";
+import { trackEvent } from "@/utils/track";
 
 const INITIAL_STATE: RegisterState = { status: "idle" };
 
@@ -73,6 +74,8 @@ export function RegisterForm() {
     }
 
     if (state.status === "success") {
+      trackEvent("sign_up", { method: "email" });
+
       // Ainda não há sessão: a conta existe no WP, mas quem autentica é o login.
       toast.success(
         "Usuário cadastrado com sucesso! Use suas credenciais para acessar.",
