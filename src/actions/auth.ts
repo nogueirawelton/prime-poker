@@ -298,7 +298,8 @@ export async function registerUser(
       );
     }
 
-    return { status: "success", tier };
+    // `values` volta para o form mandar os dados do lead ao GTM (sem senha).
+    return { status: "success", tier, values };
   } catch (error) {
     const rawMessage =
       error instanceof ClientError
