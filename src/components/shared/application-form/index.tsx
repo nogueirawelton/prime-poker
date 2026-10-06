@@ -109,10 +109,15 @@ export function Form() {
         if (sheet.status === "rejected") console.error(sheet.reason);
 
         toast.success("Formulário enviado com sucesso!");
-        trackEvent("generate_lead", {
-          form_name: "aplicacao",
-          ...getUtmParams(),
-        });
+        trackEvent(
+          "generate_lead",
+          { form_name: "aplicacao", ...getUtmParams() },
+          {
+            fullName: data.personalData.nome_completo,
+            email: data.personalData.email,
+            phone: data.personalData.numero_whatsapp,
+          },
+        );
         reset();
         setValue("0");
       } catch (err) {

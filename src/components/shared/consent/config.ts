@@ -34,7 +34,7 @@ export const CONSENT_CATEGORIES: Array<{
     key: "marketing",
     title: "Marketing",
     description:
-      "Permitem medir campanhas e mostrar anúncios mais relevantes para você (Google Ads).",
+      "Permitem medir campanhas e mostrar anúncios mais relevantes para você (Google Ads e Meta).",
   },
 ];
 

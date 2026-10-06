@@ -74,7 +74,15 @@ export function RegisterForm() {
     }
 
     if (state.status === "success") {
-      trackEvent("sign_up", { method: "email" });
+      trackEvent(
+        "sign_up",
+        { method: "email" },
+        {
+          firstName: state.values?.name,
+          lastName: state.values?.lastName,
+          email: state.values?.email,
+        },
+      );
 
       // Ainda não há sessão: a conta existe no WP, mas quem autentica é o login.
       toast.success(

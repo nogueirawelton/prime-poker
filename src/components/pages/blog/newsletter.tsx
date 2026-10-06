@@ -31,7 +31,7 @@ export function Newsletter() {
       await wp(FORM_ID, { email, ...getUtmParams() });
 
       toast.success("Inscrição confirmada. Boa sorte nas mesas!");
-      trackEvent("newsletter_signup", { form_name: "newsletter" });
+      trackEvent("newsletter_signup", { form_name: "newsletter" }, { email });
       setEmail("");
     } catch (error) {
       console.error(error);
