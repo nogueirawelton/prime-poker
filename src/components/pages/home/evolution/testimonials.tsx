@@ -1,10 +1,12 @@
 "use client";
 
-import { UserIcon } from "@phosphor-icons/react";
+import { CaretLeftIcon, CaretRightIcon, UserIcon } from "@phosphor-icons/react";
 import type { Evolution } from "@/@types/pages/Home";
 import {
   Carousel,
   CarouselDots,
+  CarouselNext,
+  CarouselPrevious,
   CarouselSlide,
   CarouselTrack,
   CarouselViewport,
@@ -17,7 +19,9 @@ export type TestimonialsProps = {
 
 export function Testimonials({ content }: TestimonialsProps) {
   return (
-    <Carousel data-el="testimonials" className="mt-12">
+    // Depoimento é texto longo: o padrão de 5s trocava o slide antes de dar
+    // tempo de terminar a leitura.
+    <Carousel data-el="testimonials" autoplay={9000} className="mt-12">
       <h3 className="gap-2 text-center font-bold text-prime-light text-xl uppercase">
         Histórias de sucesso
       </h3>
@@ -55,7 +59,19 @@ export function Testimonials({ content }: TestimonialsProps) {
         </CarouselTrack>
       </CarouselViewport>
 
-      <CarouselDots className="mt-6 flex items-center justify-center gap-3" />
+      {/* No mobile as setas ladeiam os bullets: com um depoimento por vez, o
+          arraste sozinho não deixa claro que há mais histórias. */}
+      <div className="mt-6 flex items-center justify-center gap-4">
+        <CarouselPrevious className="cursor-pointer md:hidden">
+          <CaretLeftIcon className="size-8 text-prime-light" />
+        </CarouselPrevious>
+
+        <CarouselDots className="flex items-center justify-center gap-3" />
+
+        <CarouselNext className="cursor-pointer md:hidden">
+          <CaretRightIcon className="size-8 text-prime-light" />
+        </CarouselNext>
+      </div>
     </Carousel>
   );
 }
